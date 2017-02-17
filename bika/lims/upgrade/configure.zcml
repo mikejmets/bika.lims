@@ -552,6 +552,15 @@
         sortkey="1"
         profile="bika.lims:default"/>
 
+<genericsetup:upgradeStep
+        title="Repair ARImports"
+        description=""
+        source="3200"
+        destination="3201"
+        handler="bika.lims.upgrade.to3201.upgrade"
+        sortkey="1"
+        profile="bika.lims:default"/>
+
 </configure>
 
 
