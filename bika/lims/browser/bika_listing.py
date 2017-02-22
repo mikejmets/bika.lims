@@ -594,6 +594,7 @@ class BikaListingView(BrowserView):
                     continue
                 ##logger.info("Or: %s=%s"%(index, value))
                 if idx.meta_type in('ZCTextIndex', 'FieldIndex'):
+                    value = ' '.join(['%s*' % v for v in value.split(' ')])
                     self.Or.append(MatchRegexp(index, value))
                     self.expand_all_categories = True
                     # https://github.com/bikalabs/Bika-LIMS/issues/1069
