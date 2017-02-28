@@ -592,8 +592,9 @@ class BikaListingView(BrowserView):
                                  "(Perhaps the index is still empty)." %
                                  (index, self.catalog))
                     continue
-                ##logger.info("Or: %s=%s"%(index, value))
                 if idx.meta_type in('ZCTextIndex', 'FieldIndex'):
+                    #Append wildcard on each word in the query to allow 
+                    #part word searches
                     value = ' '.join(['%s*' % v for v in value.split(' ')])
                     self.Or.append(MatchRegexp(index, value))
                     self.expand_all_categories = True
