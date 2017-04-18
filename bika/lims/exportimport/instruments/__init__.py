@@ -7,30 +7,31 @@ import sys
 import inspect
 
 #from generic import xml
+from abaxis.vetscan import vs2
 from agilent.masshunter import quantitative
+from alere.pima import beads, cd4
+from beckmancoulter.access import model2
+from biodrop.ulite import ulite
+from eltra.cs import cs2000
 from foss.fiastar import fiastar
 from foss.winescan import auto
 from foss.winescan import ft120
+from horiba.jobinyvon import icp
+from lifetechnologies.qubit import qubit
+from myself import myinstrument
+from nuclisens import easyq
 from thermoscientific.gallery import Ts9861x
 from thermoscientific.arena import xt20
 from thermoscientific.multiskan import go
-from panalytical.omnia import axios_xrf
-from alere.pima import beads, cd4
-from lifetechnologies.qubit import qubit
-from biodrop.ulite import ulite
 from tescan.tima import tima
+from panalytical.omnia import axios_xrf
 from sysmex.xs import i500, i1000
-from beckmancoulter.access import model2
+from rigaku.supermini import wxrf
 from rochecobas.taqman import model48
 from rochecobas.taqman import model96
 from sealanalytical.aq2 import aq2
-from horiba.jobinyvon import icp
-from abaxis.vetscan import vs2
 from scilvet.abc import plus
-from eltra.cs import cs2000
-from rigaku.supermini import wxrf
-from myself import myinstrument
-from nuclisens import easyq
+from shimadzu.gcms import tq8030_gc_ms_ms
 
 __all__ = ['abaxis.vetscan.vs2',
            'agilent.masshunter.quantitative',
@@ -42,6 +43,7 @@ __all__ = ['abaxis.vetscan.vs2',
            'foss.fiastar.fiastar',
            'foss.winescan.auto',
            'foss.winescan.ft120',
+           'shimadzu.gcms.tq8030_gc_ms_ms', 
            #'generic.xml',
            'horiba.jobinyvon.icp',
            'rigaku.supermini.wxrf',
