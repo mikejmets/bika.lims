@@ -24,6 +24,7 @@ from zope.component import getUtility
 import csv
 import json
 import plone
+import re
 import zope
 import zope.event
 from bika.lims.exportimport.instruments.resultsimport import InstrumentCSVResultsFileParser,\
@@ -36,12 +37,12 @@ title = "Shimadzu GCMS-TQ8030 GC/MS/MS"
 def Import(context, request):
     """ Read Shimadzu GCMS-TQ8030 GC/MS/MS analysis results
     """
-    infile = request.form['amhq_file']
-    fileformat = request.form['amhq_format']
-    artoapply = request.form['amhq_artoapply']
-    override = request.form['amhq_override']
-    sample = request.form.get('amhq_sample', 'requestid')
-    instrument = request.form.get('amhq_instrument', None)
+    form = request.form
+    infile = form['file'][0] if isinstance(form['file'],list) else form['file'] #TODO Why is this returning a list
+    artoapply = form['artoapply']
+    override = form['override']
+    sample = form.get('sample', 'requestid')
+    instrument = form.get('instrument', None)
     errors = []
     logs = []
 
@@ -49,11 +50,7 @@ def Import(context, request):
     parser = None
     if not hasattr(infile, 'filename'):
         errors.append(_("No file selected"))
-    elif fileformat == 'csv':
-        parser = GCMSTQ8030GCMSMSCSVParser(infile)
-    else:
-        errors.append(t(_("Unrecognized file format ${fileformat}",
-                          mapping={"fileformat": fileformat})))
+    parser = GCMSTQ8030GCMSMSCSVParser(infile)
 
     if parser:
         # Load the importer
@@ -106,13 +103,14 @@ def Import(context, request):
 
 class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
 
-    HEADERTABLE_KEY = 'Header'
+    HEADERTABLE_KEY = '[Header]'
     HEADERKEY_FILENAME = 'Data File Name'
     HEADERKEY_OUTPUTDATE = 'Output Date'
     HEADERKEY_OUTPUTTIME = 'Output Time'
-    QUANTITATIONRESULTS_KEY = 'MS Quantitative Results'
+    QUANTITATIONRESULTS_KEY = '[MS Quantitative Results]'
     QUANTITATIONRESULTS_NUMBEROFIDS = '# of IDs'
-    QUANTITATIONRESULTS_NUMERICHEADERS = ('Mass', 'Ret.Time', 'Start Time', 
+    QUANTITATIONRESULTS_HEADER_ID_NUMBER = 'ID#'
+    QUANTITATIONRESULTS_NUMERICHEADERS = ('Mass', 'Start Time', 
             'End Time',	'A/H', 'Area','Height' 'Conc.', 'Peak#', 
             'Std.Ret.Time', '3rd', '2nd', '1st', 'Constant', 'Ref.Ion Area', 
             'Ref.Ion Height', 'Ref.Ion Set Ratio', 'Ref.Ion Ratio', 'Recovery',
@@ -124,28 +122,21 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
             'Ref.Ion4 m/z', 'Ref.Ion4 Area', 'Ref.Ion4 Height', 
             'Ref.Ion4 Set Ratio', 'Ref.Ion4 Ratio', 'Ref.Ion5 m/z', 
             'Ref.Ion5 Area', 'Ref.Ion5 Height', 'Ref.Ion5 Set Ratio',
-            'Ref.Ion5 Ratio', 'Ret. Index', 'S/N', 'Threshold',
+            'Ref.Ion5 Ratio', 'S/N', 'Threshold',
             )
-    QUANTITATIONRESULTS_COMPOUNDCOLUMN = 'Compound'
+    SIMILARITYSEARCHRESULTS_KEY = '[MS Similarity Search Results for Identified Results]'
+    PEAK_TABLE_KEY = '[MC Peak Table]'
     COMMAS = ','
 
     def __init__(self, csv):
         InstrumentCSVResultsFileParser.__init__(self, csv)
         self._end_header = False
-        #self._end_sequencetable = False
-        #self._sequences = []
-        self._sequencesheader = []
         self._quantitationresultsheader = []
         self._numline = 0
-
-    def getAttachmentFileType(self):
-        return "Agilent's Masshunter Quant CSV"
 
     def _parseline(self, line):
         if self._end_header == False:
             return self.parse_headerline(line)
-        elif self._end_sequencetable == False:
-            return self.parse_sequencetableline(line)
         else:
             return self.parse_quantitationesultsline(line)
 
@@ -153,132 +144,77 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
         """ Parses header lines
 
             Header example:
-            Batch Info,2013-03-20T07:11:09.9053262-07:00,2013-03-20T07:12:55.5280967-07:00,2013-03-20T07:11:07.1047817-07:00,,,,,,,,,,,,,,
-            Batch Data Path,D:\MassHunter\Data\130129\QuantResults\130129LS.batch.bin,,,,,,,,,,,,,,,,
-            Analysis Time,3/20/2013 7:11 AM,Analyst Name,Administrator,,,,,,,,,,,,,,
-            Report Time,3/20/2013 7:12 AM,Reporter Name,Administrator,,,,,,,,,,,,,,
-            Last Calib Update,3/20/2013 7:11 AM,Batch State,Processed,,,,,,,,,,,,,,
-            ,,,,,,,,,,,,,,,,,
-
-
-
+            [Header]
             Data File Name,C:\GCMSsolution\Data\October\1-16-02249-001_CD_10172016_2.qgd
             Output Date,10/18/2016
             Output Time,12:04:11 PM
-            ,,
         """
         if self._end_header == True:
             # Header already processed
             return 0
 
-        if line.startswith(self.SEQUENCETABLE_KEY):
+
+        splitted = [token.strip() for token in line.split('\t')] 
+
+        # [Header]
+        if splitted[0] == self.HEADERTABLE_KEY:
+            if self.HEADERTABLE_KEY in self._header:
+                self.warn("Header [Header] Info already found. Discarding",
+                          numline=self._numline, line=line)
+                return 0
+
+            self._header[self.HEADERTABLE_KEY] = []
+            for i in range(len(splitted) - 1):
+                if splitted[i + 1]:
+                    self._header[self.HEADERTABLE_KEY].append(splitted[i + 1])
+
+        # Data File Name, C:\GCMSsolution\Data\October\1-16-02249-001_CD_10172016_2.qgd
+        elif splitted[0] == self.HEADERKEY_FILENAME:
+            if self.HEADERKEY_FILENAME in self._header:
+                self.warn("Header File Data Name already found. Discarding",
+                          numline=self._numline, line=line)
+                return 0;
+
+            if splitted[1]:
+                self._header[self.HEADERKEY_FILENAME] = splitted[1]
+            else:
+                self.warn("File Data Name not found or empty",
+                          numline=self._numline, line=line)
+
+        # Output Date	10/18/2016
+        elif splitted[0] == self.HEADERKEY_OUTPUTDATE:
+            if splitted[1]:
+                try:
+                    d = datetime.strptime(splitted[1], "%m/%d/%Y")
+                    self._header[self.HEADERKEY_OUTPUTDATE] = d
+                except ValueError:
+                    self.err("Invalid Output Date format",
+                             numline=self._numline, line=line)
+            else:
+                self.warn("Output Date not found or empty",
+                          numline=self._numline, line=line)
+                d = datetime.strptime(splitted[1], "%m/%d/%Y")
+
+        # Output Time	12:04:11 PM
+        elif splitted[0] == self.HEADERKEY_OUTPUTTIME:
+            if splitted[1]:
+                try:
+                    d = datetime.strptime(splitted[1], "%I:%M:%S %p")
+                    self._header[self.HEADERKEY_OUTPUTTIME] = d
+                except ValueError:
+                    self.err("Invalid Output Time format",
+                             numline=self._numline, line=line)
+            else:
+                self.warn("Output Time not found or empty",
+                          numline=self._numline, line=line)
+                d = datetime.strptime(splitted[1], "%I:%M %p")
+
+        if line.startswith(self.QUANTITATIONRESULTS_KEY):
             self._end_header = True
             if len(self._header) == 0:
                 self.err("No header found", numline=self._numline)
                 return -1
             return 0
-
-        splitted = [token.strip() for token in line.split(',')]
-
-        # Batch Info,2013-03-20T07:11:09.9053262-07:00,2013-03-20T07:12:55.5280967-07:00,2013-03-20T07:11:07.1047817-07:00,,,,,,,,,,,,,,
-        if splitted[0] == self.HEADERKEY_BATCHINFO:
-            if self.HEADERKEY_BATCHINFO in self._header:
-                self.warn("Header Batch Info already found. Discarding",
-                          numline=self._numline, line=line)
-                return 0
-
-            self._header[self.HEADERKEY_BATCHINFO] = []
-            for i in range(len(splitted) - 1):
-                if splitted[i + 1]:
-                    self._header[self.HEADERKEY_BATCHINFO].append(splitted[i + 1])
-
-        # Batch Data Path,D:\MassHunter\Data\130129\QuantResults\130129LS.batch.bin,,,,,,,,,,,,,,,,
-        elif splitted[0] == self.HEADERKEY_BATCHDATAPATH:
-            if self.HEADERKEY_BATCHDATAPATH in self._header:
-                self.warn("Header Batch Data Path already found. Discarding",
-                          numline=self._numline, line=line)
-                return 0;
-
-            if splitted[1]:
-                self._header[self.HEADERKEY_BATCHDATAPATH] = splitted[1]
-            else:
-                self.warn("Batch Data Path not found or empty",
-                          numline=self._numline, line=line)
-
-        # Analysis Time,3/20/2013 7:11 AM,Analyst Name,Administrator,,,,,,,,,,,,,,
-        elif splitted[0] == self.HEADERKEY_ANALYSISTIME:
-            if splitted[1]:
-                try:
-                    d = datetime.strptime(splitted[1], "%m/%d/%Y %I:%M %p")
-                    self._header[self.HEADERKEY_ANALYSISTIME] = d
-                except ValueError:
-                    self.err("Invalid Analysis Time format",
-                             numline=self._numline, line=line)
-            else:
-                self.warn("Analysis Time not found or empty",
-                          numline=self._numline, line=line)
-
-            if splitted[2] and splitted[2] == self.HEADERKEY_ANALYSTNAME:
-                if splitted[3]:
-                    self._header[self.HEADERKEY_ANALYSTNAME] = splitted[3]
-                else:
-                    self.warn("Analyst Name not found or empty",
-                              numline=self._numline, line=line)
-            else:
-                self.err("Analyst Name not found",
-                         numline=self._numline, line=line)
-
-        # Report Time,3/20/2013 7:12 AM,Reporter Name,Administrator,,,,,,,,,,,,,,
-        elif splitted[0] == self.HEADERKEY_REPORTTIME:
-            if splitted[1]:
-                try:
-                    d = datetime.strptime(splitted[1], "%m/%d/%Y %I:%M %p")
-                    self._header[self.HEADERKEY_REPORTTIME] = d
-                except ValueError:
-                    self.err("Invalid Report Time format",
-                         numline=self._numline, line=line)
-            else:
-                self.warn("Report time not found or empty",
-                          numline=self._numline, line=line)
-
-
-            if splitted[2] and splitted[2] == self.HEADERKEY_REPORTERNAME:
-                if splitted[3]:
-                    self._header[self.HEADERKEY_REPORTERNAME] = splitted[3]
-                else:
-                    self.warn("Reporter Name not found or empty",
-                              numline=self._numline, line=line)
-
-            else:
-                self.err("Reporter Name not found",
-                         numline=self._numline, line=line)
-
-
-        # Last Calib Update,3/20/2013 7:11 AM,Batch State,Processed,,,,,,,,,,,,,,
-        elif splitted[0] == self.HEADERKEY_LASTCALIBRATION:
-            if splitted[1]:
-                try:
-                    d = datetime.strptime(splitted[1], "%m/%d/%Y %I:%M %p")
-                    self._header[self.HEADERKEY_LASTCALIBRATION] = d
-                except ValueError:
-                    self.err("Invalid Last Calibration time format",
-                             numline=self._numline, line=line)
-
-            else:
-                self.warn("Last Calibration time not found or empty",
-                          numline=self._numline, line=line)
-
-
-            if splitted[2] and splitted[2] == self.HEADERKEY_BATCHSTATE:
-                if splitted[3]:
-                    self._header[self.HEADERKEY_BATCHSTATE] = splitted[3]
-                else:
-                    self.warn("Batch state not found or empty",
-                              numline=self._numline, line=line)
-
-            else:
-                self.err("Batch state not found",
-                         numline=self._numline, line=line)
 
 
         return 0
@@ -286,66 +222,31 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
 
     def parse_quantitationesultsline(self, line):
         """ Parses quantitation result lines
-
-            Quantitation results example:
-            Quantitation Results,,,,,,,,,,,,,,,,,
-            Target Compound,25-OH D3+PTAD+MA,,,,,,,,,,,,,,,,
-            Data File,Compound,ISTD,Resp,ISTD Resp,Resp Ratio, Final Conc,Exp Conc,Accuracy,,,,,,,,,
-            prerunrespchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,5816,274638,0.0212,0.9145,,,,,,,,,,,
-            DSS_Nist_L1.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,6103,139562,0.0437,1.6912,,,,,,,,,,,
-            DSS_Nist_L2.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,11339,135726,0.0835,3.0510,,,,,,,,,,,
-            DSS_Nist_L3.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,15871,141710,0.1120,4.0144,,,,,,,,,,,
-            mid_respchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,4699,242798,0.0194,0.8514,,,,,,,,,,,
-            DSS_Nist_L3-r002.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,15659,129490,0.1209,4.3157,,,,,,,,,,,
-            UTAK_DS_L1-r001.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,29846,132264,0.2257,7.7965,,,,,,,,,,,
-            UTAK_DS_L1-r002.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,28696,141614,0.2026,7.0387,,,,,,,,,,,
-            post_respchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,5022,231748,0.0217,0.9315,,,,,,,,,,,
-            ,,,,,,,,,,,,,,,,,
-            Target Compound,25-OH D2+PTAD+MA,,,,,,,,,,,,,,,,
-            Data File,Compound,ISTD,Resp,ISTD Resp,Resp Ratio, Final Conc,Exp Conc,Accuracy,,,,,,,,,
-            prerunrespchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,6222,274638,0.0227,0.8835,,,,,,,,,,,
-            DSS_Nist_L1.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,1252,139562,0.0090,0.7909,,,,,,,,,,,
-            DSS_Nist_L2.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,3937,135726,0.0290,0.9265,,,,,,,,,,,
-            DSS_Nist_L3.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,826,141710,0.0058,0.7697,,,,,,,,,,,
-            mid_respchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,7864,242798,0.0324,0.9493,,,,,,,,,,,
-            DSS_Nist_L3-r002.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,853,129490,0.0066,0.7748,,,,,,,,,,,
-            UTAK_DS_L1-r001.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,127496,132264,0.9639,7.1558,,,,,,,,,,,
-            UTAK_DS_L1-r002.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,135738,141614,0.9585,7.1201,,,,,,,,,,,
-            post_respchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,6567,231748,0.0283,0.9219,,,,,,,,,,,
-            ,,,,,,,,,,,,,,,,,
+            Please see samples/GC-MS output.txt
+            [MS Quantitative Results] section
         """
 
-        # Quantitation Results,,,,,,,,,,,,,,,,,
-        # prerunrespchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,5816,274638,0.0212,0.9145,,,,,,,,,,,
-        # mid_respchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,4699,242798,0.0194,0.8514,,,,,,,,,,,
-        # post_respchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,6567,231748,0.0283,0.9219,,,,,,,,,,,
-        # ,,,,,,,,,,,,,,,,,
+        # [MS Quantitative Results]
         if line.startswith(self.QUANTITATIONRESULTS_KEY) \
-            or line.startswith(self.QUANTITATIONRESULTS_PRERUN) \
-            or line.startswith(self.QUANTITATIONRESULTS_MIDRUN) \
-            or line.startswith(self.QUANTITATIONRESULTS_POSTRUN) \
-            or line.startswith(self.COMMAS):
+                or line.startswith(self.QUANTITATIONRESULTS_NUMBEROFIDS) \
+                or line.startswith(self.SIMILARITYSEARCHRESULTS_KEY) \
+                or line.startswith(self.PEAK_TABLE_KEY): 
 
             # Nothing to do, continue
             return 0
 
-        # Data File,Compound,ISTD,Resp,ISTD Resp,Resp Ratio, Final Conc,Exp Conc,Accuracy,,,,,,,,,
-        if line.startswith(self.QUANTITATIONRESULTS_HEADER_DATAFILE):
-            self._quantitationresultsheader = [token.strip() for token in line.split(',') if token.strip()]
+        # # of IDs \t23
+        if line.startswith(self.QUANTITATIONRESULTS_HEADER_ID_NUMBER):
+            self._quantitationresultsheader = [token.strip() for token in line.split('\t') if token.strip()]
             return 0
 
-        # Target Compound,25-OH D3+PTAD+MA,,,,,,,,,,,,,,,,
-        if line.startswith(self.QUANTITATIONRESULTS_TARGETCOMPOUND):
-            # New set of Quantitation Results
-            splitted = [token.strip() for token in line.split(',')]
-            if not splitted[1]:
-                self.warn("No Target Compound found",
-                          numline=self._numline, line=line)
-            return 0
-
-        # DSS_Nist_L1.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,1252,139562,0.0090,0.7909,,,,,,,,,,,
-        splitted = [token.strip() for token in line.split(',')]
-        quantitation = {}
+        #1 \talpha-Pinene \tTarget \t0 \t93.00 \t7.738 \t7.680 \t7.795 \t2.480	
+        #\t344488 \t138926 \t0.02604 \tAuto \t2	\t7.812	\tLinear \t0 \t0 
+        #\t4.44061e+008	\t278569 \t0 \t0 \t38.94 \t38.58 \t0.00	\t98 \t92.00
+        #\t0 \t0 \t38.94 \t38.58 \t91.00 \t0 \t0 \t38.93 \t40.02 \t0 \t0 \t0 
+        #\t0 \t0 \t0 \t0 #\t0 \t0 \t0 \t0 \t0 \t0 \t0 \t0 \t75.27 \tmg \t0.00000
+        splitted = [token.strip() for token in line.split('\t')]
+        quantitation = {'DefaultResult': 'Conc.'}
         for colname in self._quantitationresultsheader:
             quantitation[colname] = ''
 
@@ -353,7 +254,7 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
             token = splitted[i]
             if i < len(self._quantitationresultsheader):
                 colname = self._quantitationresultsheader[i]
-                if token and colname in self.QUANTITATIONRESULTS_NUMERICHEADERS:
+                if colname in self.QUANTITATIONRESULTS_NUMERICHEADERS:
                     try:
                         quantitation[colname] = float(token)
                     except ValueError:
@@ -366,49 +267,16 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
                         quantitation[colname] = token
                 else:
                     quantitation[colname] = token
+                #quantitation[colname] = token
+                val = re.sub(r"\W", "", splitted[1])
+                self._addRawResult(quantitation['ID#'],
+                                   values={val:quantitation},
+                                   override=True)
             elif token:
                 self.err("Orphan value in column ${index} (${token})",
                          mapping={"index": str(i+1),
                                   "token": token},
                          numline=self._numline, line=line)
-
-        if self.QUANTITATIONRESULTS_COMPOUNDCOLUMN in quantitation:
-            compound = quantitation[self.QUANTITATIONRESULTS_COMPOUNDCOLUMN]
-
-            # Look for sequence matches and populate rawdata
-            datafile = quantitation.get(self.QUANTITATIONRESULTS_HEADER_DATAFILE, '')
-            if not datafile:
-                self.err("No Data File found for quantitation result",
-                         numline=self._numline, line=line)
-
-            else:
-                seqs = [sequence for sequence in self._sequences \
-                        if sequence.get('Data File', '') == datafile]
-                if len(seqs) == 0:
-                    self.err("No sample found for quantitative result ${data_file}",
-                             mapping={"data_file": datafile},
-                             numline=self._numline, line=line)
-                elif len(seqs) > 1:
-                    self.err("More than one sequence found for quantitative result: ${data_file}",
-                             mapping={"data_file": datafile},
-                             numline=self._numline, line=line)
-                else:
-                    objid = seqs[0].get(self.SEQUENCETABLE_HEADER_SAMPLENAME, '')
-                    if objid:
-                        quantitation['DefaultResult'] = 'Final Conc'
-                        quantitation['Remarks'] = _("Autoimport")
-                        rows = self.getRawResults().get(objid, [])
-                        raw = rows[0] if len(rows) > 0 else {}
-                        raw[compound] = quantitation
-                        self._addRawResult(objid, raw, True)
-                    else:
-                        self.err("No valid sequence for ${data_file}",
-                                 mapping={"data_file": datafile},
-                                 numline=self._numline, line=line)
-        else:
-            self.err("Value for column '${column}' not found",
-                     mapping={"column": self.QUANTITATIONRESULTS_COMPOUNDCOLUMN},
-                     numline=self._numline, line=line)
 
 
 class GCMSTQ8030GCMSMSImporter(AnalysisResultsImporter):
