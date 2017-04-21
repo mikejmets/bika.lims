@@ -38,7 +38,8 @@ def Import(context, request):
     """ Read Shimadzu GCMS-TQ8030 GC/MS/MS analysis results
     """
     form = request.form
-    infile = form['file'][0] if isinstance(form['file'],list) else form['file'] #TODO Why is this returning a list
+    #TODO form['file'] sometimes returns a list
+    infile = form['file'][0] if isinstance(form['file'],list) else form['file']
     artoapply = form['artoapply']
     override = form['override']
     sample = form.get('sample', 'requestid')
@@ -267,7 +268,7 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
                         quantitation[colname] = token
                 else:
                     quantitation[colname] = token
-                #quantitation[colname] = token
+
                 val = re.sub(r"\W", "", splitted[1])
                 self._addRawResult(quantitation['ID#'],
                                    values={val:quantitation},
