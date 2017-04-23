@@ -51,7 +51,7 @@ def Import(context, request):
     parser = None
     if not hasattr(infile, 'filename'):
         errors.append(_("No file selected"))
-    parser = GCMSTQ8030GCMSMSCSVParser(infile)
+    parser = ICPEMultitypeCSVParser(infile)
 
     if parser:
         # Load the importer
@@ -79,7 +79,7 @@ def Import(context, request):
         elif sample == 'sample_clientsid':
             sam = ['getSampleID', 'getClientSampleID']
 
-        importer = GCMSTQ8030GCMSMSImporter(parser=parser,
+        importer = ICPEMultitypeImporter(parser=parser,
                                            context=context,
                                            idsearchcriteria=sam,
                                            allowed_ar_states=status,
@@ -102,8 +102,11 @@ def Import(context, request):
     return json.dumps(results)
 
 
-class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
+class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
 
+    QUANTITATIONRESULTS_NUMERICHEADERS = ('Title8', 'Title9','Title31',
+            'Title32','Title41', 'Title42','Title43', 
+            )
     def __init__(self, csv):
         InstrumentCSVResultsFileParser.__init__(self, csv)
         self._end_header = False
@@ -111,28 +114,53 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
         self._numline = 0
 
     def _parseline(self, line):
-        return self.parse_quantitationesultsline(line)
+        return self.parse_resultsline(line)
 
-
-    def parse_quantitationesultsline(self, line):
-        """ Parses quantitation result lines
-            Please see samples/GC-MS output.txt
-            [MS Quantitative Results] section
+    def parse_resultsline(self, line):
+        """ Parses result lines
         """
 
         # Metals Mix Method with IS longer cali\tCAL1\tBlank\t9/23/2016 11:54:59 AM\t\tMRC\tAs\tQUANT\t193.759\t1\tppb\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tAfter Drift Correction\t-0.0936625\t-0.1063610\t-0.1266098\t\t\t\t\t\t\t\t-0.1088778\t0.0166172\t15.26
+
         splitted = [token.strip() for token in line.split('\t')]
-        quantitation = {'DefaultResult': 'Conc.'}
-        for item in splitted:
+        quantitation = {'DefaultResult': 'Title8'}
+        # File has no headers
+        self._quantitationresultsheader  = ['Title%s' % x for x in range(44)]
+        for colname in self._quantitationresultsheader:
+            quantitation[colname] = ''
+
+        for i in range(len(splitted)):
             token = splitted[i]
-            quantitation[colname] = token
-            val = re.sub(r"\W", "", splitted[1])
-            self._addRawResult(quantitation['ID#'],
-                               values={val:quantitation},
-                               override=True)
+            if i < len(self._quantitationresultsheader):
+                colname = self._quantitationresultsheader[i]
+                if colname in self.QUANTITATIONRESULTS_NUMERICHEADERS:
+                    try:
+                        quantitation[colname] = float(token)
+                    except ValueError:
+                        self.warn(
+                            "No valid number ${token} in column ${index} (${column_name})",
+                            mapping={"token": token,
+                                     "index": str(i + 1),
+                                     "column_name": colname},
+                            numline=self._numline, line=line)
+                        quantitation[colname] = token
+                elif colname == 'Title3':
+                    d = datetime.strptime(token, "%m/%d/%Y %I:%M:%S %p")
+                    quantitation[colname] = d
+                else:
+                    quantitation[colname] = token
 
+                val = re.sub(r"\W", "", splitted[1])
+                self._addRawResult(quantitation['Title0'],
+                                   values={val:quantitation},
+                                   override=True)
+            elif token:
+                self.err("Orphan value in column ${index} (${token})",
+                         mapping={"index": str(i+1),
+                                  "token": token},
+                         numline=self._numline, line=line)
 
-class GCMSTQ8030GCMSMSImporter(AnalysisResultsImporter):
+class ICPEMultitypeImporter(AnalysisResultsImporter):
 
     def __init__(self, parser, context, idsearchcriteria, override,
                  allowed_ar_states=None, allowed_analysis_states=None,
