@@ -60,8 +60,9 @@ class ImportView(BrowserView):
         """This is a trick to allow non-robot tests to access the import form
         without javascript.
         """
-        exim = self.request.get('exim').replace(".", "/")
+        exim = self.request.get('exim')
         if exim:
+            exim = exim.replace(".", "/")
             import os.path
             instrpath = os.path.join("exportimport", "instruments")
             templates_dir = resource_filename("bika.lims", instrpath)
