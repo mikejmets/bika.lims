@@ -36,7 +36,11 @@
                         tal:content="python:importers.getValue(option)"/>
                 </tal:options>
             </select>
-            <div id="import_form"/>
+            <!-- import_form can be pre-completed for the case where zope test browser
+                 calls this screen; it can't use javascript.
+            -->
+            <div id="import_form"
+                 tal:content="structure view/import_form"/>
             <div id="intermediate" style="display:none"/>
         </fieldset>
 
