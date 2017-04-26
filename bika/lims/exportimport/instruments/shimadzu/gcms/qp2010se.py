@@ -116,13 +116,15 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
     FILEINFORMATIONKEY_MODIFIEDBY = 'Modified by'
 
     # TODO: Ask what to do with whether to ignore or add to headers on the sample file
-    SAMPLETABLE_KEY = '[Sample Information]'
-    SAMPLETABLE_HEADER_OPERATORNAME = 'Operator Name'
-    SAMPLETABLE_HEADER_ANALYZED = 'Analyzed'
-    SAMPLETABLE_HEADER_TYPE = 'Type'
-    SAMPLETABLE_HEADER_LEVEL = 'Level'
-    SAMPLETABLE_HEADER_SAMPLENAME = 'Sample Name'
-    SAMPLETABLE_HEADER_SAMPLEID = 'Sample ID'
+    SAMPLEINFORMATIONTABLE_KEY = '[Sample Information]'
+    SAMPLEINFORMATIONKEY_OPERATORNAME = 'Operator Name'
+    SAMPLEINFORMATIONKEY_ANALYZED = 'Analyzed'
+    SAMPLEINFORMATIONKEY_TYPE = 'Type'
+    SAMPLEINFORMATIONKEY_LEVEL = 'Level'
+    SAMPLEINFORMATIONKEY_SAMPLENAME = 'Sample Name'
+    SAMPLEINFORMATIONKEY_SAMPLEID = 'Sample ID'
+    SAMPLEINFORMATIONRESULT_SAMPLEAMOUNT = 'Sample Amount'
+    SAMPLEINFORMATIONRESULT_DILUTIONFACTOR = 'Dilution Factor'
 
 
     ORIGINALFILESTABLE_KEY = '[Original Files]'
@@ -151,14 +153,17 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
                                           'Final Conc', 'Exp Conc', 'Accuracy')
     QUANTITATIONRESULTS_COMPOUNDCOLUMN = 'Compound'
     COMMAS = ','
+    SEPERATOR = '\t'
 
     def __init__(self, csv):
         InstrumentCSVResultsFileParser.__init__(self, csv)
         self._end_header = False
-        self._end_sequencetable = False
-        self._sequences = []
-        self._sequencesheader = []
+        self._end_sampleinformationtable = False 
+        self._sampleinformationresults = [] 
+        self._sampleinformation = []
+
         self._quantitationresultsheader = []
+        self._sampleinformationheader = []
         self._numline = 0
 
     def getAttachmentFileType(self):
@@ -167,8 +172,8 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
     def _parseline(self, line):
         if self._end_header == False:
             return self.parse_headerline(line)
-        elif self._end_sequencetable == False:
-            return self.parse_sequencetableline(line)
+        elif self._end_sampleinformationtable == False:
+            return self.parse_sampleinformationtableline(line)
         else:
             return self.parse_quantitationesultsline(line)
 
@@ -187,7 +192,7 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
             # Header already processed
             return 0
 
-        if line.startswith(self.SAMPLETABLE_KEY):
+        if line.startswith(self.SAMPLEINFORMATIONTABLE_KEY):
             self._end_header = True
             if len(self._header) == 0:
                 self.err("No header found", numline=self._numline)
@@ -339,88 +344,46 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
 
         return 0
 
-    def parse_sequencetableline(self, line):
+    def parse_sampleinformationtableline(self, line):
         """ Parses sequence table lines
 
             Sequence Table example:
-            Sequence Table,,,,,,,,,,,,,,,,,
-            Data File,Sample Name,Position,Inj Vol,Level,Sample Type,Acq Method File,,,,,,,,,,,
-            prerunrespchk.d,prerunrespchk,Vial 3,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            DSS_Nist_L1.d,DSS_Nist_L1,P1-A2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            DSS_Nist_L2.d,DSS_Nist_L2,P1-B2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            DSS_Nist_L3.d,DSS_Nist_L3,P1-C2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            UTAK_DS_L1.d,UTAK_DS_L1,P1-D2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            UTAK_DS_L2.d,UTAK_DS_L2,P1-E2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            mid_respchk.d,mid_respchk,Vial 3,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            UTAK_DS_low.d,UTAK_DS_Low,P1-F2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            FDBS_31.d,FDBS_31,P1-G2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            FDBS_32.d,FDBS_32,P1-H2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            LS_60-r001.d,LS_60,P1-G12,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            LS_60-r002.d,LS_60,P1-G12,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            LS_61-r001.d,LS_61,P1-H12,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            LS_61-r002.d,LS_61,P1-H12,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            post_respchk.d,post_respchk,Vial 3,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-            ,,,,,,,,,,,,,,,,,
         """
 
-        # Sequence Table,,,,,,,,,,,,,,,,,
-        # prerunrespchk.d,prerunrespchk,Vial 3,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-        # mid_respchk.d,mid_respchk,Vial 3,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-        # ,,,,,,,,,,,,,,,,,
-        if line.startswith(self.SAMPLETABLE_KEY) \
-            or self._end_sequencetable == True:
-
+        sampleinformationresult = {}
+        # Operator Name \t Admin
+        if line.startswith(self.SAMPLEINFORMATIONKEY_OPERATORNAME) \
+                or line.startswith(self.SAMPLEINFORMATIONKEY_ANALYZED) \
+                or line.startswith(self.SAMPLEINFORMATIONKEY_TYPE) \
+                or line.startswith(self.SAMPLEINFORMATIONKEY_LEVEL) \
+                or line.startswith(self.SAMPLEINFORMATIONKEY_SAMPLENAME) \
+                or line.startswith(self.SAMPLEINFORMATIONKEY_SAMPLEID):
             # Nothing to do, continue
             return 0
 
-        ## Data File,Sample Name,Position,Inj Vol,Level,Sample Type,Acq Method File,,,,,,,,,,,
-        #if line.startswith(self.SEQUENCETABLE_HEADER_DATAFILE):
-        #    self._sequencesheader = [token.strip() for token in line.split(',') if token.strip()]
-        #    return 0
+        # Sample Amount\t 3.2397
+        # Dilution factor\t10
+        import pdb; pdb.set_trace()
+        if line.startswith(self.SAMPLEINFORMATIONRESULT_DILUTIONFACTOR) \
+            or line.startswith(self.SAMPLEINFORMATIONRESULT_SAMPLEAMOUNT) \
+            or self._end_sampleinformationtable == False:
 
-        # post_respchk.d,post_respchk,Vial 3,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-        # Quantitation Results,,,,,,,,,,,,,,,,,
-        if line.startswith(self.ORIGINALFILESTABLE_KEY) \
-            or line.startswith(self.TABS):
-            self._end_sequencetable = True
-            if len(self._sequences) == 0:
-                self.err("No Sequence Table found", linenum=self._numline)
-                return -1
-
-            # Jumps 2 lines:
-            # Data File,Sample Name,Position,Inj Vol,Level,Sample Type,Acq Method File,,,,,,,,,,,
-            # prerunrespchk.d,prerunrespchk,Vial 3,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
+            splitted = [token.strip() for token in line.split(SEPERATOR)]
+            sampleinformationresult[splitted[0]] =  float(splitted[1])
+            self._sampleinformationresults.append(sampleinformationresult)
             return 0
 
-        # DSS_Nist_L1.d,DSS_Nist_L1,P1-A2,-1.00,,Sample,120824_VitD_MAPTAD_1D_MRM_practice.m,,,,,,,,,,,
-        splitted = [token.strip() for token in line.split(',')]
-        sequence = {}
-        for colname in self._sequencesheader:
-            sequence[colname] = ''
 
-        for i in range(len(splitted)):
-            token = splitted[i]
-            if i < len(self._sequencesheader):
-                colname = self._sequencesheader[i]
-                if token and colname in self.SEQUENCETABLE_NUMERICHEADERS:
-                    try:
-                        sequence[colname] = float(token)
-                    except ValueError:
-                        self.warn(
-                            "No valid number ${token} in column ${index} (${column_name})",
-                            mapping={"token": token,
-                                     "index": str(i + 1),
-                                     "column_name": colname},
-                            numline=self._numline, line=line)
-                        sequence[colname] = token
-                else:
-                    sequence[colname] = token
-            elif token:
-                self.err("Orphan value in column ${index} (${token})",
-                         mapping={"index": str(i+1),
-                                  "token": token},
-                         numline=self._numline, line=line)
-        self._sequences.append(sequence)
+        # [Original Files]
+        # \t
+        if line.startswith(self.ORIGINALFILESTABLE_KEY) \
+            or line.startswith(self.SEPERATOR):
+            self._end_sampleinformationtable = True
+            if len(self._sampleinformationresults) == 0:
+                self.err("No Sample Information Table found", linenum=self._numline)
+                return -1
+            return 0
+
 
     def parse_quantitationesultsline(self, line):
         """ Parses quantitation result lines
