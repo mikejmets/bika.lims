@@ -18,6 +18,9 @@ from Products.CMFCore.utils import getToolByName
 import re
 import transaction
 import unittest
+import StringIO
+from zope.testbrowser import interfaces
+from zope.interface.verify import verifyObject
 
 try:
     import unittest2 as unittest
@@ -89,10 +92,22 @@ class TestARImports(BikaSimpleTestCase):
     def test_BC_4(self):
         browser = self.getBrowser(loggedIn=True)
         browser.open(self.client.absolute_url())
-        import_url = '%s/%s' % (self.portal.absolute_url, 'import')
-        #TODO Ask Campell for the URL
-        browser.open(import_url))
-        browser.getControl(name="exim").displayValue = ['Shimadzu GCMS-TQ8030 GC/MS/MS']
+        import_exim_url = 'import?exim=shimadzu.gcms.tq8030_gc_ms_ms'
+        import_url = '%s/%s' % (self.portal.absolute_url(), import_exim_url)
+        browser.open(import_url)
+        content = browser.contents
+        if 'Advanced options' not in content:
+            self.fail('Text Advanced options not in content')
+        import pdb; pdb.set_trace()
+        ctrl = browser.getControl(name='file')
+        path = '/home/lunga/instances/bikafromrestore/zinstance/src/bika.lims/bika/lims/exportimport/instruments/shimadzu/gcms/samples'
+        filename = '%s/GC-MS output.txt' % path
+        ctrl.add_file(open(filename, 'r'),'text/plain', 'test.txt')
+        #verifyObject(interfaces.IControl, ctrl)
+
+
+        #Pass read_data as file contents
+        browser.getControl(name="firstsubmit").click()
         # Import
         #Import Instrument File     Horiba Jobin-Yvon - ICP  ${PATH_TO_TEST}/files/ICPlimstest.csv
         #Page should contain        Service keyword Ni221647 not found
@@ -106,8 +121,9 @@ class TestARImports(BikaSimpleTestCase):
         #True
         #>>> ctrl.value is None
         #True
-        #>>> import cStringIO
+        #>>> import 
         #>>> ctrl.add_file(cStringIO.StringIO('File contents'),
+
         #        ...               'text/plain', 'test.txt')
         #browser.getControl(name="form.button.save").click()
         import pdb; pdb.set_trace()
