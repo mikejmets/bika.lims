@@ -20,18 +20,18 @@ from horiba.jobinyvon import icp
 from lifetechnologies.qubit import qubit
 from myself import myinstrument
 from nuclisens import easyq
-from thermoscientific.gallery import Ts9861x
-from thermoscientific.arena import xt20
-from thermoscientific.multiskan import go
-from tescan.tima import tima
 from panalytical.omnia import axios_xrf
-from sysmex.xs import i500, i1000
 from rigaku.supermini import wxrf
 from rochecobas.taqman import model48
 from rochecobas.taqman import model96
-from sealanalytical.aq2 import aq2
 from scilvet.abc import plus
-from shimadzu.gcms import tq8030_gc_ms_ms
+from sealanalytical.aq2 import aq2
+from shimadzu.gcms import tq8030
+from sysmex.xs import i500, i1000
+from tescan.tima import tima
+from thermoscientific.arena import xt20
+from thermoscientific.gallery import Ts9861x
+from thermoscientific.multiskan import go
 
 __all__ = ['abaxis.vetscan.vs2',
            'agilent.masshunter.quantitative',
@@ -43,24 +43,24 @@ __all__ = ['abaxis.vetscan.vs2',
            'foss.fiastar.fiastar',
            'foss.winescan.auto',
            'foss.winescan.ft120',
-           'shimadzu.gcms.tq8030_gc_ms_ms', 
            #'generic.xml',
            'horiba.jobinyvon.icp',
+           'lifetechnologies.qubit.qubit',
+           'myself.myinstrument',
+           'nuclisens.easyq',
+           'panalytical.omnia.axios_xrf',
            'rigaku.supermini.wxrf',
            'rochecobas.taqman.model48',
            'rochecobas.taqman.model96',
-           'thermoscientific.arena.xt20',
-           'thermoscientific.gallery.Ts9861x',
-           'panalytical.omnia.axios_xrf',
-           'lifetechnologies.qubit.qubit',
-           'sysmex.xs.i500',
-           'sysmex.xs.i1000',
            'scilvet.abc.plus',
            'sealanalytical.aq2.aq2',
+           'shimadzu.gcms.tq8030', 
+           'sysmex.xs.i500',
+           'sysmex.xs.i1000',
            'tescan.tima.tima',
+           'thermoscientific.arena.xt20',
+           'thermoscientific.gallery.Ts9861x',
            'thermoscientific.multiskan.go',
-           'myself.myinstrument',
-           'nuclisens.easyq',
            ]
 
 

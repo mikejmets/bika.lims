@@ -111,8 +111,7 @@ class GCMSTQ8030GCMSMSCSVParser(InstrumentCSVResultsFileParser):
     QUANTITATIONRESULTS_KEY = '[MS Quantitative Results]'
     QUANTITATIONRESULTS_NUMBEROFIDS = '# of IDs'
     QUANTITATIONRESULTS_HEADER_ID_NUMBER = 'ID#'
-    QUANTITATIONRESULTS_NUMERICHEADERS = ('Mass', 'Start Time', 
-            'End Time',	'A/H', 'Area','Height' 'Conc.', 'Peak#', 
+    QUANTITATIONRESULTS_NUMERICHEADERS = ('Mass', 'Height' 'Conc.',
             'Std.Ret.Time', '3rd', '2nd', '1st', 'Constant', 'Ref.Ion Area', 
             'Ref.Ion Height', 'Ref.Ion Set Ratio', 'Ref.Ion Ratio', 'Recovery',
             'SI', 'Ref.Ion1 m/z', 'Ref.Ion1 Area', 'Ref.Ion1 Height', 
