@@ -24,6 +24,7 @@ from zope.component import getUtility
 import csv
 import json
 import plone
+import re
 import zope
 import zope.event
 from bika.lims.exportimport.instruments.resultsimport import InstrumentCSVResultsFileParser,\
@@ -115,7 +116,6 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
     FILEINFORMATIONKEY_MODIFIED = 'Modified'
     FILEINFORMATIONKEY_MODIFIEDBY = 'Modified by'
 
-    # TODO: Ask what to do with whether to ignore or add to headers on the sample file
     SAMPLEINFORMATIONTABLE_KEY = '[Sample Information]'
     SAMPLEINFORMATIONKEY_OPERATORNAME = 'Operator Name'
     SAMPLEINFORMATIONKEY_ANALYZED = 'Analyzed'
@@ -126,7 +126,6 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
     SAMPLEINFORMATIONRESULT_SAMPLEAMOUNT = 'Sample Amount'
     SAMPLEINFORMATIONRESULT_DILUTIONFACTOR = 'Dilution Factor'
 
-
     ORIGINALFILESTABLE_KEY = '[Original Files]'
     ORIGINALFILESKEY_DATAFILE = 'Data File'
     ORIGINALFILESKEY_METHODFILE = 'Method File'
@@ -134,24 +133,16 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
     ORIGINALFILESKEY_REPORTFORMATFILE = 'Report Format File'
     ORIGINALFILESKEY_TUNINGFILE = 'Tuning File'
 
-    HEADERKEY_OUTPUTDATE = 'Output Date'
-    HEADERKEY_OUTPUTTIME = 'Output Time'
+    FILEDESCRIPTION_KEY = '[File Description]'
 
+    QUANTITATIONRESULTS_KEY = '[MS Quantitative Results]'
+    QUANTITATIONRESULTS_NUMBEROFIDS = '# of IDs'
+    QUANTITATIONRESULTS_HEADER_ID_NUMBER = 'ID#'
+    QUANTITATIONRESULTS_NUMERICHEADERS = ('2nd', '1st', 'Constant',)
 
-    SEQUENCETABLE_HEADER_SAMPLENAME = 'Sample Name'
-    SEQUENCETABLE_PRERUN = 'prerunrespchk.d'
-    SEQUENCETABLE_MIDRUN = 'mid_respchk.d'
-    SEQUENCETABLE_POSTRUN = 'post_respchk.d'
-    SEQUENCETABLE_NUMERICHEADERS = ('Inj Vol',)
-    QUANTITATIONRESULTS_KEY = 'Quantification Results'
-    QUANTITATIONRESULTS_TARGETCOMPOUND = 'Target Compound'
-    QUANTITATIONRESULTS_HEADER_DATAFILE = 'Data File'
-    QUANTITATIONRESULTS_PRERUN = 'prerunrespchk.d'
-    QUANTITATIONRESULTS_MIDRUN = 'mid_respchk.d'
-    QUANTITATIONRESULTS_POSTRUN = 'post_respchk.d'
-    QUANTITATIONRESULTS_NUMERICHEADERS = ('Resp', 'ISTD Resp', 'Resp Ratio',
-                                          'Final Conc', 'Exp Conc', 'Accuracy')
-    QUANTITATIONRESULTS_COMPOUNDCOLUMN = 'Compound'
+    SIMILARITYSEARCHRESULTS_KEY = '[MS Similarity Search Results for Identified Results]'
+    PEAK_TABLE_KEY = '[MC Peak Table]'
+
     COMMAS = ','
     SEPERATOR = '\t'
 
@@ -199,7 +190,7 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
                 return -1
             return 0
 
-        splitted = [token.strip() for token in line.split(',')]
+        splitted = [token.strip() for token in line.split(self.SEPERATOR)]
 
         # [Header]
         if splitted[0] == self.HEADERTABLE_KEY:
@@ -283,7 +274,7 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
         elif splitted[0] == self.FILEINFORMATIONKEY_GENERATED:
             if splitted[1]:
                 try:
-                    d = datetime.strptime(splitted[1], "%m/%d/%Y %I:%M %p")
+                    d = datetime.strptime(splitted[1], "%m/%d/%Y %I:%M:%S %p")
                     self._header[self.FILEINFORMATIONKEY_GENERATED] = d
                 except ValueError:
                     self.err("Invalid Generated Date format",
@@ -310,7 +301,7 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
         elif splitted[0] == self.FILEINFORMATIONKEY_MODIFIED:
             if splitted[1]:
                 try:
-                    d = datetime.strptime(splitted[1], "%m/%d/%Y %I:%M %p")
+                    d = datetime.strptime(splitted[1], "%m/%d/%Y %I:%M:%S %p")
                     self._header[self.FILEINFORMATIONKEY_MODIFIED] = d
                 except ValueError:
                     self.err("Invalid Modified Date format",
@@ -333,6 +324,78 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
                 self.warn("File Data Name not found or empty",
                           numline=self._numline, line=line)
 
+        # Data File\tC:\GCMSsolution\Data\Pesticides\OCt 2016\CRACKER JACK_1-16-02258-001_10.qgd
+        elif splitted[0] == self.ORIGINALFILESKEY_DATAFILE:
+            if self.ORIGINALFILESKEY_DATAFILE in self._header:
+                self.warn("Header File Data already found. Discarding",
+                          numline=self._numline, line=line)
+                return 0;
+
+            if splitted[1]:
+                self._header[self.ORIGINALFILESKEY_DATAFILE] = splitted[1]
+            else:
+                self.warn("Data File not found or empty",
+                          numline=self._numline, line=line)
+
+        # Method File\tC:\GCMSsolution\Data\Pesticides\OCt 2016\Pesticide Method with IS June 13 2015.qgm
+        elif splitted[0] == self.ORIGINALFILESKEY_METHODFILE:
+            if self.ORIGINALFILESKEY_METHODFILE in self._header:
+                self.warn("Header Method File already found. Discarding",
+                          numline=self._numline, line=line)
+                return 0;
+
+            if splitted[1]:
+                self._header[self.ORIGINALFILESKEY_METHODFILE] = splitted[1]
+            else:
+                self.warn("Method File not found or empty",
+                          numline=self._numline, line=line)
+
+        # Batch File\tC:\GCMSsolution\Data\Pesticides\OCt 2016\20161017 samples.qgb
+        elif splitted[0] == self.ORIGINALFILESKEY_BATCHFILE:
+            if self.ORIGINALFILESKEY_BATCHFILE in self._header:
+                self.warn("Header Batch File already found. Discarding",
+                          numline=self._numline, line=line)
+                return 0;
+
+            if splitted[1]:
+                self._header[self.ORIGINALFILESKEY_BATCHFILE] = splitted[1]
+            else:
+                self.warn("Batch File not found or empty",
+                          numline=self._numline, line=line)
+
+        # Report Format File
+        elif splitted[0] == self.ORIGINALFILESKEY_REPORTFORMATFILE:
+            if self.ORIGINALFILESKEY_REPORTFORMATFILE in self._header:
+                self.warn("Header Report Format File already found. Discarding",
+                          numline=self._numline, line=line)
+                return 0;
+
+            if splitted[0]:
+                self._header[self.ORIGINALFILESKEY_REPORTFORMATFILE] = splitted[0]
+            else:
+                self.warn("Report Format File not found or empty",
+                          numline=self._numline, line=line)
+
+        # Tuning File\tC:\GCMSsolution\System\Tune1\Autotune09262016.qgt
+        elif splitted[0] == self.ORIGINALFILESKEY_TUNINGFILE:
+            if self.ORIGINALFILESKEY_TUNINGFILE in self._header:
+                self.warn("Header Report Format File already found. Discarding",
+                          numline=self._numline, line=line)
+                return 0;
+
+            if splitted[1]:
+                self._header[self.ORIGINALFILESKEY_TUNINGFILE] = splitted[1]
+            else:
+                self.warn("Report Format File not found or empty",
+                          numline=self._numline, line=line)
+
+        # [File Description]
+        elif line.startswith(self.FILEDESCRIPTION_KEY):
+            self._end_header = True
+            if len(self._header) == 0:
+                self.err("No header found", numline=self._numline)
+                return -1
+            return 0
 
         if line.startswith(self.QUANTITATIONRESULTS_KEY):
             self._end_header = True
@@ -345,9 +408,53 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
         return 0
 
     def parse_sampleinformationtableline(self, line):
-        """ Parses sequence table lines
-
-            Sequence Table example:
+        """ Parses sample information table lines
+            Sample Information Table example:
+            [Sample Information]
+            Operator Name	Admin
+            Analyzed	10/17/2016 4:29:47 PM
+            Type	Unknown
+            Level	1
+            Sample Name	CRACKER JACK
+            Sample ID	1-16-02258-001
+            ISTD Amount 1	1
+            ISTD Amount 2	1
+            ISTD Amount 3	1
+            ISTD Amount 4	1
+            ISTD Amount 5	1
+            ISTD Amount 6	1
+            ISTD Amount 7	1
+            ISTD Amount 8	1
+            ISTD Amount 9	1
+            ISTD Amount 10	1
+            ISTD Amount 11	1
+            ISTD Amount 12	1
+            ISTD Amount 13	1
+            ISTD Amount 14	1
+            ISTD Amount 15	1
+            ISTD Amount 16	1
+            ISTD Amount 17	1
+            ISTD Amount 18	1
+            ISTD Amount 19	1
+            ISTD Amount 20	1
+            ISTD Amount 21	1
+            ISTD Amount 22	1
+            ISTD Amount 23	1
+            ISTD Amount 24	1
+            ISTD Amount 25	1
+            ISTD Amount 26	1
+            ISTD Amount 27	1
+            ISTD Amount 28	1
+            ISTD Amount 29	1
+            ISTD Amount 30	1
+            ISTD Amount 31	1
+            ISTD Amount 32	1
+            Sample Amount	3.2397
+            Dilution Factor	10
+            Vial#	6
+            Injection Volume	1
+            Injection Count	1
+            Bar Code	
         """
 
         sampleinformationresult = {}
@@ -363,12 +470,10 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
 
         # Sample Amount\t 3.2397
         # Dilution factor\t10
-        import pdb; pdb.set_trace()
         if line.startswith(self.SAMPLEINFORMATIONRESULT_DILUTIONFACTOR) \
-            or line.startswith(self.SAMPLEINFORMATIONRESULT_SAMPLEAMOUNT) \
-            or self._end_sampleinformationtable == False:
+                or line.startswith(self.SAMPLEINFORMATIONRESULT_SAMPLEAMOUNT): \
 
-            splitted = [token.strip() for token in line.split(SEPERATOR)]
+            splitted = [token.strip() for token in line.split(self.SEPERATOR)]
             sampleinformationresult[splitted[0]] =  float(splitted[1])
             self._sampleinformationresults.append(sampleinformationresult)
             return 0
@@ -379,6 +484,7 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
         if line.startswith(self.ORIGINALFILESTABLE_KEY) \
             or line.startswith(self.SEPERATOR):
             self._end_sampleinformationtable = True
+            self._end_header = False
             if len(self._sampleinformationresults) == 0:
                 self.err("No Sample Information Table found", linenum=self._numline)
                 return -1
@@ -387,66 +493,37 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
 
     def parse_quantitationesultsline(self, line):
         """ Parses quantitation result lines
-
-            Quantitation results example:
-            Quantitation Results,,,,,,,,,,,,,,,,,
-            Target Compound,25-OH D3+PTAD+MA,,,,,,,,,,,,,,,,
-            Data File,Compound,ISTD,Resp,ISTD Resp,Resp Ratio, Final Conc,Exp Conc,Accuracy,,,,,,,,,
-            prerunrespchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,5816,274638,0.0212,0.9145,,,,,,,,,,,
-            DSS_Nist_L1.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,6103,139562,0.0437,1.6912,,,,,,,,,,,
-            DSS_Nist_L2.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,11339,135726,0.0835,3.0510,,,,,,,,,,,
-            DSS_Nist_L3.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,15871,141710,0.1120,4.0144,,,,,,,,,,,
-            mid_respchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,4699,242798,0.0194,0.8514,,,,,,,,,,,
-            DSS_Nist_L3-r002.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,15659,129490,0.1209,4.3157,,,,,,,,,,,
-            UTAK_DS_L1-r001.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,29846,132264,0.2257,7.7965,,,,,,,,,,,
-            UTAK_DS_L1-r002.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,28696,141614,0.2026,7.0387,,,,,,,,,,,
-            post_respchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,5022,231748,0.0217,0.9315,,,,,,,,,,,
-            ,,,,,,,,,,,,,,,,,
-            Target Compound,25-OH D2+PTAD+MA,,,,,,,,,,,,,,,,
-            Data File,Compound,ISTD,Resp,ISTD Resp,Resp Ratio, Final Conc,Exp Conc,Accuracy,,,,,,,,,
-            prerunrespchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,6222,274638,0.0227,0.8835,,,,,,,,,,,
-            DSS_Nist_L1.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,1252,139562,0.0090,0.7909,,,,,,,,,,,
-            DSS_Nist_L2.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,3937,135726,0.0290,0.9265,,,,,,,,,,,
-            DSS_Nist_L3.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,826,141710,0.0058,0.7697,,,,,,,,,,,
-            mid_respchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,7864,242798,0.0324,0.9493,,,,,,,,,,,
-            DSS_Nist_L3-r002.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,853,129490,0.0066,0.7748,,,,,,,,,,,
-            UTAK_DS_L1-r001.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,127496,132264,0.9639,7.1558,,,,,,,,,,,
-            UTAK_DS_L1-r002.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,135738,141614,0.9585,7.1201,,,,,,,,,,,
-            post_respchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,6567,231748,0.0283,0.9219,,,,,,,,,,,
-            ,,,,,,,,,,,,,,,,,
+            Please see samples/GC-MS output.txt
+            [MS Quantitative Results] section
         """
 
-        # Quantitation Results,,,,,,,,,,,,,,,,,
-        # prerunrespchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,5816,274638,0.0212,0.9145,,,,,,,,,,,
-        # mid_respchk.d,25-OH D3+PTAD+MA,25-OH D3d3+PTAD+MA,4699,242798,0.0194,0.8514,,,,,,,,,,,
-        # post_respchk.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,6567,231748,0.0283,0.9219,,,,,,,,,,,
-        # ,,,,,,,,,,,,,,,,,
+        # [MS Quantitative Results]
         if line.startswith(self.QUANTITATIONRESULTS_KEY) \
-            or line.startswith(self.QUANTITATIONRESULTS_PRERUN) \
-            or line.startswith(self.QUANTITATIONRESULTS_MIDRUN) \
-            or line.startswith(self.QUANTITATIONRESULTS_POSTRUN) \
-            or line.startswith(self.COMMAS):
+                or line.startswith(self.QUANTITATIONRESULTS_NUMBEROFIDS) \
+                or line.startswith(self.SIMILARITYSEARCHRESULTS_KEY) \
+                or line.startswith(self.PEAK_TABLE_KEY): 
 
             # Nothing to do, continue
             return 0
 
-        # Data File,Compound,ISTD,Resp,ISTD Resp,Resp Ratio, Final Conc,Exp Conc,Accuracy,,,,,,,,,
-        if line.startswith(self.QUANTITATIONRESULTS_HEADER_DATAFILE):
-            self._quantitationresultsheader = [token.strip() for token in line.split(',') if token.strip()]
+        # # of IDs \t23
+        if line.startswith(self.QUANTITATIONRESULTS_HEADER_ID_NUMBER):
+            self._quantitationresultsheader = [token.strip() for token in line.split('\t') if token.strip()]
             return 0
 
-        # Target Compound,25-OH D3+PTAD+MA,,,,,,,,,,,,,,,,
-        if line.startswith(self.QUANTITATIONRESULTS_TARGETCOMPOUND):
-            # New set of Quantitation Results
-            splitted = [token.strip() for token in line.split(',')]
-            if not splitted[1]:
-                self.warn("No Target Compound found",
-                          numline=self._numline, line=line)
-            return 0
+        #1 \talpha-Pinene \tTarget \t0 \t93.00 \t7.738 \t7.680 \t7.795 \t2.480	
+        #\t344488 \t138926 \t0.02604 \tAuto \t2	\t7.812	\tLinear \t0 \t0 
+        #\t4.44061e+008	\t278569 \t0 \t0 \t38.94 \t38.58 \t0.00	\t98 \t92.00
+        #\t0 \t0 \t38.94 \t38.58 \t91.00 \t0 \t0 \t38.93 \t40.02 \t0 \t0 \t0 
+        #\t0 \t0 \t0 \t0 #\t0 \t0 \t0 \t0 \t0 \t0 \t0 \t0 \t75.27 \tmg \t0.00000
+        splitted = [token.strip() for token in line.split('\t')]
+        quantitation = {'DefaultResult': 'Conc.'}
+        if len(self._sampleinformationresults) == 2:
+            sample_amount = self._sampleinformationresults[0]
+            dilution_factor = self._sampleinformationresults[1]
+            quantitation['Sample Amount'] = sample_amount['Sample Amount']
+            quantitation['Dilution Factor'] = dilution_factor['Dilution Factor']
 
-        # DSS_Nist_L1.d,25-OH D2+PTAD+MA,25-OH D3d3+PTAD+MA,1252,139562,0.0090,0.7909,,,,,,,,,,,
-        splitted = [token.strip() for token in line.split(',')]
-        quantitation = {}
         for colname in self._quantitationresultsheader:
             quantitation[colname] = ''
 
@@ -454,7 +531,7 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
             token = splitted[i]
             if i < len(self._quantitationresultsheader):
                 colname = self._quantitationresultsheader[i]
-                if token and colname in self.QUANTITATIONRESULTS_NUMERICHEADERS:
+                if colname in self.QUANTITATIONRESULTS_NUMERICHEADERS:
                     try:
                         quantitation[colname] = float(token)
                     except ValueError:
@@ -467,49 +544,16 @@ class MasshunterQuantCSVParser(InstrumentCSVResultsFileParser):
                         quantitation[colname] = token
                 else:
                     quantitation[colname] = token
+
+                val = re.sub(r"\W", "", splitted[1])
+                self._addRawResult(quantitation['ID#'],
+                                   values={val:quantitation},
+                                   override=True)
             elif token:
                 self.err("Orphan value in column ${index} (${token})",
                          mapping={"index": str(i+1),
                                   "token": token},
                          numline=self._numline, line=line)
-
-        if self.QUANTITATIONRESULTS_COMPOUNDCOLUMN in quantitation:
-            compound = quantitation[self.QUANTITATIONRESULTS_COMPOUNDCOLUMN]
-
-            # Look for sequence matches and populate rawdata
-            datafile = quantitation.get(self.QUANTITATIONRESULTS_HEADER_DATAFILE, '')
-            if not datafile:
-                self.err("No Data File found for quantitation result",
-                         numline=self._numline, line=line)
-
-            else:
-                seqs = [sequence for sequence in self._sequences \
-                        if sequence.get('Data File', '') == datafile]
-                if len(seqs) == 0:
-                    self.err("No sample found for quantitative result ${data_file}",
-                             mapping={"data_file": datafile},
-                             numline=self._numline, line=line)
-                elif len(seqs) > 1:
-                    self.err("More than one sequence found for quantitative result: ${data_file}",
-                             mapping={"data_file": datafile},
-                             numline=self._numline, line=line)
-                else:
-                    objid = seqs[0].get(self.SEQUENCETABLE_HEADER_SAMPLENAME, '')
-                    if objid:
-                        quantitation['DefaultResult'] = 'Final Conc'
-                        quantitation['Remarks'] = _("Autoimport")
-                        rows = self.getRawResults().get(objid, [])
-                        raw = rows[0] if len(rows) > 0 else {}
-                        raw[compound] = quantitation
-                        self._addRawResult(objid, raw, True)
-                    else:
-                        self.err("No valid sequence for ${data_file}",
-                                 mapping={"data_file": datafile},
-                                 numline=self._numline, line=line)
-        else:
-            self.err("Value for column '${column}' not found",
-                     mapping={"column": self.QUANTITATIONRESULTS_COMPOUNDCOLUMN},
-                     numline=self._numline, line=line)
 
 
 class MasshunterQuantImporter(AnalysisResultsImporter):
