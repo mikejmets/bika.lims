@@ -53,7 +53,7 @@ class TestInstrumentImport(BikaSimpleTestCase):
         self.addthing(self.client, 'Contact', Firstname='Rita Mohale',
                       Lastname='Mohale')
         self.addthing(self.portal.bika_setup.bika_sampletypes, 'SampleType',
-                      title='Water', Prefix='H2O')
+                      title='Water', Prefix='1')
         self.addthing(self.portal.bika_setup.bika_samplematrices,
                       'SampleMatrix', title='Liquids')
         self.addthing(self.portal.bika_setup.bika_samplepoints, 'SamplePoint',
@@ -63,72 +63,10 @@ class TestInstrumentImport(BikaSimpleTestCase):
         self.addthing(self.portal.bika_setup.bika_arpriorities, 'ARPriority',
                       title='Normal', sortKey=1)
         a = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='Ecoli', Keyword="ECO")
-        #b = self.addthing(self.portal.bika_setup.bika_analysisservices,
-        #                  'AnalysisService', title='Salmonella', Keyword="SAL")
-        #ar_category = self.addthing(self.portal.bika_setup.bika_analysiscategories, 'AnalysisCategory',
-        #              title='Metals')
-        #c = self.addthing(self.portal.bika_setup.bika_analysisservices,
-        #                  'AnalysisService', title='Color', Keyword="COL",
-        #                    AnalysisCategory=ar_category.UID(),)
-        #d = self.addthing(self.portal.bika_setup.bika_analysisservices,
-        #                  'AnalysisService', title='Taste', Keyword="TAS")
+                          'AnalysisService', title='alpha-Pinene', Keyword="alphaPinene")
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
                       Service=[a.UID()])
-        #self.addthing(self.portal.bika_setup.bika_analysisprofiles,
-        #              'AnalysisProfile', title='Properties',
-        #              Service=[c.UID(), d.UID()])
-
-    #def setUp(self):
-    #    super(TestInstrumentImport, self).setUp()
-    #    login(self.portal, TEST_USER_NAME)
-    #    clients = self.portal.clients
-    #    self.client = self.addthing(self.portal.clients, 'Client',
-    #                                title='Happy Hills', ClientID='HH')
-    #    #bs = self.portal.bika_setup
-    #    ## @formatter:off
-    #    #self.client = self.addthing(clients, 'Client', title='Happy Hills', ClientID='HH')
-    #    #contact = self.addthing(self.client, 'Contact', Firstname='Rita', Lastname='Mohale')
-    #    ## Sample
-    #    #sampletype = self.addthing(bs.bika_sampletypes, 'SampleType', title='1', Prefix='1')
-    #    #ar_category = self.addthing(self.portal.bika_setup.bika_analysiscategories, 'AnalysisCategory',
-    #    #              title='Metals')
-    #    #analysis = self.addthing(self.portal.bika_setup.bika_analysis, 'Analysis',
-    #    #              title='alphaPinene')
-    #    #service = self.addthing(bs.bika_analysisservices, 
-    #    #        'AnalysisService', 
-    #    #        title='alphaPinene', 
-    #    #        AnalysisKeyword="alphaPinene",
-    #    #        AnalysisCategory=ar_category.UID(),)
-    #    #bac = getToolByName(self.portal, 'bika_analysis_catalog')
-    #    #analyses = bac(portal_type='Analysis')
-    #    ## Create Sample
-    #    #self.sample1 = self.addthing(self.client, 'Sample', SampleType=sampletype)
-    #    #api.content.transition(obj=self.sample1, transition='sampling_workflow')
-    #    #api.content.transition(obj=self.sample1, transition='sample')
-    #    #api.content.transition(obj=self.sample1, transition='sample_due')
-    #    #api.content.transition(obj=self.sample1, transition='receive')
-    #    #transaction.commit()
-    #    ## Create an AR
-    #    #self.ar1 = self.addthing(self.client, 'AnalysisRequest', Contact=contact,
-    #    #                        Sample=self.sample1, Analyses=[service], SamplingDate=DateTime())
-    #    #import pdb; pdb.set_trace()
-    #    #api.content.transition(obj=self.ar1, transition='sampling_workflow')
-    #    #state = api.content.get_state(self.ar1)
-    #    #if state == 'to_be_sampled':
-    #    #    try:
-    #    #        api.content.transition(obj=self.ar1, transition='sample')
-    #    #        transaction.commit()
-    #    #    except Exception, e:
-    #    #        pass
-    #    #state = api.content.get_state(self.ar1)
-    #    ##api.content.transition(obj=self.ar1, transition='sample_due')
-    #    #api.content.transition(obj=self.ar1, transition='receive')
-    #    #state = api.content.get_state(self.ar1)
-    #    #transaction.commit()
-    #    #if state != 'sample_received':
-    #    #    self.fail("Incorrect state for AR")
 
     def tearDown(self):
         super(TestInstrumentImport, self).setUp()
@@ -145,7 +83,7 @@ Header,      File name,  Client name,  Client ID, Contact,     CC Names - Report
 Header Data, test1.csv,  Happy Hills,  HH,        Rita Mohale,                  ,                   ,                    ,                    , 10,            HHPO-001,                            ,,
 Batch Header, id,       title,     description,    ClientBatchID, ClientBatchComment, BatchLabels, ReturnSampleToClient,,,
 Batch Data,   B15-0123, New Batch, Optional descr, CC 201506,     Just a batch,                  , TRUE                ,,,
-Samples,    ClientSampleID,    SamplingDate,DateSampled,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,ECO,,,,MicroBio,,
+Samples,    ClientSampleID,    SamplingDate,DateSampled,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,alphaPinene,,,,MicroBio,,
 Analysis price,,,,,,,,,,,,,,
 "Total Analyses or Profiles",,,,,,,,,,,,,9,,,
 Total price excl Tax,,,,,,,,,,,,,,
@@ -187,23 +125,10 @@ Total price excl Tax,,,,,,,,,,,,,,
 
         bc = getToolByName(self.portal, 'bika_catalog')
         ars = bc(portal_type='AnalysisRequest')
-        api.content.transition(obj=ars[0].getObject(), transition='receive')
+        ar = ars[0]
+        api.content.transition(obj=ar.getObject(), transition='receive')
         transaction.commit()
-        #if not ars[0].getObject().getContact():
-        #    self.fail('No Contact imported into ar.Contact field.')
-        #l = len(ars)
-        #if l != 4:
-        #    self.fail('4 AnalysisRequests were not created!  We found %s' % l)
-        #l = len(bc(portal_type='Sample'))
-        #if l != 4:
-        #    self.fail('4 Samples were not created!  We found %s' % l)
-        #bac = getToolByName(self.portal, 'bika_analysis_catalog')
-        #analyses = bac(portal_type='Analysis')
-        #l = len(analyses)
-        #if l != 12:
-        #    self.fail('12 Analysis not found! We found %s' % l)
-        #states = [workflow.getInfoFor(a.getObject(), 'review_state')
-        #          for a in analyses]
+        #Testing Import for Instrument
         path = os.path.dirname(__file__)
         filename = '%s/files/GC-MS output.txt' % path
         if not os.path.isfile(filename):
@@ -220,33 +145,15 @@ Total price excl Tax,,,,,,,,,,,,,,
                                     instrument=''))
         context = self.portal
         results = Import(context, request)
+        transaction.commit()
         text = 'Import finished successfully: 1 ARs and 1 results updated'
         if text not in results:
-            self.fail("AR did not get updated")
-        #if states != ['sample_due'] * 12:
-        #    self.fail('Analysis states should all be sample_due, but are not!')
-
-    #def test_BC_4(self):
-    #    path = os.path.dirname(__file__)
-    #    filename = '%s/files/GC-MS output.txt' % path
-    #    if not os.path.isfile(filename):
-    #        self.fail("File %s not found" % filename)
-    #    data = open(filename, 'r').read()
-    #    file = FileUpload(TestFile(cStringIO.StringIO(data)))
-    #    request = TestRequest()
-    #    request = TestRequest(form=dict(
-    #                                submitted=True,
-    #                                artoapply='received',
-    #                                override='nooverride',
-    #                                file=file,
-    #                                sample='requestid',
-    #                                instrument=''))
-    #    context = self.portal
-    #    results = Import(context, request)
-    #    import pdb; pdb.set_trace()
-    #    text = 'Import finished successfully: 1 ARs and 1 results updated'
-    #    if text not in results:
-    #        self.fail("AR did not get updated")
+            self.fail("AR Import failed")
+        browser = self.getBrowser(loggedIn=True)
+        browser.open(ar.getObject().absolute_url() + "/manage_results")
+        content = browser.contents
+        if '0.02604' not in content:
+            self.fail("AR Result did not get updated")
 
 def test_suite():
     suite = unittest.TestSuite()
