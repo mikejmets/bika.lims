@@ -72,7 +72,7 @@ class TestInstrumentImport(BikaSimpleTestCase):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
 
-    def test_complete_valid_batch_import(self):
+    def test_BC4_Shimadzu_TQ8030Import(self):
         pc = getToolByName(self.portal, 'portal_catalog')
         workflow = getToolByName(self.portal, 'portal_workflow')
         arimport = self.addthing(self.client, 'ARImport')
