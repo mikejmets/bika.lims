@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This file is part of Bika LIMS
 #
 # Copyright 2011-2016 by it's authors.
@@ -49,9 +50,9 @@ class TestInstrumentImport(BikaSimpleTestCase):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
         self.client = self.addthing(self.portal.clients, 'Client',
-                                    title='Happy Hills', ClientID='HH')
-        self.addthing(self.client, 'Contact', Firstname='Rita Mohale',
-                      Lastname='Mohale')
+                                    title='AA Test Client', ClientID='AAT')
+        self.addthing(self.client, 'Contact', Firstname='A Test Client Contact',
+                      Lastname='Contact')
         self.addthing(self.portal.bika_setup.bika_sampletypes, 'SampleType',
                       title='Water', Prefix='1')
         self.addthing(self.portal.bika_setup.bika_samplematrices,
@@ -65,7 +66,7 @@ class TestInstrumentImport(BikaSimpleTestCase):
         a = self.addthing(self.portal.bika_setup.bika_analysisservices,
                           'AnalysisService', title='Diazinone', Keyword="Diazinone")
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
-                      'AnalysisProfile', title='MicroBio',
+                      'AnalysisProfile', title='BIO',
                       Service=[a.UID()])
 
     def tearDown(self):
@@ -79,15 +80,15 @@ class TestInstrumentImport(BikaSimpleTestCase):
         arimport.unmarkCreationFlag()
         arimport.setFilename("test1.csv")
         arimport.setOriginalFile("""
-Header,      File name,  Client name,  Client ID, Contact,     CC Names - Report, CC Emails - Report, CC Names - Invoice, CC Emails - Invoice, No of Samples, Client Order Number, Client Reference,,
-Header Data, test1.csv,  Happy Hills,  HH,        Rita Mohale,                  ,                   ,                    ,                    , 10,            HHPO-001,                            ,,
-Batch Header, id,       title,     description,    ClientBatchID, ClientBatchComment, BatchLabels, ReturnSampleToClient,,,
-Batch Data,   B15-0123, New Batch, Optional descr, CC 201506,     Just a batch,                  , TRUE                ,,,
-Samples,    ClientSampleID,    SamplingDate,DateSampled,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,Diazinone,,,,MicroBio,,
-Analysis price,,,,,,,,,,,,,,
-"Total Analyses or Profiles",,,,,,,,,,,,,9,,,
-Total price excl Tax,,,,,,,,,,,,,,
-"Sample 1", HHS14001,          3/9/2014,    3/9/2014,   Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
+Header,File name,Client name,Client ID,Contact,CC Names - Report,CC Emails - Report,CC Names - Invoice,CC Emails - Invoice,Client Order Number,Client Reference,No of Samples,,,,,,,,,,,,,,,,,,,
+Header Data,ALSBikaImportToBatch201701,AA Test Client,AAT,A Test Client Contact,,,,,,,,,,,,,,,,,,,,,,,,,,
+Batch Header,title,description,ClientBatchID,BatchDate,ClientBatchComment,BatchLabels,ReturnSampleToClient,,,,,,,,,,,,,,,,,,,,,,,
+Batch Data,,,,11/9/2016,,,,,,,,,,,,,,,,,,,,,,,,,,
+Samples,ClientSampleID,SamplingDate,DateSampled,Sampler,SamplePoint,Activity Sampled,Amount Sampled,Metric,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Profiles or Analyses ,Price excl Tax,Diazinone,W11,GW4,W20F,W300,WKDC02,WB01,BIO,,,,,,,
+Analysis price,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Total Analyses or Profiles,,,,,,,,,,,,,,0,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Total price excl Tax,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Sample 1,ClientSampleID 1,,01/17/2017 10:29:00,Client Sampler,KKPW03B,,,,,Potable Water,Plastic Bottle,,,,,,,,1,,,,,,,,,,,
         """)
 
         # check that values are saved without errors
@@ -147,6 +148,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         results = Import(context, request)
         transaction.commit()
         text = 'Import finished successfully: 1 ARs and 1 results updated'
+        import pdb; pdb.set_trace()
         if text not in results:
             self.fail("AR Import failed")
         browser = self.getBrowser(loggedIn=True)
