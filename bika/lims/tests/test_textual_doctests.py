@@ -16,11 +16,14 @@ from bika.lims.tests.base import BikaSimpleTestCase
 
 DOCTESTS = [
     "../docs/API.rst",
+    "../docs/JSONAPIv2.rst",
     "../docs/Permissions.rst",
     "../docs/InstrumentCalibrationCertificationAndValidation.rst",
     "../docs/ContactUser.rst",
     "../docs/Instruments.rst",
     "../docs/Versioning.rst",
+    "../docs/AnalysisRequests.rst",
+    "../docs/Calculations.rst",
 ]
 
 

@@ -7,8 +7,10 @@ from AccessControl.PermissionRole import rolesForPermissionOn
 
 from Products.CMFPlone.utils import base_hasattr
 from Products.CMFCore.interfaces import ISiteRoot
+from Products.CMFCore.interfaces import IFolderish
 from Products.Archetypes.BaseObject import BaseObject
 from Products.ZCatalog.interfaces import ICatalogBrain
+from Products.CMFPlone.utils import _createObjectByType
 from Products.CMFCore.WorkflowCore import WorkflowException
 
 from zope import globalrequest
@@ -41,7 +43,9 @@ achieve the same::
 
     >>> foos = map(get_foo, list_of_brain_objects)
 
-Please add for all of your functions a descriptive test in docs/API.rst. Thanks.
+Please add for all of your functions a descriptive test in docs/API.rst.
+
+Thanks.
 """
 
 _marker = object()
@@ -66,7 +70,7 @@ def get_bika_setup():
     return portal.get("bika_setup")
 
 
-def create(container, portal_type, title=None, **kwargs):
+def create(container, portal_type, **kwargs):
     """Creates an object in Bika LIMS
 
     :param container: container
@@ -77,9 +81,11 @@ def create(container, portal_type, title=None, **kwargs):
     :type title: string
     :returns: The new created object
     """
-    title = title is None and "New {}".format(portal_type) or title
-    _ = container.invokeFactory(portal_type, id="tmpID", title=title)
-    obj = container.get(_)
+    from bika.lims.utils import tmpID
+    if kwargs.get("title") is None:
+        kwargs["title"] = "New {}".format(portal_type)
+    obj = _createObjectByType(portal_type, container, tmpID())
+    obj.edit(**kwargs)
     obj.processForm()
     # explicit notification
     modified(obj)
@@ -171,6 +177,32 @@ def is_at_content(brain_or_object):
     :rtype: bool
     """
     return isinstance(brain_or_object, BaseObject)
+
+
+def is_folderish(brain_or_object):
+    """Checks if the passed in object is folderish
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: True if the object is folderish
+    :rtype: bool
+    """
+    if hasattr(brain_or_object, "is_folderish"):
+        if callable(brain_or_object.is_folderish):
+            return brain_or_object.is_folderish()
+        return brain_or_object.is_folderish
+    return IFolderish.providedBy(get_object(brain_or_object))
+
+
+def get_portal_type(brain_or_object):
+    """Get the portal type for this object
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Portal type
+    :rtype: string
+    """
+    return brain_or_object.portal_type
 
 
 def get_schema(brain_or_object):

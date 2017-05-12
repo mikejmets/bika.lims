@@ -16,8 +16,9 @@ from bika.lims.content.analysisrequest import schema as ar_schema
 from bika.lims.content.sample import schema as sample_schema
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import IARImport, IClient
-from bika.lims.utils import tmpID
+from bika.lims.utils import tmpID, getUsers
 from bika.lims.vocabularies import CatalogVocabulary
+from bika.lims.workflow import getTransitionDate
 from collective.progressbar.events import InitialiseProgressBar
 from collective.progressbar.events import ProgressBar
 from collective.progressbar.events import ProgressState
@@ -33,8 +34,12 @@ from Products.DataGridField import Column
 from Products.DataGridField import DataGridField
 from Products.DataGridField import DataGridWidget
 from Products.DataGridField import DateColumn
+from Products.DataGridField import DatetimeColumn
 from Products.DataGridField import LinesColumn
 from Products.DataGridField import SelectColumn
+from Products.DataGridField import TimeColumn
+from plone import api
+from plone.indexer import indexer
 from zope import event
 from zope.event import notify
 from zope.i18nmessageid import MessageFactory
@@ -75,6 +80,25 @@ ClientName = StringField(
     searchable=True,
     widget=StringWidget(
         label=_("Client Name"),
+        visible=False
+    ),
+)
+Client = ReferenceField(
+    'Client',
+    allowed_types=('Client',),
+    relationship='ARImportClient',
+    referenceClass=HoldingReference,
+    vocabulary_display_path_bound=sys.maxint,
+    widget=ReferenceWidget(
+        label=_('Client'),
+        size=20,
+        visible=True,
+        base_query={'inactive_state': 'active'},
+        showOn=True,
+        popup_width='300px',
+        colModel=[#{'columnName': 'UID', 'hidden': True},
+                  {'columnName': 'Name', 'width': '100',
+                   'label': _('Name')}],
     ),
 )
 
@@ -126,7 +150,7 @@ Batch = ReferenceField(
     'Batch',
     allowed_types=('Batch',),
     relationship='ARImportBatch',
-    widget=bReferenceWidget(
+    widget=ReferenceWidget(
         label=_('Batch'),
         visible=True,
         catalog_name='bika_catalog',
@@ -170,6 +194,7 @@ SampleData = DataGridField(
     columns=('ClientSampleID',
              'SamplingDate',
              'DateSampled',
+             'Sampler',
              'SamplePoint',
              'SampleMatrix',
              'SampleType',  # not a schema field!
@@ -184,7 +209,8 @@ SampleData = DataGridField(
         columns={
             'ClientSampleID': Column('Sample ID'),
             'SamplingDate': DateColumn('Sampling Date'),
-            'DateSampled': DateColumn('Date Sampled'),
+            'DateSampled': DatetimeColumn('Date Sampled'),
+            'Sampler': Column('Sampler'),
             'SamplePoint': SelectColumn(
                 'Sample Point', vocabulary='Vocabulary_SamplePoint'),
             'SampleMatrix': SelectColumn(
@@ -215,6 +241,7 @@ schema = BikaSchema.copy() + Schema((
     Filename,
     NrSamples,
     ClientName,
+    Client,
     ClientID,
     ClientOrderNumber,
     ClientReference,
@@ -283,6 +310,34 @@ class ARImport(BaseFolder):
     def workflow_script_import(self):
         """Create objects from valid ARImport
         """
+
+        def convert_date_string(datestr):
+            return datestr.replace('-', '/')
+
+        def lookup_sampler_uid(import_user):
+            #Lookup sampler's uid
+            found = False
+            userid = None
+            user_ids = []
+            users = getUsers(self, ['LabManager', 'Sampler']).items()
+            for (samplerid, samplername) in users:
+                if import_user == samplerid:
+                    found = True
+                    userid = samplerid
+                    break
+                if import_user == samplername:
+                    user_ids.append(samplerid)
+            if found:
+                return userid
+            if len(user_ids) == 1:
+                return user_ids[0]
+            if len(user_ids) > 1:
+                #raise ValueError('Sampler %s is ambiguous' % import_user)
+                return None
+            #Otherwise
+            #raise ValueError('Sampler %s not found' % import_user)
+            return None
+
         bsc = getToolByName(self, 'bika_setup_catalog')
         workflow = getToolByName(self, 'portal_workflow')
         client = self.aq_parent
@@ -352,6 +407,10 @@ class ARImport(BaseFolder):
             row['ClientReference'] = self.getClientReference()
             row['ClientOrderNumber'] = self.getClientOrderNumber()
             row['Contact'] = self.getContact()
+            row['DateSampled'] = convert_date_string(row['DateSampled'])
+            if row['Sampler']:
+                row['Sampler'] = lookup_sampler_uid(row['Sampler'])
+
             # Create AR
             ar = _createObjectByType("AnalysisRequest", client, tmpID())
             ar.setSample(sample)
@@ -372,7 +431,7 @@ class ARImport(BaseFolder):
         # document has been written to, and redirect() fails here
         self.REQUEST.response.write(
             '<script>document.location.href="%s"</script>' % (
-                self.absolute_url()))
+                self.aq_parent.absolute_url()))
 
     def get_header_values(self):
         """Scrape the "Header" values from the original input file
@@ -410,7 +469,9 @@ class ARImport(BaseFolder):
         if not headers:
             return False
 
-        # Plain header fields that can be set into plain schema fields:
+        if client:
+            self.setClient(client)
+
         for h, f in [
             ('File name', 'Filename'),
             ('No of Samples', 'NrSamples'),
@@ -424,7 +485,6 @@ class ARImport(BaseFolder):
                 field = self.schema[f]
                 field.set(self, v)
             del (headers[h])
-
         # Primary Contact
         v = headers.get('Contact', None)
         contacts = [x for x in client.objectValues('Contact')]
@@ -540,6 +600,12 @@ class ARImport(BaseFolder):
             # in put spreadsheet
             gridrow = {'sid': row['Samples']}
             del (row['Samples'])
+
+            gridrow = {'ClientSampleID': row['ClientSampleID']}
+            del (row['ClientSampleID'])
+
+            gridrow['Sampler'] = row['Sampler']
+            del (row['Sampler'])
 
             # We'll use this later to verify the number against selections
             if 'Total number of Analyses or Profiles' in row:
@@ -740,9 +806,9 @@ class ARImport(BaseFolder):
         client = self.aq_parent
 
         # Verify Client Name
-        if self.getClientName() != client.Title():
+        if self.getClient() != client:
             self.error("%s: value is invalid (%s)." % (
-                'Client name', self.getClientName()))
+                'Client name', self.getClient()))
 
         # Verify Client ID
         if self.getClientID() != client.getClientID():
@@ -986,5 +1052,13 @@ class ARImport(BaseFolder):
         errors.append(msg)
         self.setErrors(errors)
 
+
+@indexer(IARImport)
+def getDateValidated(instance):
+    return getTransitionDate(instance, 'validate')
+
+@indexer(IARImport)
+def getDateImported(instance):
+    return getTransitionDate(instance, 'import')
 
 atapi.registerType(ARImport, PROJECTNAME)
