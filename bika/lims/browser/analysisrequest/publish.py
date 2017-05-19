@@ -973,19 +973,26 @@ class AnalysisRequestPublishView(BrowserView):
         analyses = []
         output = StringIO.StringIO()
         for ar in ars:
+            sample = ar.getSample()
+            date_rec = ar.getDateReceived()
+            if date_rec:
+                date_rec = date_rec.strftime('%m-%d-%y')
+            sampling_date = ar.getSamplingDate()
+            if sampling_date:
+                sampling_date = sampling_date.strftime('%m-%d-%y')
             writer = csv.writer(output)
-            writer.writerow(["Sample Type",
-                             ar.getSample().getSampleType().Title()])
-            writer.writerow(["Client's Sample ID", ar.getClientSampleID()])
-            writer.writerow(["Lab Sample ID", ar.getSample().id])
-            writer.writerow(["Date of Analysis",
-                             ar.getDateSampled().strftime('%m-%d-%y')])
+            writer.writerow(["Sample Type", sample.getSampleType().Title()])
+            writer.writerow(["Client's Ref", ar.getClientReference()])
+            writer.writerow(["Client's Sample ID", sample.getClientSampleID()])
+            writer.writerow(["Lab Sample ID", sample.id])
+            writer.writerow(["Date Received", date_rec])
+            writer.writerow(["Sampling Date", sampling_date])
             writer.writerow([])
             analyses = ar.getAnalyses(full_objects=True)
             group_cats = {}
             for analysis in analyses:
                 analysis_info = {'title': analysis.Title(),
-                                 'result': analysis.getFormattedResult(),
+                                 'result': analysis.getFormattedResult(html=False),
                                  'unit': analysis.getService().getUnit()}
                 if analysis.getCategoryTitle() not in group_cats.keys():
                     group_cats[analysis.getCategoryTitle()] = []
@@ -994,8 +1001,8 @@ class AnalysisRequestPublishView(BrowserView):
             for g_cat in sorted(group_cats.keys()):
                 writer.writerow([g_cat])
                 writer.writerow(["Analysis", "Result", "Unit"])
-                for a in group_cats[g_cat]:
-                    writer.writerow([a['title'], a['result'], a['unit']])
+                for a_info in group_cats[g_cat]:
+                    writer.writerow([a_info['title'], a_info['result'], a_info['unit']])
 
         return output.getvalue()
 
