@@ -36,6 +36,7 @@ from tescan.tima import tima
 from thermoscientific.arena import xt20
 from thermoscientific.gallery import Ts9861x
 from thermoscientific.multiskan import go
+from shimadzu.nexera import LC2040C, LCMS8050
 
 __all__ = ['abaxis.vetscan.vs2',
            'agilent.masshunter.quantitative',
@@ -69,6 +70,8 @@ __all__ = ['abaxis.vetscan.vs2',
            'nuclisens.easyq',
            'shimadzu.icpe.multitype',
            'shimadzu.gcms.qp2010se',
+           'shimadzu.nexera.LC2040C',
+           'shimadzu.nexera.LCMS8050',
            ]
 
 
