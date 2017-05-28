@@ -34,6 +34,7 @@ from rigaku.supermini import wxrf
 from myself import myinstrument
 from nuclisens import easyq
 from shimadzu.icpe import multitype
+from shimadzu.gcms import qp2010se
 
 __all__ = ['abaxis.vetscan.vs2',
            'agilent.masshunter.quantitative',
@@ -63,6 +64,7 @@ __all__ = ['abaxis.vetscan.vs2',
            'myself.myinstrument',
            'nuclisens.easyq',
            'shimadzu.icpe.multitype',
+           'shimadzu.gcms.qp2010se',
            ]
 
 
