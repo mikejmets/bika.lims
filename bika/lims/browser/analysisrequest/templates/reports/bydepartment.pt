@@ -303,46 +303,57 @@
 
 <!-- Attachments section -->
 <div id="section-attachments"
-    tal:define="ar_attachments python:(analysisrequest['obj'].getAttachment() and len(analysisrequest['obj'].getAttachment())>0) and analysisrequest['obj'].getAttachment() or None;
-                an_attachments python:[an.getAttachment() for an in analysisrequest['obj'].getAnalyses(full_objects=True) if (an.getAttachment() and an.getService().getDepartment() and an.getService().getDepartment().UID()==dept.UID())];">
-    <h1 i18n:translate="" tal:condition="python: ar_attachments or len(an_attachments)>0">Attachments</h1>
-    <h2 i18n:translate="" tal:condition="ar_attachments">Analysis request attachments</h2>
-    <ul tal:condition="ar_attachments">
-    <tal:attachment tal:repeat="attachment ar_attachments">
-        <li tal:define="file python:attachment.getAttachmentFile();
-                        filename file/filename | nothing;
-                        filesize file/get_size | python:file and len(file) or 0;
-                        icon file/icon | nothing">
-            <a title="Click to download"
-               tal:attributes="href string:${attachment/absolute_url}/at_download/AttachmentFile"
-               tal:content="attachment/Title">Filename</a>
-            <span class="file-type" tal:content="python:attachment.getAttachmentType().Title() if attachment.getAttachmentType() else ''">Title</span>&nbsp;&nbsp;
-            (<span class="file-mime" tal:content="python:here.lookupMime(file.getContentType())">CSV</span>)&nbsp;&mdash;&nbsp;
-            <span class="file-size" tal:content="python:'%sKb' % (filesize / 1024)">145Kb</span>
+     tal:define="ar_attachments analysisrequest/ar_attachments;
+                 an_attachments analysisrequest/an_attachments">
+
+  <h1 i18n:translate="" tal:condition="python:ar_attachments or an_attachments">Attachments</h1>
+
+  <!-- AR Attachments -->
+  <div id="analysisrequest-attachments" tal:condition="ar_attachments">
+    <h2 i18n:translate="">Analysis request attachments</h2>
+    <ul>
+      <tal:attachment tal:repeat="attachment ar_attachments">
+        <li>
+          <tal:inline condition="python:attachment['renderoption']=='r'">
+            <div class="inline-attachment">
+              <tal:tag replace="structure attachment/inline"/>
+            </div>
+          </tal:inline>
+          <a title="Click to download"
+             tal:attributes="href attachment/download"
+             tal:content="attachment/filename">Filename</a>
+          <span class="file-type" tal:content="attachment/type">Type</span>&nbsp;&nbsp;
+          (<span class="file-mime" tal:content="attachment/mimetype">CSV</span>)&nbsp;&mdash;&nbsp;
+          <span class="file-size" tal:content="attachment/size">145Kb</span>
         </li>
-    </tal:attachment>
+      </tal:attachment>
     </ul>
-    <h2 i18n:translate="" tal:condition="python: len(an_attachments)>0">Analysis services attachments</h2>
-    <table id="analysis-attachments" tal:condition="python: len(an_attachments)>0">
-    <tal:anattachments tal:repeat="analysis python:analysisrequest['obj'].getAnalyses(full_objects=True)">
-    <tal:anattachment tal:repeat="anat python: analysis.getAttachment()">
-        <tr tal:define="file python:anat.getAttachmentFile();
-                        filename file/filename | nothing;
-                        filesize file/get_size | python:file and len(file) or 0;
-                        icon file/icon | nothing">
-            <td tal:content="python: analysis.getKeyword()">Total Vit D2 + D3</td>
-            <td>
-                <a title="Click to download"
-               tal:attributes="href string:${anat/absolute_url}/at_download/AttachmentFile"
-               tal:content="anat/Title">Filename</a>
-            <span class="file-type" tal:content="python:anat.getAttachmentType().Title() if anat.getAttachmentType() else ''">Title</span>&nbsp;&nbsp;
-            (<span class="file-mime" tal:content="python:here.lookupMime(file.getContentType())">CSV</span>)&nbsp;&mdash;&nbsp;
-            <span class="file-size" tal:content="python:'%sKb' % (filesize / 1024)">145Kb</span>
-            </td>
+  </div>
+
+  <!-- Analyses Attachments -->
+  <div id="analyses-attachments" tal:condition="an_attachments">
+    <h2 i18n:translate="">Analysis services attachments</h2>
+    <table id="analysis-attachments">
+      <tal:attachment tal:repeat="attachment an_attachments">
+        <tr>
+          <td tal:content="attachment/keywords">Total Vit D2 + D3</td>
+          <td>
+            <tal:inline condition="python:attachment['renderoption']=='r'">
+              <div class="inline-attachment">
+                <tal:tag replace="structure attachment/inline"/>
+              </div>
+            </tal:inline>
+            <a title="Click to download"
+               tal:attributes="href attachment/download"
+               tal:content="attachment/filename">Filename</a>
+            <span class="file-type" tal:content="attachment/type">Type</span>&nbsp;&nbsp;
+            (<span class="file-mime" tal:content="attachment/mimetype">CSV</span>)&nbsp;&mdash;&nbsp;
+            <span class="file-size" tal:content="attachment/size">145Kb</span>
+          </td>
         </tr>
-    </tal:anattachment>
-    </tal:anattachments>
+      </tal:attachment>
     </table>
+  </div>
 </div>
 
 <!-- Signatures section -->
