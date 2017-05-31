@@ -12,6 +12,7 @@ from bika.lims import api
 from bika.lims.permissions import AddAttachment
 from bika.lims.permissions import EditResults
 from bika.lims.permissions import EditFieldResults
+from bika.lims.config import ATTACHMENT_REPORT_OPTIONS
 
 EDITABLE_STATES = [
     'to_be_sampled',
@@ -63,6 +64,11 @@ class AttachmentsViewlet(ViewletBase):
                                               sort_on="sortable_title",
                                               sort_order="ascending")
         return attachment_types
+
+    def get_attachment_report_options(self):
+        """Returns the valid attachment report options
+        """
+        return ATTACHMENT_REPORT_OPTIONS.items()
 
     def get_analyses(self):
         """Returns a list of analyses from the AR

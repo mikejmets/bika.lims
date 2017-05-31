@@ -24,9 +24,11 @@ from Products.Archetypes.atapi import ReferenceWidget
 from Products.Archetypes.atapi import StringField
 from Products.Archetypes.atapi import StringWidget
 from Products.Archetypes.atapi import DateTimeField
+from Products.Archetypes.atapi import SelectionWidget
 from Products.Archetypes.config import REFERENCE_CATALOG
 
 from bika.lims.config import PROJECTNAME
+from bika.lims.config import ATTACHMENT_REPORT_OPTIONS
 from bika.lims import bikaMessageFactory as _
 from bika.lims.content.bikaschema import BikaSchema
 from bika.lims.browser.widgets import DateTimeWidget
@@ -56,6 +58,19 @@ schema = BikaSchema.copy() + Schema((
         relationship='AttachmentAttachmentType',
         widget=ReferenceWidget(
             label=_("Attachment Type"),
+        ),
+    ),
+
+    StringField(
+        'ReportOption',
+        searchable=True,
+        vocabulary="ATTACHMENT_REPORT_OPTIONS",
+        widget=SelectionWidget(
+            label=_("Report Options"),
+            checkbox_bound=0,
+            format='select',
+            visible=True,
+            default='a',
         ),
     ),
 
