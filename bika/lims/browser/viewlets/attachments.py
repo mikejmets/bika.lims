@@ -140,3 +140,27 @@ class AttachmentsViewlet(ViewletBase):
         if not self.show():
             return ""
         return self.template()
+
+
+class WorksheetAttachmentsViewlet(AttachmentsViewlet):
+    """Viewlet to manage Attachments on Worksheets
+    """
+    template = ViewPageTemplateFile("templates/worksheet_attachments.pt")
+
+    def show(self):
+        """Controls if the viewlet should be rendered
+        """
+        # XXX: Hack to show the viewlet only on the WS manage_results view
+        if not self.request.getURL().endswith("manage_results"):
+            return False
+        return True
+
+    def get_attachments(self):
+        """Returns a list of Attachment objects
+        """
+        return []
+
+    def get_services(self):
+        """Returns a list of AnalysisService objects
+        """
+        return self.context.getWorksheetServices()

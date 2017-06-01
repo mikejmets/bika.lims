@@ -6,7 +6,7 @@
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 from attachments import AttachmentsViewlet  # noqa
-from attachments import WSAttachmentsViewlet  # noqa
+from attachments import WorksheetAttachmentsViewlet  # noqa
 from viewlets import DocumentActionsViewlet  # noqa
 from viewlets import NewVersionsViewlet  # noqa
 from viewlets import PathBarViewlet  # noqa

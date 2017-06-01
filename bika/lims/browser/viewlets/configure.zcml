@@ -12,6 +12,16 @@
       layer="bika.lims.interfaces.IBikaLIMS"
       />
 
+  <!-- Worksheet Attachments Viewlet -->
+  <browser:viewlet
+      for="bika.lims.interfaces.IWorksheet"
+      name="bika.lims.viewlets.worksheet_attachments"
+      class="bika.lims.browser.viewlets.WorksheetAttachmentsViewlet"
+      manager="plone.app.layout.viewlets.interfaces.IBelowContentTitle"
+      permission="zope2.View"
+      layer="bika.lims.interfaces.IBikaLIMS"
+      />
+
   <!-- Show new version and upgrade alert viewlet -->
   <browser:viewlet
       for="plone.app.controlpanel.interfaces.IPloneControlPanelView"
