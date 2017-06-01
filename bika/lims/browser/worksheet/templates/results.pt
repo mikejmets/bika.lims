@@ -117,9 +117,9 @@
                 <tal:hiddeninterim repeat="inter python:wideinterims[an]['interims'].values()">
                   <input type='hidden'
                          tal:attributes="id python:'wideinterim_%s_%s' % (an, inter['keyword']);
-                                         name python:inter['title'];
-                                         value python:inter['value'];
-                                         keyword python:inter['keyword'];"/>
+                               name python:inter['title'];
+                               value python:inter['value'];
+                               keyword python:inter['keyword'];"/>
                 </tal:hiddeninterim>
               </tal:hiddeninterims>
             </td>
@@ -128,8 +128,7 @@
               <select id='wideinterims_interims'
                       style='font-size: 100%;margin-left:1em;'>
                 <tal:options repeat="interim python:wideinterims[wideanselected]['interims'].keys()">
-                  <option tal:attributes="
-                                          value python:interim;
+                  <option tal:attributes="value python:interim;
                                           selected python:interim==wideinterimselected;"
                           tal:content="python:wideinterims[wideanselected]['interims'][interim]['title']" />
                 </tal:options>
