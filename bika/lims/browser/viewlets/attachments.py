@@ -123,8 +123,9 @@ class AttachmentsViewlet(ViewletBase):
     def show(self):
         """Controls if the viewlet should be rendered
         """
+        url = self.request.getURL()
         # XXX: Hack to show the viewlet only on the AR base_view
-        if not self.request.getURL().endswith("base_view"):
+        if not any(map(url.endswith, ["base_view", "manage_results"])):
             return False
         return self.user_can_add_attachments() or \
             self.user_can_update_attachments()
