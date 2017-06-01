@@ -288,10 +288,10 @@ class Analysis(BaseContent):
         self.setMaxTimeAllowed(maxtime)
         # set the due date
         # default to old calc in case no calendars
-        max_days = float(maxtime.get('days', 0)) + \
+        max_days = int(maxtime.get('days', 0)) + \
                  (
-                     (float(maxtime.get('hours', 0)) * 3600 +
-                      float(maxtime.get('minutes', 0)) * 60)
+                     (int(maxtime.get('hours', 0)) * 3600 +
+                      int(maxtime.get('minutes', 0)) * 60)
                      / 86400
                  )
         part = self.getSamplePartition()
