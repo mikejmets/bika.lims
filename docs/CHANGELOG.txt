@@ -1,80 +1,8 @@
-3.2.1 (unreleased)
+3.3.0 (unreleased)
 ------------------
-LIMS-2596: AR and Sample view fields that need to stay editable
-Issue-2024: Worksheet Template table header in Layout not translated
-Issue-1973: Published PDF reports are visible by anonymous users
-Issue-1976: Publication Report "bydepartment" raises an Error
-Issue-2001: Custom Accreditation Logo not visible (Unauthorized)
-Issue-2010: Bika Listing Table: "Show More" button disappears
-Issue-2012: AR Template Analysis don't get applied if an Analysis Profile is selected
-Issue-2015: Copy AS functionality from the "bika_analysisservices" view raises an error
-Issue-1974: Clicking on the "Arrow Button" of an empty cell in the AR Add View causes a JS Error and endless Spinner
-issue-1992: Data Duplication between Analysis Requests and Samples
-Issue-1999: Allow external Python library functions to be used in Calculation Formulas
-Issue-1971: Allow Reports in Landscape
-Issue-1967: Dashboard Link to "aggregatedanalyses" results in a 404
-Issue-1984: Analysisrequest "Add XX ARs" context action not translated
-Issue-1997: Calculation "Formula" field description keeps untranslated
-Issue-1981: Transifex Error processing bika/lims/skins/bika/bika_widgets/referencewidget.pt
-Issue-1975: Matching the labels to the fields is not easy when the user wants to add a single AR
-LIMS-2509: Correctly save empty values for CoordinateField and DurationField
-LIMS-2600: Some improvements and fixes for Statements
-LIMS-2567: Show all ARs on worksheet when adding Duplicate analysis
-LIMS-2562: Add Client filter when applying Worksheet Template
-LIMS-2561: Valid Reference Samples not being listed in worksheet views
-LIMS-1504: Calculation formula test widgets
-LIMS-2352: Cleaner and smaller instrument import log
-LIMS-2527: Bika Listing Table fail on invalid `sort_on` index
-LIMS-2568: Multi AR Report Template raises AttributeError
-LIMS-2548: Allow entry of negative values for LDL and UDL
-LIMS-2489: Fix error in suppliers view when a Reference Sample is past expiry date
-LIMS-2597: AttributeError: `bika_setup` on login on a new Plone site w/o bika.lims installed
-LIMS-2558: JavaScript Uncaught TypeError: Cannot read property 'checkbox' of undefined causes endless Spinner
-LIMS-2473: Link User to Contact: LDAP Users not found
-LIMS-2477: Reference Analysis has no dependencies; remove guard that assumes it does
-LIMS-2465: Not possible to translate Bika Listing Table Workflow Action Buttons
-LIMS-1391: Add configurable identifier types (CAS# for AnalysisService)
-LIMS-2466: Central Instrument Location Management
-LIMS-2357: Custom Landing Page and Link to switch between the Front Page and Dashboard
-LIMS-2341: Cleanup and format default Multi-AR COA
-LIMS-2455: Contact/Login Linkage Behavior
-LIMS-2456: Restrict duplicate slots in worksheet templates to routine analyses only.
-LIMS-2447: getDatePublished index not indexed correctly at time of AR publication
-LIMS-2404: AR list in batches permitted sampling without Sampler and Sampling date provided
-LIMS-2380: ARs are created in correct order (order of columns in ar-create form)
-LIMS-2394: Calculation failure in worksheets. TDS Calc misfires again.
-LIMS-2391: Use source analysis's sample ID in duplicate analysis IDs
-LIMS-2351: Field analyses without results do not prevent Samples from being received
-LIMS-2366: Workflow. AR stays in Received state with all Analyses in To be Verifie
-LIMS-2384: ARImport: Workflow state of imported ARs and their Analyses not synchronised.
-LIMS-2369: Workflow. Sampler and Date Sampled should be compulsory
-LIMS-2355: Unable to view dormant/active filters in some bika_setup pages
-LIMS-2344: Fix some UI javascript failures when viewing ARs
-LIMS-2319: AR Add: Deleting a selected CC Contact corrupts the UID of reference widgets
-LIMS-2325: Allow SampleTypes to be linked with Client Sample Points
-LIMS-2324: WS export to the LaChat Quick Chem FIA
-LIMS-2298: Add filter in Clients list
-LIMS-2299: Add ui for editing ar_count in all analysisrequest lists
-LIMS-2268: Instrument Interface. Vista Pro Simultaneous ICP, bi-directional CSV
-LIMS-2261: Cannot create analysis request
-LIMS-1562: Using a Sample Round. Basic form and printed form
-LIMS-2266: Crating partitions through Add form, doesn't create partitions.
-HEALTH-394: Sample sticker layout. 2 new sticker layouts, 2 stickers per row
-LIMS-2032: AS Methods initialise with 1st available Instrument (loading setup data)
-LIMS-2014: I can only select a Default Method for an AS if Manual results capture is on
-LIMS-2181: An analysis is not stopped from using an invalid instrument
-HEALTH-310: Implemented Nuclisens EasyQ instrument importer
-HEALTH-319: Instrument. Roche Cobas Taqman 96
-LIMS-2091: Table Column Display options Everywhere
-LIMS-2207: Indentation in analysisrequests.py
-LIMS-2208: WinescanCSVParser class instance variable misspelling
-LIMS-1832: New Results Template, COA. Multiple ARs in columns
-LIMS-2148: Unable to sort Bika Listing tables
-LIMS-1774: Shiny graphs for result ranges
-3.2.1b3 (unreleased)
---------------------
 
-- no changes yet
+- LIMS-2596: AR and Sample view fields that need to stay editable
+- Issue-2052: Computed Sample Field "SampleTypeUID" does not check if a SampleType is set
 
 
 3.2.1b2 (2017-05-27)
@@ -171,6 +99,25 @@ LIMS-1774: Shiny graphs for result ranges
 - Replacement of pagination by 'Show more' in tables makes the app faster
 - Add Bika LIMS TAL report reference in reports preview
 - Simplify instrument interface creation for basic CSV files
+
+
+3.1.14 (2017-05-26)
+-------------------
+
+- Pinned Plone version to 4.3.11
+
+
+3.1.13 (2016-12-28)
+-------------------
+
+- LIMS-2299: Add ui for editing ar_count in all analysisrequest lists
+- Removed commented HTML that was causing Chameleon to choke when adding ARs.
+
+
+3.1.12 (2016-12-15)
+-------------------
+
+- HEALTH-569 Bar code printing not working on sample registration
 - Pinned CairoSVG to 1.0.20 (support for Python 2 removed in later versions)
 
 
