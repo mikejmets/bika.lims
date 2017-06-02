@@ -22,6 +22,7 @@ from zope.interface import providedBy
 import copy,re,urllib
 import plone.protect
 import transaction
+from Products.ATContentTypes.utils import DT2dt
 
 class IDServerUnavailable(Exception):
     pass
@@ -52,7 +53,7 @@ def idserver_generate_id(context, prefix, batch_size = None):
         raise IDServerUnavailable(_('ID Server unavailable'))
 
     return new_id
-
+    
 def generateUniqueId(context):
     """ Generate pretty content IDs.
         - context is used to find portal_type; in case there is no
@@ -72,22 +73,28 @@ def generateUniqueId(context):
             e['separator'] = ''
         if e['portal_type'] == context.portal_type:
             separator = e['separator']
-
+    #Get from config
+    config_map = {
+            'AnalysisRequest': '{sampleId}-R{seq:02d}',
+            'Sample': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
+            }
     # Analysis Request IDs
+    print context.portal_type
     if context.portal_type == "AnalysisRequest":
-        sample = context.getSample()
-        s_prefix = fn_normalize(sample.getSampleType().getPrefix())
-        sample_padding = context.bika_setup.getSampleIDPadding()
-        ar_padding = context.bika_setup.getARIDPadding()
-        sample_id = sample.getId()
-        sample_number = sample_id.split(s_prefix)[1]
-        ar_number = sample.getLastARNumber()
+        variable_map = {
+                'AnalysisRequest': {
+                    'vars': {
+                        'sampleId': context.getSample().getId(),
+                        },
+                    'index': 'AR',
+                    }
+                }
+        ar_number = context.getSample().getLastARNumber()
         ar_number = ar_number and ar_number + 1 or 1
-        return fn_normalize(
-            ("%s%s" + separator + "R%s") % (s_prefix,
-                          str(sample_number).zfill(sample_padding),
-                          str(ar_number).zfill(ar_padding))
-        )
+        variables = variable_map[context.portal_type]['vars']
+        variables['seq'] = int(ar_number)
+        result = config_map[context.portal_type].format(**variables)
+        return result
 
     # Sample Partition IDs
     if context.portal_type == "SamplePartition":
@@ -157,6 +164,32 @@ def generateUniqueId(context):
             _id = ids and ids[-1] or 0
             new_id = _id + 1
             return str(new_id)
+
+        if context.portal_type == "Sample":
+            variable_map = {
+                'Sample': {
+                    'vars': {
+                        'clientId': context.aq_parent.getClientID(),
+                        'sampleDate': DT2dt(context.getSamplingDate()),
+                        'sampleType': context.getSampleType().getPrefix(),
+                        },
+                    'index': 'Sample',
+                    }
+                }
+            variables = variable_map[context.portal_type]['vars']
+            config = '-'.join(
+                    config_map[context.portal_type].split('-')[:-1])
+            prefix = config.format(**variables)
+            # Special case for Sample IDs
+            sequence_start = context.bika_setup.getSampleIDSequenceStart()
+            # If sequence_start is greater than new_id. Set
+            # sequence_start as new_id. (Jira LIMS-280)
+            new_id = next_id(prefix)
+            if sequence_start > int(new_id):
+                new_id = str(sequence_start)
+            variables['seq'] = int(new_id)
+            result = config_map[context.portal_type].format(**variables)
+            return result
 
         for d in prefixes:
             if context.portal_type == "Sample":
