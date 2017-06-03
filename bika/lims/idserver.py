@@ -62,6 +62,23 @@ def generateUniqueId(context):
           used as a prefix instead.
     """
 
+    def getLastARNumber(context):
+        ARs = context.getBackReferences("AnalysisRequestSample")
+        prefix = context.getSampleType().getPrefix()
+        ar_ids = []
+        for AR in ARs:
+            try:
+                ar_prefix = AR.getId().split('-')[2]
+            except IndexError, e:
+                continue
+            if ar_prefix == prefix:
+                ar_ids.append(AR.id)
+        ar_ids = sorted(ar_ids)
+        try:
+            last_ar_number = int(AR.getId().split('-')[-1])
+        except:
+            return 0
+        return last_ar_number
     fn_normalize = getUtility(IFileNameNormalizer).normalize
     id_normalize = getUtility(IIDNormalizer).normalize
     number_generator = getUtility(INumberGenerator)
@@ -83,7 +100,8 @@ def generateUniqueId(context):
                     'sequence': 'AR',
                     }
                 }
-        ar_number = len(context.aq_parent.objectValues('AnalysisRequest'))
+        ar_number = getLastARNumber(context.getSample())
+        #ar_number = len(context.aq_parent.objectValues('AnalysisRequest'))
         variables = variable_map[context.portal_type]['vars']
         variables['seq'] = ar_number+1
         result = config_map[context.portal_type].format(**variables)
@@ -117,12 +135,15 @@ def generateUniqueId(context):
             }
         var_map = variable_map[context.portal_type]
         variables = var_map['vars']
-        sequence_start = context.bika_setup.getSampleIDSequenceStart()
+        prefix_config = '-'.join(
+                config_map[context.portal_type].split('-')[:-1])
+        prefix = prefix_config.format(**variables)
+        #sequence_start = context.bika_setup.getSampleIDSequenceStart()
         # If sequence_start is greater than new_id. Set
         # sequence_start as new_id. (Jira LIMS-280)
-        new_seq = number_generator(var_map['sequence'])
-        if sequence_start > int(new_seq):
-            new_seq = str(sequence_start)
+        new_seq = number_generator(key=prefix)
+        #if sequence_start > int(new_seq):
+        #    new_seq = str(sequence_start)
         variables['seq'] = new_seq + 1
         result = config_map[context.portal_type].format(**variables)
         return result
