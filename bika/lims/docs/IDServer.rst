@@ -107,6 +107,6 @@ An `AnalysisRequest` can be created::
 
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
-    >>> ar.getId() == 'RB-20170605-water-001-R01'
+    >>> ar.getId() == 'water-0001-R1'
     True
 
