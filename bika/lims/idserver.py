@@ -57,9 +57,6 @@ def idserver_generate_id(context, prefix, batch_size = None):
     
 def generateUniqueId(context, parent=False):
     """ Generate pretty content IDs.
-        - context is used to find portal_type; in case there is no
-          prefix specified for the type, the normalized portal_type is
-          used as a prefix instead.
     """
 
     prefixes = context.bika_setup.getPrefixes()
@@ -102,39 +99,33 @@ def generateUniqueId(context, parent=False):
         'AnalysisRequest': {
             #'form': '{sampleId}-R{seq:02d}',
             'form': '{sampleId}-R{seq:d}',
-            'sequence': {
-                'type': 'counter', #[generated|counter]
-                'context': 'sample',
-                'counter_type': 'backreference',
-                'counter_reference': 'AnalysisRequestSample',
-                },
+            'sequence_type': 'counter', #[generated|counter]
+            'context': 'sample',
+            'counter_type': 'backreference',
+            'counter_reference': 'AnalysisRequestSample',
             },
         'SamplePartition': {
             #'form': '{sampleId}-P{seq:02d}',
             'form': '{sampleId}-P{seq:d}',
-            'sequence': {
-                'type': 'counter', #[generated|counter]
-                'context': 'sample',
-                'counter_type': 'contained',
-                'counter_reference': 'SamplePartition',
-                },
+            'sequence_type': 'counter', #[generated|counter]
+            'context': 'sample',
+            'counter_type': 'contained',
+            'counter_reference': 'SamplePartition',
             },
         'Sample': {
             #'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
             'form': '{sampleType}{year}-{seq:04d}',
-            'sequence': {
-                'prefix': 'sample',
-                'type': 'generated', #[generated|counter]
-                'split_length': 1,
-                },
+            'prefix': 'sample',
+            'sequence_type': 'generated', #[generated|counter]
+            'split_length': 1,
             },
         }
 
-    def getLastCounter(context, seq_config):
-        if seq_config.get('counter_type', '') == 'backreference':
-            return len(context.getBackReferences(seq_config['counter_reference']))-1
-        elif seq_config.get('counter_type', '') == 'contained':
-            return len(context.objectItems(seq_config['counter_reference']))-1
+    def getLastCounter(context, config):
+        if config.get('counter_type', '') == 'backreference':
+            return len(context.getBackReferences(config['counter_reference']))-1
+        elif config.get('counter_type', '') == 'contained':
+            return len(context.objectItems(config['counter_reference']))-1
         else:
             raise RuntimeError('ID Server: missing values in configuration')
 
@@ -169,29 +160,26 @@ def generateUniqueId(context, parent=False):
     else:
         config = {
             'form': '%s-{seq}' % context.portal_type.lower(),
-            'sequence': {
-                'type': 'generated', #[generated|counter]
-                'prefix': '%s' % context.portal_type.lower(),
-                },
+            'sequence_type': 'generated', #[generated|counter]
+            'prefix': '%s' % context.portal_type.lower(),
             }
         variables_map = {}
 
     #Actual id construction starts here
     form = config['form']
-    seq = config['sequence']
-    if seq['type'] == 'counter':
+    if config['sequence_type'] == 'counter':
         new_seq = getLastCounter(
-                        context=variables_map[seq['context']], 
-                        seq_config=seq)
-    elif seq['type'] == 'generated':
-        if seq.get('split_length', None) == 0:
+                        context=variables_map[config['context']], 
+                        config=config)
+    elif config['sequence_type'] == 'generated':
+        if config.get('split_length', None) == 0:
             prefix_config = '-'.join(form.split('-')[:-1])
             prefix = prefix_config.format(**variables_map)
-        elif seq.get('split_length', None) > 0:
-            prefix_config = '-'.join(form.split('-')[:seq['split_length']])
+        elif config.get('split_length', None) > 0:
+            prefix_config = '-'.join(form.split('-')[:config['split_length']])
             prefix = prefix_config.format(**variables_map)
         else:
-            prefix = seq['prefix']
+            prefix = config['prefix']
         new_seq = number_generator(key=prefix)
     variables_map['seq'] = new_seq + 1
     result = form.format(**variables_map)
