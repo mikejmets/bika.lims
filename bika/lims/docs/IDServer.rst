@@ -110,3 +110,35 @@ An `AnalysisRequest` can be created::
     >>> ar.getId() == 'water-0001-R1'
     True
 
+Create a second `AnalysisRequest`::
+
+    >>> values = {
+    ...           'Client': client,
+    ...           'Contact': contact,
+    ...           'SamplingDate': date_now,
+    ...           'DateSampled': date_now,
+    ...           'SampleType': sampletype
+    ...          }
+
+    >>> service_uids = [analysisservice.UID()]
+    >>> ar = create_analysisrequest(client, request, values, service_uids)
+    >>> ar.getId() == 'water-0002-R1'
+    True
+
+Create a third `AnalysisRequest` with existing sample::
+
+    >>> sample = ar.getSample()
+    >>> sample.getId() == 'water-0002'
+    True
+    >>> values = {
+    ...           'Client': client,
+    ...           'Contact': contact,
+    ...           'SampleType': sampletype,
+    ...           'Sample': sample,
+    ...          }
+
+    >>> service_uids = [analysisservice.UID()]
+    >>> ar = create_analysisrequest(client, request, values, service_uids)
+    >>> ar.getId() == 'water-0002-R2'
+    True
+
