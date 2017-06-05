@@ -107,8 +107,8 @@ An `AnalysisRequest` can be created::
 
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
-    >>> ar.getId() == 'water-0001-R1'
-    True
+    >>> ar
+    <AnalysisRequest at /plone/clients/client-1/water-0001-R1>
 
 Create a second `AnalysisRequest`::
 
@@ -122,14 +122,14 @@ Create a second `AnalysisRequest`::
 
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
-    >>> ar.getId() == 'water-0002-R1'
-    True
+    >>> ar
+    <AnalysisRequest at /plone/clients/client-1/water-0002-R1>
 
 Create a third `AnalysisRequest` with existing sample::
 
     >>> sample = ar.getSample()
-    >>> sample.getId() == 'water-0002'
-    True
+    >>> sample
+    <Sample at /plone/clients/client-1/water-0002>
     >>> values = {
     ...           'Client': client,
     ...           'Contact': contact,
@@ -139,6 +139,6 @@ Create a third `AnalysisRequest` with existing sample::
 
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
-    >>> ar.getId() == 'water-0002-R2'
-    True
+    >>> ar
+    <AnalysisRequest at /plone/clients/client-1/water-0002-R2>
 
