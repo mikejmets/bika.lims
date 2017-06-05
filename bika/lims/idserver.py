@@ -105,7 +105,8 @@ def generateUniqueId(context, parent=False):
             'sequence': {
                 'type': 'counter', #[generated|counter]
                 'context': 'sample',
-                'backreference': 'AnalysisRequestSample',
+                'counter_type': 'backreference',
+                'counter_reference': 'AnalysisRequestSample',
                 },
             },
         'SamplePartition': {
@@ -114,7 +115,8 @@ def generateUniqueId(context, parent=False):
             'sequence': {
                 'type': 'counter', #[generated|counter]
                 'context': 'sample',
-                'contained': 'SamplePartition',
+                'counter_type': 'contained',
+                'counter_reference': 'SamplePartition',
                 },
             },
         'Sample': {
@@ -129,10 +131,10 @@ def generateUniqueId(context, parent=False):
         }
 
     def getLastCounter(context, seq_config):
-        if seq_config.get('backreference', False):
-            return len(context.getBackReferences(seq_config['backreference']))-1
-        elif seq_config.get('contained', False):
-            return len(context.objectItems(seq_config['contained']))-1
+        if seq_config.get('counter_type', '') == 'backreference':
+            return len(context.getBackReferences(seq_config['counter_reference']))-1
+        elif seq_config.get('counter_type', '') == 'contained':
+            return len(context.objectItems(seq_config['counter_reference']))-1
         else:
             raise RuntimeError('ID Server: missing values in configuration')
 
