@@ -100,7 +100,8 @@ def generateUniqueId(context, parent=False):
     #TODO #Get from config from view
     config_map = {
         'AnalysisRequest': {
-            'form': '{sampleId}-R{seq:02d}',
+            #'form': '{sampleId}-R{seq:02d}',
+            'form': '{sampleId}-R{seq:d}',
             'sequence': {
                 'type': 'counter', #[generated|counter]
                 'context': 'sample',
@@ -108,7 +109,8 @@ def generateUniqueId(context, parent=False):
                 },
             },
         'SamplePartition': {
-            'form': '{sampleId}-P{seq:02d}',
+            #'form': '{sampleId}-P{seq:02d}',
+            'form': '{sampleId}-P{seq:d}',
             'sequence': {
                 'type': 'counter', #[generated|counter]
                 'context': 'sample',
@@ -116,11 +118,12 @@ def generateUniqueId(context, parent=False):
                 },
             },
         'Sample': {
-            'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
+            #'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
+            'form': '{sampleType}{year}-{seq:04d}',
             'sequence': {
                 'prefix': 'sample',
                 'type': 'generated', #[generated|counter]
-                'split_length': 2,
+                'split_length': 1,
                 },
             },
         }
@@ -158,6 +161,8 @@ def generateUniqueId(context, parent=False):
                     'clientId': context.aq_parent.getClientID(),
                     'sampleDate': DT2dt(context.getSamplingDate()),
                     'sampleType': context.getSampleType().getPrefix(),
+                    'year': context.bika_setup.getYearInPrefix() and \
+                            DateTime().strftime("%Y")[2:] or ''
             }
     else:
         config = {

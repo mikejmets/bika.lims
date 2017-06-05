@@ -10,6 +10,7 @@ from Acquisition import aq_inner
 from Acquisition import aq_parent
 from bika.lims import logger
 from bika.lims.idserver2 import INumberGenerator
+from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import _createObjectByType
@@ -60,11 +61,12 @@ def prepare_number_generator(portal):
     #TODO thiscould be made generic with a default config in plce
     #TODO get from bika_setup 
     config = {
-            'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
+            #'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
+            'form': '{sampleType}{year}-{seq:04d}',
             'sequence': {
                 'prefix': 'sample',
                 'type': 'generated', #[generated|counter]
-                'split_length': 2,
+                'split_length': 1,
                 },
             }
     form = config['form']
@@ -77,6 +79,8 @@ def prepare_number_generator(portal):
                     'clientId': context.aq_parent.getClientID(),
                     'sampleDate': DT2dt(context.getSamplingDate()),
                     'sampleType': context.getSampleType().getPrefix(),
+                    'year': context.bika_setup.getYearInPrefix() and \
+                            DateTime().strftime("%Y")[2:] or ''
             }
         if seq['type'] == 'counter':
             new_seq = getLastCounter(
@@ -91,6 +95,5 @@ def prepare_number_generator(portal):
                 prefix = prefix_config.format(**variables_map)
             else:
                 prefix = seq['prefix']
-            import pdb; pdb.set_trace()
             new_seq = number_generator(key=prefix)
 
