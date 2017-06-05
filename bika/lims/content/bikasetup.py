@@ -66,27 +66,55 @@ class PrefixesField(RecordsField):
     _properties = RecordsField._properties.copy()
     _properties.update({
         'type': 'prefixes',
-        'subfields': ('portal_type', 'prefix', 'separator', 'padding', 'sequence_start'),
-        'subfield_labels': {'portal_type': 'Portal type',
+        'subfields': ('portal_type', 'form', 'sequence_type', 'context', 'counter_type', 'counter_reference', 'prefix', 'split_length'),
+        'subfield_labels': {'portal_type': 'Portal Type',
+                            'form': 'Format',
+                            'sequence_type': 'Seq Type',
+                            'context': 'Context',
+                            'counter_type': 'Counter Type',
+                            'counter_reference': 'Counter Ref',
                             'prefix': 'Prefix',
-                            'separator': 'Prefix Separator',
-                            'padding': 'Padding',
-                            'sequence_start': 'Sequence Start'},
+                            'split_length': 'Split Length',
+                            },
         'subfield_readonly': {'portal_type': False,
+                              'form': False,
+                              'sequence_type': False,
+                              'context': False,
+                              'counter_type': False,
+                              'counter_reference': False,
                               'prefix': False,
-                              'padding': False,
-                              'separator': False,
-                              'sequence_start': False},
-        'subfield_sizes': {'portal_type': 32,
+                              'split_length': False,
+                              },
+        'subfield_sizes': {'portal_type': 20,
+                           'form': 30,
+                           'sequence_type': 1,
+                           'context': 12,
+                           'counter_type': 1,
+                           'counter_reference': 12,
                            'prefix': 12,
-                           'padding': 12,
-                           'separator': 5,
-                           'sequence_start': 12},
-        'subfield_types': {'padding': 'int',
-                           'sequence_start': 'int'},
+                           'split_length': 5,
+                           },
+        'subfield_types': {
+            'sequence_type': 'selection',
+            'counter_type': 'selection',
+            'split_length': 'int',
+            },
+        'subfield_vocabularies': {
+            'sequence_type': 'getSequenceTypes',
+            'counter_type': 'getCounterTypes',
+        },
     })
 
     security = ClassSecurityInfo()
+
+    def getSequenceTypes(self, instance=None):
+        return DisplayList([('counter','Counter'),('generated', 'Generated')])
+
+    def getCounterTypes(self, instance=None):
+        return DisplayList(
+            [('', ''), 
+             ('backreference','Backreference'),
+             ('contained', 'Contained')])
 
 
 STICKER_AUTO_OPTIONS = DisplayList((
@@ -618,77 +646,11 @@ schema = BikaFolderSchema.copy() + Schema((
         )
     ),
     PrefixesField(
-        'Prefixes',
+        'IDFormatting',
         schemata="ID Server",
-        default=[{'portal_type': 'ARImport', 'prefix': 'AI', 'padding': '4', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'AnalysisRequest', 'prefix': 'client', 'padding': '0', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'Client', 'prefix': 'client', 'padding': '0', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'Batch', 'prefix': 'batch', 'padding': '0', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'DuplicateAnalysis', 'prefix': 'DA', 'padding': '0', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'Invoice', 'prefix': 'I', 'padding': '4', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'ReferenceAnalysis', 'prefix': 'RA', 'padding': '4', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'ReferenceSample', 'prefix': 'RS', 'padding': '4', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'SupplyOrder', 'prefix': 'O', 'padding': '3', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'Worksheet', 'prefix': 'WS', 'padding': '4', 'separator': '-', 'sequence_start': '0'},
-                 {'portal_type': 'Pricelist', 'prefix': 'PL', 'padding': '4', 'separator': '-', 'sequence_start': '0'},
-                 ],
-        # fixedSize=8,
         widget=RecordsWidget(
-            label=_("Prefixes"),
-            description=_(
-                "Define the prefixes for the unique sequential IDs the system issues for "
-                "objects. In the 'Padding' field, indicate with how many leading zeros the "
-                "numbers must be padded. E.g. a prefix of WS for worksheets with padding of "
-                "4, will see them numbered from WS-0001 to WS-9999. Sequence Start "
-                "indicates the number from which the next ID should start. This is "
-                "set only if it is greater than existing id numbers. Note that the "
-                "gap created by jumping IDs cannot be refilled. NB: Note that samples "
-                "and analysis requests are prefixed with sample type abbreviations and are "
-                "not configured in this table - their padding can be set in the specified "
-                "fields below"),
+            label=_("Formatting Configuration"),
             allowDelete=False,
-        )
-    ),
-    BooleanField(
-        'YearInPrefix',
-        schemata="ID Server",
-        default=False,
-        widget=BooleanWidget(
-            label=_("Include year in ID prefix"),
-            description=_("Adds a two-digit year after the ID prefix")
-        ),
-    ),
-    IntegerField(
-        'SampleIDPadding',
-        schemata="ID Server",
-        required=1,
-        default=4,
-        widget=IntegerWidget(
-            label=_("Sample ID Padding"),
-            description=_("The length of the zero-padding for Sample IDs"),
-        )
-    ),
-    IntegerField(
-        'SampleIDSequenceStart',
-        schemata="ID Server",
-        required=1,
-        default=0,
-        widget=IntegerWidget(
-            label=_("Sample ID Sequence Start"),
-            description=_(
-                "The number from which the next id should start. This "
-                "is set only if it is greater than existing id numbers. "
-                "Note that the resultant gap between IDs cannot be filled."),
-        )
-    ),
-    IntegerField(
-        'ARIDPadding',
-        schemata="ID Server",
-        required=1,
-        default=2,
-        widget=IntegerWidget(
-            label=_("AR ID Padding"),
-            description=_("The length of the zero-padding for the AR number in AR IDs"),
         )
     ),
     BooleanField(

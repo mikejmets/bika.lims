@@ -95,6 +95,33 @@ An `AnalysisService` defines a analysis service offered by the laboratory::
     >>> analysisservice
     <AnalysisService at /plone/bika_setup/bika_analysisservices/analysisservice-1>
 
+Set up `ID Server` configuration::
+
+    >>> values = [
+    ...            {'form': '{sampleType}{year}-{seq:04d}',
+    ...             'portal_type': 'Sample',
+    ...             'prefix': 'sample',
+    ...             'sequence_type': 'generated',
+    ...             'split_length': 1,
+    ...             'value': ''},
+    ...            {'context': 'sample',
+    ...             'counter_reference': 'AnalysisRequestSample',
+    ...             'counter_type': 'backreference',
+    ...             'form': '{sampleId}-R{seq:d}',
+    ...             'portal_type': 'AnalysisRequest',
+    ...             'sequence_type': 'counter',
+    ...             'value': ''},
+    ...            {'context': 'sample',
+    ...             'counter_reference': 'SamplePartition',
+    ...             'counter_type': 'contained',
+    ...             'form': '{sampleId}-P{seq:d}',
+    ...             'portal_type': 'SamplePartition',
+    ...             'sequence_type': 'counter',
+    ...             'value': ''}
+    ...          ]
+
+    >>> bika_setup.setIDFormatting(values)
+
 An `AnalysisRequest` can be created::
 
     >>> values = {
@@ -108,7 +135,7 @@ An `AnalysisRequest` can be created::
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
     >>> ar
-    <AnalysisRequest at /plone/clients/client-1/water-0001-R1>
+    <AnalysisRequest at /plone/clients/client-1/water17-0001-R1>
 
 Create a second `AnalysisRequest`::
 
@@ -123,13 +150,13 @@ Create a second `AnalysisRequest`::
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
     >>> ar
-    <AnalysisRequest at /plone/clients/client-1/water-0002-R1>
+    <AnalysisRequest at /plone/clients/client-1/water17-0002-R1>
 
 Create a third `AnalysisRequest` with existing sample::
 
     >>> sample = ar.getSample()
     >>> sample
-    <Sample at /plone/clients/client-1/water-0002>
+    <Sample at /plone/clients/client-1/water17-0002>
     >>> values = {
     ...           'Client': client,
     ...           'Contact': contact,
@@ -140,5 +167,5 @@ Create a third `AnalysisRequest` with existing sample::
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
     >>> ar
-    <AnalysisRequest at /plone/clients/client-1/water-0002-R2>
+    <AnalysisRequest at /plone/clients/client-1/water17-0002-R2>
 
