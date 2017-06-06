@@ -9,6 +9,7 @@ import transaction
 from Acquisition import aq_inner
 from Acquisition import aq_parent
 from bika.lims import logger
+from bika.lims.idserver import generateUniqueId
 from bika.lims.idserver2 import INumberGenerator
 from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
@@ -34,71 +35,97 @@ def upgrade(tool):
 
 
 def prepare_number_generator(portal):
+    #Load IDServer defaults
+    config_map = [
+         {'context': 'sample',
+          'counter_reference': 'AnalysisRequestSample',
+          'counter_type': 'backreference',
+          'form': '{sampleId}-R{seq:d}',
+          'portal_type': 'AnalysisRequest',
+          'prefix': '',
+          'sequence_type': 'counter',
+          'split_length': ''},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': 'B-{seq:03d}',
+          'portal_type': 'Batch',
+          'prefix': 'batch',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': '{sampleType}{year}-{seq:04d}',
+          'portal_type': 'Sample',
+          'prefix': 'sample',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': 'WS-{seq:03d}',
+          'portal_type': 'Worksheet',
+          'prefix': 'worksheet',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': 'I-{seq:03d}',
+          'portal_type': 'Invoice',
+          'prefix': 'invoice',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': 'AI-{seq:03d}',
+          'portal_type': 'ARImport',
+          'prefix': 'arimport',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': 'QC-{seq:03d}',
+          'portal_type': 'ReferenceSample',
+          'prefix': 'refsample',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': 'SA-{seq:03d}',
+          'portal_type': 'ReferenceAnalysis',
+          'prefix': 'refanalysis',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': '',
+          'counter_reference': '',
+          'counter_type': '',
+          'form': 'D-{seq:03d}',
+          'portal_type': 'DuplicateAnalysis',
+          'prefix': 'duplicate',
+          'sequence_type': 'generated',
+          'split_length': 1},
+         {'context': 'sample',
+          'counter_reference': 'SamplePartition',
+          'counter_type': 'contained',
+          'form': '{sampleId}-P{seq:d}',
+          'portal_type': 'SamplePartition',
+          'prefix': '',
+          'sequence_type': 'counter',
+          'split_length': ''}]
+    portal.bika_setup.setIDFormatting(config_map)
+
+    #Regenerate every id to prime the numbe generator
     bsc = portal.bika_setup_catalog
-    number_generator = getUtility(INumberGenerator)
-
-    setup_data_brains = bsc()
-    data_dict = {}
-    for brain in setup_data_brains:
-        if brain.portal_type not in data_dict:
-            data_dict[brain.portal_type] = []
-        data_dict[brain.portal_type].append(brain)
-
-    dict_keys = data_dict.keys()
-    special_cases = ('Sample', 'SamplePartition', 'AnalysisRequest')
-    for key in special_cases:
-        if key in dict_keys:
-            dict_keys.remove(key)
-
-    for key in dict_keys:
-        for i in data_dict[key]:
-            dummy = number_generator(key.lower())
-
-    
-    #Special Cases
-    def getLastCounter(context, config):
-        if config.get('counter_type', '') == 'backreference':
-            return len(context.getBackReferences(config['counter_reference']))-1
-        elif config.get('counter_type', '') == 'contained':
-            return len(context.objectItems(config['counter_reference']))-1
-        else:
-            raise RuntimeError('ID Server: missing values in configuration')
-
-    #Sample
+    for brain in bsc():
+        dummy = generateUniqueId(brain.getObject())
+    bc = portal.bika_catalog
+    for brain in bc():
+        dummy = generateUniqueId(brain.getObject())
     pc = portal.portal_catalog
-    #TODO thiscould be made generic with a default config in plce
-    #TODO get from bika_setup 
-    config = {
-            #'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
-            'form': '{sampleType}{year}-{seq:04d}',
-            'prefix': 'sample',
-            'sequence_type': 'generated', #[generated|counter]
-            'split_length': 1,
-            }
-    form = config['form']
-
-    sample_brains = pc(portal_type='Sample')
-    for brain in sample_brains:
-        context = brain.getObject()
-        variables_map = {
-                    'clientId': context.aq_parent.getClientID(),
-                    'sampleDate': DT2dt(context.getSamplingDate()),
-                    'sampleType': context.getSampleType().getPrefix(),
-                    'year': context.bika_setup.getYearInPrefix() and \
-                            DateTime().strftime("%Y")[2:] or ''
-            }
-        if config['sequence_type'] == 'counter':
-            new_seq = getLastCounter(
-                            context=variables_map[config['context']], 
-                            config=config)
-        elif config['sequence_type'] == 'generated':
-            if config.get('split_length', None) == 0:
-                prefix_config = '-'.join(form.split('-')[:-1])
-                prefix = prefix_config.format(**variables_map)
-            elif config.get('split_length', None) > 0:
-                prefix_config = '-'.join(form.split('-')[:config['split_length']])
-                prefix = prefix_config.format(**variables_map)
-            else:
-                prefix = config['prefix']
-            new_seq = number_generator(key=prefix)
-
+    for brain in pc():
+        dummy = generateUniqueId(brain.getObject())
