@@ -133,11 +133,13 @@ def generateUniqueId(context, parent=False):
                     'year': DateTime().strftime("%Y")[2:],
             }
     else:
-        config = {
-            'form': '%s-{seq}' % context.portal_type.lower(),
-            'sequence_type': 'generated', #[generated|counter]
-            'prefix': '%s' % context.portal_type.lower(),
-            }
+        if not config:
+            #Provide default if no format specified on bika_setup
+            config = {
+                'form': '%s-{seq}' % context.portal_type.lower(),
+                'sequence_type': 'generated', 
+                'prefix': '%s' % context.portal_type.lower(),
+                }
         variables_map = {}
 
     #Actual id construction starts here
