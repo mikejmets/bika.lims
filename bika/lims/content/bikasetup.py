@@ -108,7 +108,10 @@ class PrefixesField(RecordsField):
     security = ClassSecurityInfo()
 
     def getSequenceTypes(self, instance=None):
-        return DisplayList([('counter','Counter'),('generated', 'Generated')])
+        return DisplayList(
+            [('', ''), 
+             ('counter','Counter'),
+             ('generated', 'Generated')])
 
     def getCounterTypes(self, instance=None):
         return DisplayList(
@@ -650,7 +653,7 @@ schema = BikaFolderSchema.copy() + Schema((
         schemata="ID Server",
         widget=RecordsWidget(
             label=_("Formatting Configuration"),
-            allowDelete=False,
+            allowDelete=True,
         )
     ),
     BooleanField(
