@@ -59,32 +59,6 @@ def generateUniqueId(context, parent=False):
     """ Generate pretty content IDs.
     """
 
-    #TODO #Get from config from view
-    #config_map = {
-    #    'AnalysisRequest': {
-    #        #'form': '{sampleId}-R{seq:02d}',
-    #        'form': '{sampleId}-R{seq:d}',
-    #        'sequence_type': 'counter', #[generated|counter]
-    #        'context': 'sample',
-    #        'counter_type': 'backreference',
-    #        'counter_reference': 'AnalysisRequestSample',
-    #        },
-    #    'SamplePartition': {
-    #        #'form': '{sampleId}-P{seq:02d}',
-    #        'form': '{sampleId}-P{seq:d}',
-    #        'sequence_type': 'counter', #[generated|counter]
-    #        'context': 'sample',
-    #        'counter_type': 'contained',
-    #        'counter_reference': 'SamplePartition',
-    #        },
-    #    'Sample': {
-    #        #'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:03d}',
-    #        'form': '{sampleType}{year}-{seq:04d}',
-    #        'prefix': 'sample',
-    #        'sequence_type': 'generated', #[generated|counter]
-    #        'split_length': 1,
-    #        },
-    #    }
     def getLastCounter(context, config):
         if config.get('counter_type', '') == 'backreference':
             return len(context.getBackReferences(config['counter_reference']))-1
@@ -94,6 +68,10 @@ def generateUniqueId(context, parent=False):
             raise RuntimeError('ID Server: missing values in configuration')
 
     number_generator = getUtility(INumberGenerator)
+    #keys = number_generator.keys()
+    #values = number_generator.values()
+    #for i in range(len(keys)):
+    #    print '%s : %s' % (keys[i], values[i])
 
     def getConfigByPortalType(config_map, portal_type):
         config = {}
