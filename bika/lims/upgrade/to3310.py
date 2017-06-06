@@ -56,7 +56,7 @@ def prepare_number_generator(portal):
          {'context': '',
           'counter_reference': '',
           'counter_type': '',
-          'form': '{sampleType}{year}-{seq:04d}',
+          'form': '{sampleType}-{seq:04d}',
           'portal_type': 'Sample',
           'prefix': 'sample',
           'sequence_type': 'generated',
