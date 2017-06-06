@@ -40,7 +40,7 @@ def prepare_number_generator(portal):
          {'context': 'sample',
           'counter_reference': 'AnalysisRequestSample',
           'counter_type': 'backreference',
-          'form': '{sampleId}-R{seq:d}',
+          'form': '{sampleId}-R{seq:02d}',
           'portal_type': 'AnalysisRequest',
           'prefix': '',
           'sequence_type': 'counter',
@@ -125,7 +125,4 @@ def prepare_number_generator(portal):
         dummy = generateUniqueId(brain.getObject())
     bc = portal.bika_catalog
     for brain in bc():
-        dummy = generateUniqueId(brain.getObject())
-    pc = portal.portal_catalog
-    for brain in pc():
         dummy = generateUniqueId(brain.getObject())
