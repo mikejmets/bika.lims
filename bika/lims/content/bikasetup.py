@@ -16,6 +16,7 @@ from Products.CMFCore.utils import getToolByName
 from Products.ATExtensions.ateapi import RecordsField
 
 from Products.Archetypes.atapi import Schema
+from Products.Archetypes.atapi import ComputedField
 from Products.Archetypes.atapi import registerType
 from Products.Archetypes.atapi import BooleanField
 from Products.Archetypes.atapi import BooleanWidget
@@ -23,6 +24,7 @@ from Products.Archetypes.atapi import DecimalWidget
 from Products.Archetypes.atapi import FixedPointField
 from Products.Archetypes.atapi import IntegerField
 from Products.Archetypes.atapi import IntegerWidget
+from Products.Archetypes.atapi import LabelWidget
 from Products.Archetypes.atapi import LinesField
 from Products.Archetypes.atapi import MultiSelectionWidget
 from Products.Archetypes.atapi import ReferenceField
@@ -58,9 +60,11 @@ from bika.lims.config import WORKSHEET_LAYOUT_OPTIONS
 from bika.lims.locales import COUNTRIES
 
 from bika.lims import bikaMessageFactory as _
+from bika.lims.idserver2 import INumberGenerator
+from zope.component import getUtility
 
 
-class PrefixesField(RecordsField):
+class IDFormattingField(RecordsField):
     """A list of prefixes per portal_type
     """
     _properties = RecordsField._properties.copy()
@@ -648,12 +652,18 @@ schema = BikaFolderSchema.copy() + Schema((
             description=_("Select which sticker should be used as the 'large' sticker by default")
         )
     ),
-    PrefixesField(
+    IDFormattingField(
         'IDFormatting',
         schemata="ID Server",
         widget=RecordsWidget(
             label=_("Formatting Configuration"),
             allowDelete=True,
+            description=_(
+                "Define the ID format for each content type that differs from "
+                "the default format of 'contenttype-x'. THer e are two m"
+                ""
+                ""
+                )
         )
     ),
     BooleanField(
@@ -673,6 +683,17 @@ schema = BikaFolderSchema.copy() + Schema((
         widget=StringWidget(
             label=_("ID Server URL"),
             description=_("The full URL: http://URL/path:port")
+        ),
+    ),
+    StringField(
+        'IDServerValues',
+        schemata="ID Server",
+        accessor="getIDServerValuesHTML",
+        readonly=True,
+        widget=TextAreaWidget(
+            label=_("ID Server Values"),
+            cols=30,
+            rows=30,
         ),
     ),
     RecordsField(
@@ -803,5 +824,14 @@ class BikaSetup(folder.ATFolder):
         """
         items = [(1, '1'), (2, '2'), (3, '3'), (4, '4')]
         return IntDisplayList(list(items))
+
+    def getIDServerValuesHTML(self):
+        number_generator = getUtility(INumberGenerator)
+        keys = number_generator.keys()
+        values = number_generator.values()
+        results = []
+        for i in range(len(keys)):
+            results.append('%s: %s' % (keys[i], values[i]))
+        return "\n".join(results)
 
 registerType(BikaSetup, PROJECTNAME)
