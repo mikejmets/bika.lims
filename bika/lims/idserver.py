@@ -15,7 +15,7 @@ from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import t
 from bika.lims import interfaces
 from bika.lims import logger
-from bika.lims.idserver2 import INumberGenerator
+from bika.lims.numbergenerator import INumberGenerator
 from plone.i18n.normalizer.interfaces import IFileNameNormalizer
 from plone.i18n.normalizer.interfaces import IIDNormalizer
 from zope.component import getUtility

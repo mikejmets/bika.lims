@@ -10,7 +10,7 @@ from Acquisition import aq_inner
 from Acquisition import aq_parent
 from bika.lims import logger
 from bika.lims.idserver import generateUniqueId
-from bika.lims.idserver2 import INumberGenerator
+from bika.lims.numbergenerator import INumberGenerator
 from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
 from Products.CMFCore.utils import getToolByName

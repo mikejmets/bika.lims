@@ -81,6 +81,6 @@
       />
   <utility
       provides="bika.lims.interfaces.INumberGenerator"
-      factory=".idserver2.NumberGenerator"
+      factory=".numbergenerator.NumberGenerator"
       />
 </configure>

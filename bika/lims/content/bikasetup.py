@@ -60,7 +60,7 @@ from bika.lims.config import WORKSHEET_LAYOUT_OPTIONS
 from bika.lims.locales import COUNTRIES
 
 from bika.lims import bikaMessageFactory as _
-from bika.lims.idserver2 import INumberGenerator
+from bika.lims.numbergenerator import INumberGenerator
 from zope.component import getUtility
 
 
