@@ -6,6 +6,7 @@
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 from AccessControl import ModuleSecurityInfo, allow_module
+from datetime import datetime
 from DateTime import DateTime
 from Products.Archetypes.public import DisplayList
 from Products.CMFCore.utils import getToolByName
@@ -104,9 +105,13 @@ def generateUniqueId(context, parent=False):
                         'sample': context,
                 }
     elif context.portal_type == "Sample":
+        if context.getSamplingDate():
+            sampleDate = DT2dt(context.getSamplingDate())
+        else:
+            sampleDate = datetime.now()
         variables_map = {
                     'clientId': context.aq_parent.getClientID(),
-                    'sampleDate': DT2dt(context.getSamplingDate()),
+                    'sampleDate': sampleDate,
                     'sampleType': context.getSampleType().getPrefix(),
                     'year': DateTime().strftime("%Y")[2:],
             }
