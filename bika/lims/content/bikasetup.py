@@ -655,14 +655,34 @@ schema = BikaFolderSchema.copy() + Schema((
     IDFormattingField(
         'IDFormatting',
         schemata="ID Server",
+        default=[
+             {'form': 'AI-{seq:03d}', 'portal_type': 'ARImport', 'sequence_type': 'generated', 'split_length': 1},
+             {'form': 'B-{seq:03d}', 'portal_type': 'Batch', 'prefix': 'batch', 'sequence_type': 'generated', 'split_length': 1},
+             {'form': 'D-{seq:03d}', 'portal_type': 'DuplicateAnalysis', 'prefix': 'duplicate', 'sequence_type': 'generated', 'split_length': 1},
+             {'form': 'I-{seq:03d}', 'portal_type': 'Invoice', 'prefix': 'invoice', 'sequence_type': 'generated', 'split_length': 1},
+             {'form': 'QC-{seq:03d}', 'portal_type': 'ReferenceSample', 'prefix': 'refsample', 'sequence_type': 'generated', 'split_length': 1},
+             {'form': 'SA-{seq:03d}', 'portal_type': 'ReferenceAnalysis', 'prefix': 'refanalysis', 'sequence_type': 'generated', 'split_length': 1},
+             {'form': 'WS-{seq:03d}', 'portal_type': 'Worksheet', 'prefix': 'worksheet', 'sequence_type': 'generated', 'split_length': 1},
+             {'form': '{sampleType}-{seq:04d}', 'portal_type': 'Sample', 'prefix': 'sample', 'sequence_type': 'generated', 'split_length': 1},
+             {'context': 'sample', 'counter_reference': 'AnalysisRequestSample', 'counter_type': 'backreference', 'form': '{sampleId}-R{seq:02d}', 'portal_type': 'AnalysisRequest', 'sequence_type': 'counter'},
+             {'context': 'sample', 'counter_reference': 'SamplePartition', 'counter_type': 'contained', 'form': '{sampleId}-P{seq:d}', 'portal_type': 'SamplePartition', 'sequence_type': 'counter'}],
         widget=RecordsWidget(
             label=_("Formatting Configuration"),
             allowDelete=True,
-            description=_(
-                "Define the ID format for each content type that differs from "
-                "the default format of 'contenttype-x'. THer e are two m"
-                ""
-                ""
+            description=_("""
+The ID Server in Bika LIMS provides IDs for content items base of the given format specification. The format string is constructed in the same way as a python format() method based predefined variables per content type. The only variable available to all type is 'seq'. Currently, seq can be constructed either using number generator or a counter of existing items. For generated IDs, one can specifypoint at which the format string will be split to create the generator key. For counter IDs, one must specify context and the type of counter which is either the number of backreferences or the number of contained objects.
+
+Configuration Settings:
+* format:
+  - a python format string constructed from predefined variables like sampleId, client, sampleType.
+  - special variable 'seq' must be positioned last in the format string
+* sequence type: [generated|counter]
+* context: if type counter, provides context the counting function
+* counter type: [backreference|contained]
+* counter reference: a parameter to the counting function
+* prefix: default prefix if none provided in format string
+* split length: the number of parts to be included in the prefix
+"""
                 )
         )
     ),
