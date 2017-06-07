@@ -105,10 +105,9 @@ def generateUniqueId(context, parent=False):
                         'sample': context,
                 }
     elif context.portal_type == "Sample":
+        sampleDate = None
         if context.getSamplingDate():
             sampleDate = DT2dt(context.getSamplingDate())
-        else:
-            sampleDate = datetime.now()
         variables_map = {
                     'clientId': context.aq_parent.getClientID(),
                     'sampleDate': sampleDate,
