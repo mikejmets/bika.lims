@@ -1,13 +1,18 @@
 ID Server
 =========
 
-The ID Server in Bika LIMS provides content IDs
+The ID Server in Bika LIMS provides IDs for content items base of the given format specification. The format string is constructed in the same way as a python format() method based predefined variables per content type. The only variable available to all type is 'seq'. Currently, seq can be constructed either using number generator or a counter of existing items. For generated IDs, one can specifypoint at which the format string will be split to create the generator key. For counter IDs, one must specify context and the type of counter which is either the number of backreferences or the number of contained objects.
 
-Configuration Instructions
-* form:
-  - 'seq' must be last
-* sequence
-  - split_length: 0 will use entire form sans seq
+Configuration Settings:
+* format:
+  - a python format string constructed from predefined variables like sampleId, client, sampleType.
+  - special variable 'seq' must be positioned last in the format string
+* sequence type: [generated|counter]
+* context: if type counter, provides context the counting function
+* counter type: [backreference|contained]
+* counter reference: a parameter to the counting function
+* prefix: default prefix if none provided in format string
+* split length: the number of parts to be included in the prefix
 
 Running this test from the buildout directory::
 
@@ -39,6 +44,7 @@ Functional Helpers::
 Variables::
 
     >>> date_now = timestamp()
+    >>> sample_date = DateTime(2017, 1, 31)
     >>> portal = self.portal
     >>> request = self.request
     >>> bika_setup = portal.bika_setup
@@ -127,8 +133,8 @@ An `AnalysisRequest` can be created::
     >>> values = {
     ...           'Client': client,
     ...           'Contact': contact,
-    ...           'SamplingDate': date_now,
-    ...           'DateSampled': date_now,
+    ...           'SamplingDate': sample_date,
+    ...           'DateSampled': sample_date,
     ...           'SampleType': sampletype
     ...          }
 
@@ -142,8 +148,8 @@ Create a second `AnalysisRequest`::
     >>> values = {
     ...           'Client': client,
     ...           'Contact': contact,
-    ...           'SamplingDate': date_now,
-    ...           'DateSampled': date_now,
+    ...           'SamplingDate': sample_date,
+    ...           'DateSampled': sample_date,
     ...           'SampleType': sampletype
     ...          }
 
@@ -169,3 +175,41 @@ Create a third `AnalysisRequest` with existing sample::
     >>> ar
     <AnalysisRequest at /plone/clients/client-1/water17-0002-R2>
 
+Change ID formats and create new `AnalysisRequest`::
+    >>> values = [
+    ...            {'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:04d}',
+    ...             'portal_type': 'Sample',
+    ...             'prefix': 'sample',
+    ...             'sequence_type': 'generated',
+    ...             'split_length': 2,
+    ...             'value': ''},
+    ...            {'context': 'sample',
+    ...             'counter_reference': 'AnalysisRequestSample',
+    ...             'counter_type': 'backreference',
+    ...             'form': '{sampleId}-R{seq:03d}',
+    ...             'portal_type': 'AnalysisRequest',
+    ...             'sequence_type': 'counter',
+    ...             'value': ''},
+    ...            {'context': 'sample',
+    ...             'counter_reference': 'SamplePartition',
+    ...             'counter_type': 'contained',
+    ...             'form': '{sampleId}-P{seq:d}',
+    ...             'portal_type': 'SamplePartition',
+    ...             'sequence_type': 'counter',
+    ...             'value': ''}
+    ...          ]
+
+    >>> bika_setup.setIDFormatting(values)
+
+    >>> values = {
+    ...           'Client': client,
+    ...           'Contact': contact,
+    ...           'SamplingDate': sample_date,
+    ...           'DateSampled': sample_date,
+    ...           'SampleType': sampletype
+    ...          }
+
+    >>> service_uids = [analysisservice.UID()]
+    >>> ar = create_analysisrequest(client, request, values, service_uids)
+    >>> ar
+    <AnalysisRequest at /plone/clients/client-1/RB-20170131-water-0001-R001>
