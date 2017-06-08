@@ -25,7 +25,7 @@ def upgrade(tool):
 
     qi = portal.portal_quickinstaller
     ufrom = qi.upgradeInfo('bika.lims')['installedVersion']
-    logger.info("Upgrading Bika LIMS: %s -> %s" % (ufrom, '3.3.1.0'))
+    logger.info("Upgrading Bika LIMS: %s -> %s" % (ufrom, '3.3.0'))
 
     setup = portal.portal_setup
     # Sync the empty number generator with existing content
@@ -123,6 +123,6 @@ def prepare_number_generator(portal):
     bsc = portal.bika_setup_catalog
     for brain in bsc():
         dummy = generateUniqueId(brain.getObject())
-    bc = portal.bika_catalog
-    for brain in bc():
+    pc = portal.portal_catalog
+    for brain in pc():
         dummy = generateUniqueId(brain.getObject())
