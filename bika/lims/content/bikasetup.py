@@ -107,6 +107,9 @@ class IDFormattingField(RecordsField):
             'sequence_type': 'getSequenceTypes',
             'counter_type': 'getCounterTypes',
         },
+        'subfield_maxlength': {
+            'form': 256,
+        },
     })
 
     security = ClassSecurityInfo()
