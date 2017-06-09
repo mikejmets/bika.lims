@@ -25,6 +25,7 @@ DOCTESTS = [
     "../docs/AnalysisRequests.rst",
     "../docs/Calculations.rst",
     "../docs/Rolemap.rst",
+    "../docs/IDServer.rst",
 ]
 
 
