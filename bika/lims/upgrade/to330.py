@@ -117,7 +117,7 @@ def prepare_number_generator(portal):
           'prefix': '',
           'sequence_type': 'counter',
           'split_length': ''}]
-    portal.bika_setup.setIDFormatting(config_map)
+    #portal.bika_setup.setIDFormatting(config_map)
 
     #Regenerate every id to prime the numbe generator
     bsc = portal.bika_setup_catalog

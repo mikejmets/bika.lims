@@ -14,6 +14,9 @@ Configuration Settings:
 * prefix: default prefix if none provided in format string
 * split length: the number of parts to be included in the prefix
 
+ToDo:
+* validation of format strings
+
 Running this test from the buildout directory::
 
     bin/test test_textual_doctests -t IDServer
