@@ -129,19 +129,11 @@ def create_analysisrequest(context, request, values, analyses=None,
     if not secondary:
         # Create sample partitions
         if not partitions:
-            partitions = [{'services': service_uids}]
+            partitions = values.get('Partitions',
+                            [{'services': service_uids}])
         for n, partition in enumerate(partitions):
             # Calculate partition id
-            partition_id = generateUniqueId(sample, parent=True)
-            #Rectify generateUniqueId which is normally called after
-            #object creation
-            partition_id = partition_id[:-1] + '1'
-            partition['part_id'] = partition_id
-            # Point to or create sample partition
-            if partition_id in sample.objectIds():
-                partition['object'] = sample[partition_id]
-            else:
-                partition['object'] = create_samplepartition(
+            partition['object'] = create_samplepartition(
                     sample,
                     partition,
                     analyses
