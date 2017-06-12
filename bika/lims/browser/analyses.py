@@ -132,7 +132,6 @@ class AnalysesView(BikaListingView):
                 'columns': [
                     'Service',
                     'Partition',
-                    'DetectionLimit',
                     'Result',
                     'Specification',
                     'Method',
