@@ -62,7 +62,7 @@ class TestInstrumentImport(BikaSimpleTestCase):
         self.addthing(self.portal.bika_setup.bika_arpriorities, 'ARPriority',
                       title='Normal', sortKey=1)
         a = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='CAL1', Keyword="CAL1")
+                          'AnalysisService', title='As', Keyword="As")
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
                       Service=[a.UID()])
@@ -82,7 +82,7 @@ Header,      File name,  Client name,  Client ID, Contact,     CC Names - Report
 Header Data, test1.csv,  Happy Hills,  HH,        Rita Mohale,                  ,                   ,                    ,                    , 10,            HHPO-001,                            ,,
 Batch Header, id,       title,     description,    ClientBatchID, ClientBatchComment, BatchLabels, ReturnSampleToClient,,,
 Batch Data,   B15-0123, New Batch, Optional descr, CC 201506,     Just a batch,                  , TRUE                ,,,
-Samples,    ClientSampleID,    SamplingDate,DateSampled,Sampler,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,CAL1,,,,MicroBio,,
+Samples,    ClientSampleID,    SamplingDate,DateSampled,Sampler,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,As,,,,MicroBio,,
 Analysis price,,,,,,,,,,,,,,
 "Total Analyses or Profiles",,,,,,,,,,,,,9,,,
 Total price excl Tax,,,,,,,,,,,,,,
