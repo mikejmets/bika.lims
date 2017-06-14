@@ -65,7 +65,7 @@ class AnalysesView(BaseView):
                         'Priority',
                         'Method',
                         'Instrument',
-                        'DetectionLimit',
+                        #'DetectionLimit',
                         'Result',
                         'Uncertainty',
                         'DueDate',
