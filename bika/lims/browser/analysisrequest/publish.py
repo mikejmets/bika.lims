@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+#
 # This file is part of Bika LIMS
 #
-# Copyright 2011-2016 by it's authors.
+# Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 from bika.lims import bikaMessageFactory as _, t
@@ -259,6 +261,29 @@ class AnalysisRequestPublishView(BrowserView):
         """
         return self.request.form.get('landscape', '0').lower() in ['true', '1']
 
+    def getDimension(self):
+        """ Returns the dimension of the report
+        """
+        return self.request.form.get("layout", "A4")
+
+    def getDirection(self):
+        """ Return landscape or horizontal
+        """
+        return self.isLandscape() and "landscape" or "horizontal"
+
+    def getLayout(self):
+        """ Returns the layout of the report
+        """
+        mapping = {
+            "A4": (210, 297),
+            "letter": (216, 279)
+        }
+        dimension = self.getDimension()
+        layout = mapping.get(dimension, mapping.get("A4"))
+        if self.isLandscape():
+            layout = tuple(reversed(layout))
+        return layout
+
     def explode_data(self, data, padding=''):
         out = ''
         for k,v in data.items():
@@ -304,7 +329,10 @@ class AnalysisRequestPublishView(BrowserView):
                 'prepublish': False,
                 'child_analysisrequest': None,
                 'parent_analysisrequest': None,
-                'resultsinterpretation':ar.getResultsInterpretation()}
+                'resultsinterpretation':ar.getResultsInterpretation(),
+                'ar_attachments': self._get_ar_attachments(ar),
+                'an_attachments': self._get_an_attachments(ar),
+        }
 
         # Sub-objects
         excludearuids.append(ar.UID())
@@ -391,6 +419,58 @@ class AnalysisRequestPublishView(BrowserView):
 
         self._cache['_ar_data'][ar.UID()] = data
         return data
+
+    def _get_attachment_info(self, attachment):
+        attachment_file = attachment.getAttachmentFile()
+        attachment_size = attachment.get_size()
+        attachment_type = attachment.getAttachmentType()
+        attachment_mime = attachment_file.getContentType()
+
+        def get_kb_size():
+            size = attachment_size / 1024
+            if size < 1:
+                return 1
+            return size
+
+        info = {
+            "obj": attachment,
+            "keywords": attachment.getAttachmentKeys(),
+            "type": attachment_type and attachment_type.Title() or "",
+            "file": attachment_file,
+            "filename": attachment_file.filename,
+            "filesize": attachment_size,
+            "size": "{} Kb".format(get_kb_size()),
+            "download": "{}/at_download/AttachmentFile".format(
+                attachment.absolute_url()),
+            "mimetype": attachment_mime,
+            "title": attachment_file.Title(),
+            "icon": attachment_file.icon,
+            "inline": "<embed src='{}'' class='inline-attachment inline-attachment-{}'/>".format(
+                attachment_file.absolute_url(), self.getDirection()),
+            "renderoption": attachment.getReportOption(),
+        }
+        if attachment_mime.startswith("image"):
+            info["inline"] = "<img src='{}' class='inline-attachment inline-attachment-{}'/>".format(
+                attachment_file.absolute_url(), self.getDirection())
+        return info
+
+    def _get_ar_attachments(self, ar):
+        attachments = []
+        for attachment in ar.getAttachment():
+            # Skip attachments which have the (i)gnore flag set
+            if attachment.getReportOption() == "i":
+                continue
+            attachments.append(self._get_attachment_info(attachment))
+        return attachments
+
+    def _get_an_attachments(self, ar):
+        attachments = []
+        for analysis in ar.getAnalyses(full_objects=True):
+            for attachment in analysis.getAttachment():
+                if attachment.getReportOption() == "i":
+                    continue
+                attachments.append(self._get_attachment_info(attachment))
+        return attachments
 
     def _batch_data(self, ar):
         data = {}

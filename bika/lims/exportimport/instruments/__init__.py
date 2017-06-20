@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+#
 # This file is part of Bika LIMS
 #
-# Copyright 2011-2016 by it's authors.
+# Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 import sys
@@ -25,6 +27,13 @@ from rigaku.supermini import wxrf
 from rochecobas.taqman import model48
 from rochecobas.taqman import model96
 from scilvet.abc import plus
+from eltra.cs import cs2000
+from rigaku.supermini import wxrf
+from myself import myinstrument
+from nuclisens import easyq
+from shimadzu.icpe import multitype
+from shimadzu.gcms import qp2010se
+from shimadzu.nexera import LC2040C, LCMS8050
 from sealanalytical.aq2 import aq2
 from shimadzu.gcms import tq8030
 from sysmex.xs import i500, i1000
@@ -61,6 +70,12 @@ __all__ = ['abaxis.vetscan.vs2',
            'thermoscientific.arena.xt20',
            'thermoscientific.gallery.Ts9861x',
            'thermoscientific.multiskan.go',
+           'myself.myinstrument',
+           'nuclisens.easyq',
+           'shimadzu.icpe.multitype',
+           'shimadzu.gcms.qp2010se',
+           'shimadzu.nexera.LC2040C',
+           'shimadzu.nexera.LCMS8050',
            ]
 
 
