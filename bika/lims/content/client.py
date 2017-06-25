@@ -12,11 +12,17 @@ from Products.Archetypes.utils import DisplayList
 from Products.CMFCore import permissions
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import safe_unicode
+from Products.DataGridField import Column
+from Products.DataGridField import DataGridField
+from Products.DataGridField import DataGridWidget
+from Products.DataGridField import DatetimeColumn
+from Products.DataGridField import SelectColumn
 from bika.lims import PMF, bikaMessageFactory as _
 from bika.lims import interfaces
 from bika.lims.config import *
 from bika.lims.content.organisation import Organisation
 from bika.lims.interfaces import IClient
+from bika.lims.vocabularies import CatalogVocabulary
 from bika.lims.utils import isActive
 from zope.component import getUtility
 from zope.interface import implements
@@ -128,6 +134,33 @@ schema = Organisation.schema.copy() + atapi.Schema((
             format = 'select',
         )
     ),
+    DataGridField('Licenses',
+        schemata = "Licenses",
+        allow_insert=True,
+        allow_delete=True,
+        allow_reorder=True,
+        allow_empty_rows=False,
+        columns=('LicenseType',
+                 'MME_ID',
+                 'MME_Registration',
+                 'Authority'),
+        default=[{'LicenseType': '',
+                  'MME_ID': '',
+                  'MME_Registration': '',
+                  'Authority': ''
+                  }],
+        widget=DataGridWidget(
+            columns={
+                'LicenseType': SelectColumn(
+                    'License Type',
+                    vocabulary='Vocabulary_LicenseType'),
+                'MME_ID': Column('MME ID'),
+                'MME_Registration': Column('MME Registation Number'),
+                'Authority': Column('Issuing Authority')
+            }
+        )
+    ),
+
 ))
 
 schema['AccountNumber'].write_permission = ManageClients
@@ -246,6 +279,11 @@ class Client(Organisation):
             return "Province and district fields are mandatory"
 
         return True
+
+    def Vocabulary_LicenseType(self):
+        vocabulary = CatalogVocabulary(self)
+        vocabulary.catalog = 'portal_catalog'
+        return vocabulary(allow_blank=True, portal_type='ClientType')
 
 
 schemata.finalizeATCTSchema(schema, folderish = True, moveDiscussion = False)
