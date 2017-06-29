@@ -282,7 +282,7 @@ class Client(Organisation):
 
     def Vocabulary_LicenseType(self):
         vocabulary = CatalogVocabulary(self)
-        vocabulary.catalog = 'portal_catalog'
+        vocabulary.catalog = 'bika_setup_catalog'
         return vocabulary(allow_blank=True, portal_type='ClientType')
 
 
