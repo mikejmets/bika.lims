@@ -147,6 +147,7 @@ class BikaSetupCatalog(CatalogTool):
         at = getToolByName(self, 'archetype_tool')
         types = [k for k, v in at.catalog_map.items()
                  if self.id in v]
+        types.extend(['ClientType',])
 
         self.manage_catalogClear()
         portal = getToolByName(self, 'portal_url').getPortalObject()
