@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <object name="ClientTypes"
-   meta_type="ClientTypes"
+   meta_type="Dexterity FTI"
    i18n:domain="bika.lims" xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
   <!-- Basic metadata -->

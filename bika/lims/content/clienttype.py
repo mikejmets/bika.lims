@@ -28,7 +28,8 @@ class ClientType(Item):
     # Catalog Multiplex support
     def _catalogs(self):
         ''' catalogs we will use '''
-        return [getToolByName(self, 'bika_setup_catalog')]
+        return [getToolByName(self, 'portal_catalog'),
+                getToolByName(self, 'bika_setup_catalog')]
 
     def indexObject(self):
         ''' index an object on all registered catalogs '''
