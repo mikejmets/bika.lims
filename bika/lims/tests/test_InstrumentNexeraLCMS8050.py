@@ -147,13 +147,13 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 2 ARs and 2 results updated'
+        text = 'Import finished successfully: 1 ARs and 2 results updated'
         if text not in results:
             self.fail("AR Import failed")
         browser = self.getBrowser(loggedIn=True)
         browser.open(ar.getObject().absolute_url() + "/manage_results")
         content = browser.contents
-        if '0.025' not in content:
+        if '0.8' and '0.123' not in content:
             self.fail("AR Result did not get updated")
 
 def test_suite():
