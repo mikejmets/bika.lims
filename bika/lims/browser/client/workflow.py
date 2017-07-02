@@ -105,7 +105,7 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                     doActionFor(ar, action)
                     transitioned[new_state].append(sample.Title())
                 else:
-                    message = _('Both Sampler and DataSampled are required')
+                    message = _('Both Sampler and Date Sampled are required')
                     self.context.plone_utils.addPortalMessage(message, 'error')
 
             for state in transitioned:
