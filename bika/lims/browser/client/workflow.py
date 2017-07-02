@@ -58,6 +58,7 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                 return
 
         if action == "sample":
+            message = None
             objects = AnalysisRequestWorkflowAction._get_selected_items(self)
             transitioned = {'to_be_preserved':[], 'sample_due':[]}
             for obj_uid, obj in objects.items():
@@ -103,8 +104,10 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                     new_state = workflow.getInfoFor(sample, 'review_state')
                     doActionFor(ar, action)
                     transitioned[new_state].append(sample.Title())
+                else:
+                    message = _('Both Sampler and DataSampled are required')
+                    self.context.plone_utils.addPortalMessage(message, 'error')
 
-            message = None
             for state in transitioned:
                 tlist = transitioned[state]
                 if len(tlist) > 1:
