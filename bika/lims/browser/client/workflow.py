@@ -14,6 +14,7 @@ from bika.lims import bikaMessageFactory as _
 from bika.lims.browser.analysisrequest import AnalysisRequestWorkflowAction
 from bika.lims.subscribers import doActionFor
 from bika.lims.utils import isActive
+from bika.lims.workflow import get_workflow_actions
 from DateTime import DateTime
 from Products.Archetypes.config import REFERENCE_CATALOG
 from Products.CMFCore.utils import getToolByName
@@ -75,31 +76,41 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                 # grab this object's Sampler and DateSampled from the form
                 # (if the columns are available and edit controls exist)
                 if 'getSampler' in form and 'getDateSampled' in form:
-                    try:
+                    Sampler = ''
+                    if form['getSampler'][0].get(obj_uid):
                         Sampler = form['getSampler'][0][obj_uid].strip()
+                    DateSampled = ''
+                    if form['getDateSampled'][0].get(obj_uid):
                         DateSampled = form['getDateSampled'][0][obj_uid].strip()
-                    except KeyError:
-                        continue
-                    Sampler = Sampler and Sampler or ''
-                    DateSampled = DateSampled and DateTime(DateSampled) or ''
                 else:
                     continue
 
                 # write them to the sample
-                sample.setSampler(Sampler)
-                sample.setDateSampled(DateSampled)
+                if Sampler:
+                    sample.setSampler(Sampler)
+                else:
+                    Sampler = sample.getSampler()
+                if DateSampled:
+                    sample.setDateSampled(DateSampled)
+                else:
+                    DateSampled = sample.getDateSampled()
                 sample.reindexObject()
                 ars = sample.getAnalysisRequests()
                 # Analyses and AnalysisRequets have calculated fields
                 # that are indexed; re-index all these objects.
                 for ar in ars:
                     ar.reindexObject()
-                    analyses = sample.getAnalyses({'review_state':'to_be_sampled'})
+                    analyses = sample.getAnalyses(
+                            {'review_state':'to_be_sampled'})
                     for a in analyses:
                         a.getObject().reindexObject()
 
-                # transition the object if both values are present
-                if Sampler and DateSampled:
+                transitions = [a['id'] for a in get_workflow_actions(sample)]
+                if 'sample' not in transitions:
+                    message = _('"Sample" is not a valid action for %s' % \
+                                                                sample.Title())
+                    self.context.plone_utils.addPortalMessage(message, 'error')
+                elif Sampler and DateSampled:
                     workflow.doActionFor(sample, action)
                     new_state = workflow.getInfoFor(sample, 'review_state')
                     doActionFor(ar, action)
