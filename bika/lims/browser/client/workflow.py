@@ -71,6 +71,14 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                     ar = sample.aq_parent
                 # can't transition inactive items
                 if workflow.getInfoFor(sample, 'inactive_state', '') == 'inactive':
+                    message = _('Sample %s is inactive' % sample.Title())
+                    self.context.plone_utils.addPortalMessage(message, 'error')
+                    continue
+                transitions = [a['id'] for a in get_workflow_actions(sample)]
+                if 'sample' not in transitions:
+                    message = _('"Sample" is not a valid action for %s' % \
+                                                                sample.Title())
+                    self.context.plone_utils.addPortalMessage(message, 'error')
                     continue
 
                 # grab this object's Sampler and DateSampled from the form
@@ -105,12 +113,7 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                     for a in analyses:
                         a.getObject().reindexObject()
 
-                transitions = [a['id'] for a in get_workflow_actions(sample)]
-                if 'sample' not in transitions:
-                    message = _('"Sample" is not a valid action for %s' % \
-                                                                sample.Title())
-                    self.context.plone_utils.addPortalMessage(message, 'error')
-                elif Sampler and DateSampled:
+                if Sampler and DateSampled:
                     workflow.doActionFor(sample, action)
                     new_state = workflow.getInfoFor(sample, 'review_state')
                     doActionFor(ar, action)
