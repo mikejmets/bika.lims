@@ -7,20 +7,14 @@
 
 from Acquisition import aq_base
 from bika.lims import bikaMessageFactory as _
+from bika.lims.interfaces import IClientType
 from bika.lims.interfaces import IBikaSetupCatalog
-from plone.dexterity.content import Container, Item
+from plone.dexterity.content import Item
 from plone.indexer import indexer
 from plone.supermodel import model
 from Products.CMFCore.utils import getToolByName
 from zope.interface import implements
 from zope import schema
-
-from plone.indexer import indexer
-from plone.dexterity.content import Item
-
-from bika.lims.interfaces import IClientType
-from bika.lims.interfaces import IBikaSetupCatalog
-
 
 class ClientType(Item):
     implements(IClientType)
