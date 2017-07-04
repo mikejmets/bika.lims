@@ -11,6 +11,7 @@ from zope.interface import implements
 from bika.lims.browser.bika_listing import BikaListingView
 from plone.app.content.browser.interfaces import IFolderContentsView
 from plone.app.layout.globals.interfaces import IViewView
+from bika.lims.interfaces import IClientTypes
 from bika.lims import bikaMessageFactory as _
 
 
@@ -78,10 +79,6 @@ class ClientTypesView(BikaListingView):
                  (items[x]['url'], items[x]['Title'])
 
         return items
-
-class IClientTypes(model.Schema):
-    """ A Client Types container.
-    """
 
 
 class ClientTypes(Container):
