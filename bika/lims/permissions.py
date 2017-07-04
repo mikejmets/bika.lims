@@ -170,7 +170,6 @@ ReopenSamplingRound = 'BIKA: Reopen SamplingRound'
 # ----------------------------------------------
 ManageARImport = 'BIKA: Manage ARImport'
 
-
 def setup_permissions(portal):
     """
     This function sets permissions for some general objects (or
@@ -443,3 +442,11 @@ def setup_permissions(portal):
     mp('Access contents information', ['Authenticated', 'Analyst', 'Client'], 1)
     mp(permissions.View, ['Authenticated', 'Analyst', 'Client'], 1)
     portal.bika_setup.bika_attachmenttypes.reindexObject()
+
+# Manage AR Priorities
+# ----------------------------------------------
+ManageARPriority = 'BIKA: Manage ARPriority'
+
+# Manage Client Types
+# ----------------------------------------------
+ManageClientType = 'BIKA: Manage ClientType'
