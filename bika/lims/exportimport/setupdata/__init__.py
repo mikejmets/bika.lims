@@ -3,6 +3,7 @@
 # Copyright 2011-2016 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
+from plone import api
 from bika.lims.exportimport.dataimport import SetupDataSetList as SDL
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import ISetupDataSetList
@@ -2296,7 +2297,6 @@ class AR_Priorities(WorksheetImporter):
                 obj.unmarkCreationFlag()
                 renameAfterCreation(obj)
 
-
 class Client_Departments(WorksheetImporter):
 
     def Import(self):
@@ -2331,5 +2331,3 @@ class Unit_Conversions(WorksheetImporter):
                         converted_unit=row['converted_unit'],
                         formula=row['formula'],
                         description=row['description'])
-                import pdb; pdb.set_trace()
-
