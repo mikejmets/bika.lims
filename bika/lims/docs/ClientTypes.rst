@@ -43,25 +43,15 @@ Variables::
     >>> transaction.commit()
 
 
-
 ClientType
 ==========
 
 A `ClientType` lives in `ClientTypes` folder::
 
-    >>> clienttype = api.create(clienttypes, "ClientType", title="Cultivator")
-    >>> clienttype
-    <ClientType at /plone/bika_setup/bika_clienttypes/clienttype-1>
-
-
-ClientDepartment
-----------------
-
-A `ClientDepartment` lives in `ClientDepartments` folder::
-
     >>> clienttype = ploneapi.content.create(clienttypes, "ClientType", title="Cultivator")
     >>> clienttype
     <ClientType at /plone/bika_setup/bika_clienttypes/cultivator>
+
 
 Client
 ======
