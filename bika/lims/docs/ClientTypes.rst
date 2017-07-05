@@ -11,7 +11,6 @@ Running this test from the buildout directory::
 
 Test Setup
 ==========
-
 Needed Imports::
 
     >>> import transaction
@@ -39,34 +38,39 @@ Variables::
     >>> clienttypes = bika_setup.bika_clienttypes
     >>> portal_url = portal.absolute_url()
     >>> browser = self.getBrowser()
+    >>> current_user = ploneapi.user.get_current()
+    >>> ploneapi.user.grant_roles(user=current_user,roles = ['Manager'])
+    >>> transaction.commit()
 
 
-ClientDepartment
-----------------
 
-A `ClientDepartment` lives in `ClientDepartments` folder::
+ClientType
+==========
+
+A `ClientType` lives in `ClientTypes` folder::
 
     >>> clienttype = ploneapi.content.create(clienttypes, "ClientType", title="Cultivator")
     >>> clienttype
     <ClientType at /plone/bika_setup/bika_clienttypes/cultivator>
+
 
 Client
 ======
 
 A `client` lives in the `/clients` folder::
 
-    >>> clients = portal.clients
-    >>> client1 = create(clients, "Client", title="Client-1")
-    >>> client_url = client1.absolute_url() + '/edit'
+    >>> clients = self.portal.clients
+    >>> client = api.create(clients, "Client", Name="RIDING BYTES", ClientID="RB")
+    >>> transaction.commit()
+    >>> client
+    <Client at /plone/clients/client-1>
+    >>> client.setLicenses([{'Authority': 'AA', 'LicenseType':clienttype.UID(), 'MME_ID': 'MY ID', 'MME_Registration': 'RS451'},])
+    >>> transaction.commit()
+    >>> client_url = client.absolute_url() + '/base_edit'
     >>> browser.open(client_url)
-    >>> browser.getLink('Licences').click()
-    >>> browser.getControl('ClientType').value = 'Cultivator'
-    >>> import pdb; pdb.set_trace()
-    >>> browser.getControl('Surname').value = 'Contact'
-    >>> browser.getControl('Test Department').selected = True
-    >>> browser.getControl(name='form.button.save').click()
-    >>> 'Changes saved' and 'Test Department' in browser.contents
+    >>> "edit_form" in browser.contents
     True
-    >>> browser.getControl('Test Department')
-    <ItemControl name='Department' type='select' optionValue='test-department' selected=True>
-
+    >>> browser.getControl(name='Licenses.MME_ID:records', index=0).value == 'MY ID'
+    True
+    >>> browser.getControl(name='Licenses.LicenseType:records', index=0).value[0] == clienttype.UID()
+    True
