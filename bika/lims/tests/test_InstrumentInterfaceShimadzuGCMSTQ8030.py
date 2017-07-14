@@ -64,9 +64,11 @@ class TestInstrumentImport(BikaSimpleTestCase):
                       title='Normal', sortKey=1)
         a = self.addthing(self.portal.bika_setup.bika_analysisservices,
                           'AnalysisService', title='Diazinone', Keyword="Diazinone")
+        b = self.addthing(self.portal.bika_setup.bika_analysisservices,
+                          'AnalysisService', title='Calcium', Keyword="Ca")
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
-                      Service=[a.UID()])
+                      Service=[a.UID(), b.UID()])
 
     def tearDown(self):
         super(TestInstrumentImport, self).setUp()
@@ -146,14 +148,22 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 1 ARs and 1 results updated'
+        text = 'Import finished successfully: 1 ARs and 2 results updated'
         if text not in results:
             self.fail("AR Import failed")
-        browser = self.getBrowser(loggedIn=True)
-        browser.open(ar.getObject().absolute_url() + "/manage_results")
-        content = browser.contents
-        if '6' not in content:
-            self.fail("AR Result did not get updated")
+        analyses = ar.getObject().getAnalyses(full_objects=True)
+        for an in analyses:
+            if an.getKeyword() == 'Ca':
+                if an.getResult() != '0.0':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+            if an.getKeyword() == 'Diazinone':
+                if an.getResult() != '6.0':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+        #browser = self.getBrowser(loggedIn=True)
+        #browser.open(ar.getObject().absolute_url() + "/manage_results")
+        #content = browser.contents
+        #if '6' not in content:
+        #    self.fail("AR Result did not get updated")
 
 def test_suite():
     suite = unittest.TestSuite()

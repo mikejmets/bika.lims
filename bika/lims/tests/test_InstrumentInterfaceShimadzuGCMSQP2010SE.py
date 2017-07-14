@@ -150,14 +150,22 @@ Total price excl Tax,,,,,,,,,,,,,,
         text = 'Import finished successfully: 1 ARs and 2 results updated'
         if text not in results:
             self.fail("AR Import failed")
-        browser = self.getBrowser(loggedIn=True)
-        browser.open(ar.getObject().absolute_url() + "/manage_results")
-        content = browser.contents
-        if '0.02604' not in content:
-            self.fail("AR:alphaPinene Result did not get updated")
+        analyses = ar.getObject().getAnalyses(full_objects=True)
+        for an in analyses:
+            if an.getKeyword() == 'Ca':
+                if an.getResult() != '0.0':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+            if an.getKeyword() == 'alphaPinene':
+                if an.getResult() != '0.2604':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+        #browser = self.getBrowser(loggedIn=True)
+        #browser.open(ar.getObject().absolute_url() + "/manage_results")
+        #content = browser.contents
+        #if '0.02604' not in content:
+        #    self.fail("AR:alphaPinene Result did not get updated")
 
-        if '0.02603' not in content:
-            self.fail("AR: Ca  Result did not get updated")
+        #if '0.02603' not in content:
+        #    self.fail("AR: Ca  Result did not get updated")
 
 def test_suite():
     suite = unittest.TestSuite()
