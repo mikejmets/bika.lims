@@ -553,16 +553,39 @@ class GCMSQP2010SECSVParser(InstrumentCSVResultsFileParser):
                 else:
                     quantitation[colname] = token
 
-                val = re.sub(r"\W", "", splitted[1])
-                self._addRawResult(quantitation['ID#'],
-                                   values={val:quantitation},
-                                   override=True)
             elif token:
                 self.err("Orphan value in column ${index} (${token})",
                          mapping={"index": str(i+1),
                                   "token": token},
                          numline=self._numline, line=line)
 
+        result = quantitation[quantitation['DefaultResult']]
+        column_name = quantitation['DefaultResult']
+        result = self.zeroValueDefaultInstrumentResults(column_name, result, line)
+        quantitation[quantitation['DefaultResult']] = result
+
+        val = re.sub(r"\W", "", splitted[1])
+        self._addRawResult(quantitation['ID#'],
+                           values={val:quantitation},
+                           override=False)
+
+    def zeroValueDefaultInstrumentResults(self, column_name, result, line):
+        result = str(result)
+        if result.startswith('--'):
+            return 0.0
+
+        try:
+            result = float(result)
+            if result < 0.0:
+                result  = 0.0
+        except ValueError:
+            self.err(
+                "No valid number ${result} in column (${column_name})",
+                mapping={"result": result,
+                         "column_name": column_name},
+                numline=self._numline, line=line)
+            return
+        return result
 
 class GCMSQP2010SEImporter(AnalysisResultsImporter):
 
