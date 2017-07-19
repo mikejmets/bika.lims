@@ -24,10 +24,12 @@ def upgrade(tool):
     portal = aq_parent(aq_inner(tool))
 
     qi = portal.portal_quickinstaller
+    setup = portal.portal_setup
     ufrom = qi.upgradeInfo('bika.lims')['installedVersion']
     logger.info("Upgrading Bika LIMS: %s -> %s" % (ufrom, '3.4.0'))
 
     #Do nothing other than prepare for 3.4.0
+    setup.runImportStepFromProfile('profile-bika.lims:default', 'workflow')
 
     return True
 
