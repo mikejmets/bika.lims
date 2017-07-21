@@ -20,6 +20,28 @@ from bika.lims.utils import getUsers
 from bika.lims import api
 
 schema = Organisation.schema.copy() + Schema((
+    StringField(
+        'LaboratorySupervisor',
+        mode="rw",
+        read_permission=CMFCorePermissions.View,
+        write_permission=CMFCorePermissions.ModifyPortalContent,
+        vocabulary='getLabContacts',
+        acquire=True,
+        widget=SelectionWidget(
+            format="select",
+            label=_("Laboratory Supervisor"),
+            description=_("The Laboratory's supervisor will be used on the Certificate of Analysis(COA) and Chain of Custody(COC)"),
+            render_own_label=True,
+        ),
+    ),
+    StringField(
+        'LaboratoryLicenseID',
+        write_permission = ManageBika,
+        widget=StringWidget(
+            label=_("Laboratory License ID"),
+            description=_("The Laboratory's License ID given by the state"),
+        ),
+    ),
     StringField('LabURL',
         schemata = 'Address',
         write_permission = ManageBika,
