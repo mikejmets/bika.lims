@@ -1,5 +1,10 @@
 Changelog
 =========
+3.4.0 (unreleased)
+------------------
+
+- Laboratory Supervisor field on the Laboratory(Bika Setup - Laboratory Information)
+- Laboratory License ID field on the Laboratory(Bika Setup - Laboratory Information)
 
 1.1.5 (Unreleased)
 ------------------
