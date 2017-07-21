@@ -8,7 +8,9 @@ from AccessControl import ClassSecurityInfo
 from Products.CMFCore.utils import UniqueObject
 from Products.CMFCore.permissions import ListFolderContents, \
     ModifyPortalContent, View
+from plone import api
 from plone.app import folder
+from Products.Archetypes.Widget import SelectionWidget
 from Products.Archetypes.public import *
 from Products.CMFPlone.utils import safe_unicode
 from bika.lims.content.organisation import Organisation
@@ -20,20 +22,6 @@ from bika.lims.utils import getUsers
 from bika.lims import api
 
 schema = Organisation.schema.copy() + Schema((
-    StringField(
-        'LaboratorySupervisor',
-        mode="rw",
-        read_permission=View,
-        write_permission=ModifyPortalContent,
-        vocabulary='getLabContacts',
-        acquire=True,
-        widget=SelectionWidget(
-            format="select",
-            label=_("Laboratory Supervisor"),
-            description=_("The Laboratory's supervisor will be used on the Certificate of Analysis(COA) and Chain of Custody(COC)"),
-            render_own_label=True,
-        ),
-    ),
     StringField(
         'LaboratoryLicenseID',
         write_permission = ManageBika,
@@ -54,20 +42,6 @@ schema = Organisation.schema.copy() + Schema((
     UIDReferenceField(
         'Supervisor',
         required=0,
-        allowed_types=('LabContact',),
-        vocabulary='_getLabContacts',
-        write_permission = ManageBika,
-        widget=UIDSelectionWidget(
-            format='select',
-            label=_("Supervisor"),
-            description=_("Supervisor of the Lab")
-        )
-    ),
-    IntegerField('Confidence',
-        schemata = 'Accreditation',
-        widget = IntegerWidget(
-            label=_("Confidence Level %"),
-            description=_("This value is reported at the bottom of all published results"),
         ),
     ),
     BooleanField('LaboratoryAccredited',
@@ -76,7 +50,7 @@ schema = Organisation.schema.copy() + Schema((
         write_permission = ManageBika,
         widget = BooleanWidget(
             label=_("Laboratory Accredited"),
-            description=_("Check this box if your laboratory is accredited"),
+            description=_("check this box if your laboratory is accredited"),
         ),
     ),
     StringField('AccreditationBody',
@@ -160,14 +134,13 @@ class Laboratory(UniqueObject, Organisation):
         title = self.getName() and self.getName() or _("Laboratory")
         return safe_unicode(title).encode('utf-8')
 
-    def _getLabContacts(self):
-        bsc = api.get_tool('bika_setup_catalog')
-        # fallback - all Lab Contacts
-        pairs = [['', '']]
-        for contact in bsc(portal_type='LabContact',
-                           inactive_state='active',
-                           sort_on='sortable_title'):
-            pairs.append((contact.UID, contact.Title))
-        return DisplayList(pairs)
+    def getLabContacts(self):
+        """Return a list of Lab Contacts
+        """
+        lab_contacts = api.content.find(portal_type="LabContact")
+        contacts = [['', ''], ]
+        for contact in lab_contacts:
+            contacts.append([contact.id, contact.Title])
+        return DisplayList(contacts)
 
 registerType(Laboratory, PROJECTNAME)

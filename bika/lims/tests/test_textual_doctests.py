@@ -21,7 +21,6 @@ doctests = [join("doctests", filename) for filename in rst_filenames]
 
 flags = doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF
 
-
 def test_suite():
     suite = unittest.TestSuite()
     for doctestfile in doctests:

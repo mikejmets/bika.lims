@@ -1,6 +1,10 @@
-Changelog
-=========
 3.4.0 (unreleased)
+------------------
+
+- Lab Supervisor field on the Laboratory(Bika Setup - Laboratory Information)
+
+
+3.3.0 (unreleased)
 ------------------
 
 - Laboratory Supervisor field on the Laboratory(Bika Setup - Laboratory Information)
