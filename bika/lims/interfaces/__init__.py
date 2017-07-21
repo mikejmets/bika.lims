@@ -829,4 +829,3 @@ class IUnitConversion(model.Schema):
             description=u'The formula that is used to convert the unit. Use the keyword "Value" to indicate where the existing result fits into the formula.',
             required=True,
         )
-

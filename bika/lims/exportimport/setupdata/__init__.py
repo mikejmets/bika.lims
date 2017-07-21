@@ -2307,7 +2307,6 @@ class Client_Departments(WorksheetImporter):
                                  title=row['title'],
                                  description=row.get('description', ''))
 
-
 class Client_Types(WorksheetImporter):
 
     def Import(self):
@@ -2325,7 +2324,6 @@ class Unit_Conversions(WorksheetImporter):
         from plone import api as ploneapi
         for row in self.get_rows(3):
             if row['unit']:
-                import pdb; pdb.set_trace()
                 obj = api.create(folder, 'UnitConversion',
                         title=row['unit'],
                         converted_unit=row['converted_unit'],

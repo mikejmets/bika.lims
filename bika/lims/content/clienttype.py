@@ -10,6 +10,7 @@ from bika.lims import bikaMessageFactory as _
 from bika.lims.interfaces import IClientType
 from bika.lims.interfaces import IBikaSetupCatalog
 from plone.dexterity.content import Item
+>>>>>>> 89cab21... Bc 69 client contact department lookup (#2110)
 from plone.indexer import indexer
 from plone.supermodel import model
 from Products.CMFCore.utils import getToolByName

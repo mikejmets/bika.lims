@@ -9,7 +9,6 @@ from zope.component import getUtility
 version = '1.1.5'
 profile = 'profile-{0}:default'.format(product)
 
-
 @upgradestep(product, version)
 def upgrade(tool):
     portal = tool.aq_inner.aq_parent

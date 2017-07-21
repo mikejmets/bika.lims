@@ -136,6 +136,7 @@ def initialize(context):
     from controlpanel.bika_attachmenttypes import AttachmentTypes
     from controlpanel.bika_batchlabels import BatchLabels
     from controlpanel.bika_calculations import Calculations
+    from controlpanel.bika_clientdepartments import ClientDepartments
     from controlpanel.bika_clienttypes import ClientTypes
     from controlpanel.bika_containers import Containers
     from controlpanel.bika_containertypes import ContainerTypes
