@@ -2269,3 +2269,65 @@ class Invoice_Batches(WorksheetImporter):
                 BatchEndDate=row['end'],
             )
             renameAfterCreation(obj)
+
+class AR_Priorities(WorksheetImporter):
+
+    def Import(self):
+        folder = self.context.bika_setup.bika_arpriorities
+        for row in self.get_rows(3):
+            if row['title']:
+                obj = _createObjectByType("ARPriority", folder, tmpID())
+                obj.edit(title=row['title'],
+                         description=row.get('description', ''),
+                         pricePremium=row.get('pricePremium', 0),
+                         sortKey=row.get('sortKey', 0),
+                         isDefault=row.get('isDefault', 0) == 1,
+                         )
+                small_icon_name = row.get('smallIcon', None)
+                if small_icon_name:
+                    small_icon = self.get_file_data(small_icon_name)
+                    if small_icon:
+                        obj.setSmallIcon(small_icon)
+                big_icon_name = row.get('bigIcon', None)
+                if big_icon_name:
+                    big_icon = self.get_file_data(big_icon_name)
+                    if big_icon:
+                        obj.setBigIcon(big_icon)
+                obj.unmarkCreationFlag()
+                renameAfterCreation(obj)
+
+
+class Client_Departments(WorksheetImporter):
+
+    def Import(self):
+        folder = self.context.bika_setup.bika_clientdepartments
+        for row in self.get_rows(3):
+            if row['title']:
+                obj = api.create(folder, 'ClientDepartment',  # noqa
+                                 title=row['title'],
+                                 description=row.get('description', ''))
+
+
+class Client_Types(WorksheetImporter):
+
+    def Import(self):
+        folder = self.context.bika_setup.bika_clienttypes
+        for row in self.get_rows(3):
+            if row['title']:
+                obj = api.create(folder, 'ClientType',  # noqa
+                                 title=row['title'],
+                                 description=row.get('description', ''))
+
+class Unit_Conversions(WorksheetImporter):
+
+    def Import(self):
+        folder = self.context.bika_setup.bika_unitconversions
+        import pdb; pdb.set_trace()
+        for row in self.get_rows(3):
+            if row['unit']:
+                obj = api.create(folder, 'UnitConversion') 
+                obj.unit = row['unit']
+                obj.converted_unit = row['converted_unit']
+                obj.formula = row['formula']
+                obj.description = row['description']
+
