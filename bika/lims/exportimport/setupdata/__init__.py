@@ -10,6 +10,7 @@ import os.path
 import datetime
 import transaction
 
+from plone import api as ploneapi
 from zope.interface import implements
 
 from pkg_resources import resource_filename
@@ -2332,14 +2333,11 @@ class Unit_Conversions(WorksheetImporter):
 
     def Import(self):
         folder = self.context.bika_setup.bika_unitconversions
-        from plone import api as ploneapi
         for row in self.get_rows(3):
             if row['unit']:
-                import pdb; pdb.set_trace()
                 obj = api.create(folder, 'UnitConversion',
                         title=row['unit'],
                         converted_unit=row['converted_unit'],
                         formula=row['formula'],
                         description=row['description'])
-                import pdb; pdb.set_trace()
 
