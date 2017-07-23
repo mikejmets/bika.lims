@@ -1,26 +1,24 @@
 <?xml version="1.0"?>
-<object name="ClientType"
+<object name="UnitConversion"
    meta_type="Dexterity FTI"
    i18n:domain="bika.lims" xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
   <!-- Basic metadata -->
-  <property name="title" i18n:translate="">Client Type</property>
+  <property name="title" i18n:translate="">Unit Conversion</property>
   <property name="description"
-    i18n:translate="">Client Type</property>
+    i18n:translate="">Unit Conversion</property>
   <property name="icon_expr">string:${portal_url}/folder_icon.png</property>
-  <property name="factory">bika.lims.content.clienttype</property>
+  <property name="factory">bika.lims.content.unitconversion</property>
   <property name="global_allow">True</property>
   <property name="filter_content_types">True</property>
   <property name="allow_discussion">False</property>
 
   <!-- schema and class used for content items -->
-  <property name="schema">bika.lims.content.clienttype.IClientType</property>
-  <property name="klass">bika.lims.content.clienttype.ClientType</property>
+  <property name="schema">bika.lims.content.unitconversion.IUnitConversion</property>
+  <property name="klass">bika.lims.content.unitconversion.UnitConversion</property>
 
   <property name="behaviors">
-     <element value="plone.app.content.interfaces.IGenerateID" />
-     <element value="plone.app.content.interfaces.INameFromTitle" />
-     <element value="plone.app.dexterity.behaviors.metadata.IBasic"/>
+     <element value="bika.lims.interfaces.IGenerateID" />
    </property>
 
   <!-- View information -->

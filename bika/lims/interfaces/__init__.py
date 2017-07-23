@@ -5,6 +5,8 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
+from bika.lims import bikaMessageFactory as _
+from zope import schema
 from zope.interface import Interface
 
 
@@ -754,10 +756,39 @@ class INumberGenerator(Interface):
     """A utility to generates unique numbers by key
     """
 
+class IClientTypes(Interface):
+    """ A Client Types container.
+    """
+
 class IClientType(Interface):
     """ A Client Type.
     """
 
-class IClientTypes(Interface):
-    """ A Client Types container.
+class IUnitConversions(Interface):
+    """ A Unit Conversion container.
     """
+
+class IUnitConversion(Interface):
+    """ A Unit Conversion.
+    """
+
+    unit = schema.TextLine(
+            title=u"Unit",
+            required=True,
+        )
+
+    converted_unit = schema.TextLine(
+            title=u"Converted Unit",
+            required=True,
+        )
+
+    formula = schema.TextLine(
+            title=u"Formula",
+            required=True,
+        )
+
+    description = schema.TextLine(
+            title=u"Description",
+            required=True,
+        )
+

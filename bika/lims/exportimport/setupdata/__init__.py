@@ -2327,3 +2327,17 @@ class Client_Types(WorksheetImporter):
                 obj = api.create(folder, 'ClientType',  # noqa
                                  title=row['title'],
                                  description=row.get('description', ''))
+
+class Unit_Conversions(WorksheetImporter):
+
+    def Import(self):
+        folder = self.context.bika_setup.bika_unitconversions
+        import pdb; pdb.set_trace()
+        for row in self.get_rows(3):
+            if row['unit']:
+                obj = api.create(folder, 'UnitConversion') 
+                obj.unit = row['unit']
+                obj.converted_unit = row['converted_unit']
+                obj.formula = row['formula']
+                obj.description = row['description']
+

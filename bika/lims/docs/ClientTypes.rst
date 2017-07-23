@@ -1,9 +1,9 @@
 ==========
-CientTypes
+ClientTypes
 ==========
 
-Certain client require licences to operater. So a licences can be stored in the client
-based of the client type
+Certain client require licences to operate. So one or more licences can be
+stored in the client Licenses field based of the client type
 
 Running this test from the buildout directory::
 
@@ -49,7 +49,7 @@ ClientType
 
 A `ClientType` lives in `ClientTypes` folder::
 
-    >>> clienttype = ploneapi.content.create(clienttypes, "ClientType", title="Cultivator")
+    >>> clienttype = api.content.create(clienttypes, "ClientType", title="Cultivator")
     >>> clienttype
     <ClientType at /plone/bika_setup/bika_clienttypes/cultivator>
 
