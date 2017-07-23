@@ -149,6 +149,7 @@ def renameAfterCreation(obj):
     """Rename the content after it was created/added
     """
     # Check if the _bika_id was aready set
+    import pdb; pdb.set_trace()
     bika_id = getattr(object, "_bika_id", None)
     if bika_id is not None:
         return bika_id

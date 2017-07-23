@@ -2332,12 +2332,14 @@ class Unit_Conversions(WorksheetImporter):
 
     def Import(self):
         folder = self.context.bika_setup.bika_unitconversions
-        import pdb; pdb.set_trace()
+        from plone import api as ploneapi
         for row in self.get_rows(3):
             if row['unit']:
-                obj = api.create(folder, 'UnitConversion') 
-                obj.unit = row['unit']
-                obj.converted_unit = row['converted_unit']
-                obj.formula = row['formula']
-                obj.description = row['description']
+                import pdb; pdb.set_trace()
+                obj = api.create(folder, 'UnitConversion',
+                        title=row['unit'],
+                        converted_unit=row['converted_unit'],
+                        formula=row['formula'],
+                        description=row['description'])
+                import pdb; pdb.set_trace()
 

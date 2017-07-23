@@ -48,17 +48,8 @@ A `client` lives in the `/clients` folder::
 A `UnitConversion` lives in `/bika_setup/bika_unitconversions` folder.::
 
     >>> unitconversions = self.portal.bika_setup.bika_unitconversions
-    >>> conversion = ploneapi.content.create(unitconversions, "UnitConversion", unit="mg/L", converted_unit="%", formula="Value * 100", description="mg/L to percentage")
+    >>> conversion = api.content.create(unitconversions, "UnitConversion", title="mg/L", converted_unit="%", formula="Value * 100", description="mg/L to percentage")
     >>> transaction.commit()
     >>> conversion
     <UnitConversion at /plone/bika_setup/bika_unitconversions/unitconversion-1>
-
-    >>> conversion = api.create(unitconversions, "UnitConversion")
-    >>> conversion.unit = "mg/L"
-    >>> conversion.converted_unit = "%"
-    >>> conversion.formula = "Value * 100"
-    >>> conversion.description = "mg/L to percentage"
-    >>> transaction.commit()
-    >>> conversion
-    <UnitConversion at /plone/bika_setup/bika_unitconversions/unitconversion-2>
 

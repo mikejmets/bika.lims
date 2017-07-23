@@ -6,6 +6,7 @@
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 from bika.lims import bikaMessageFactory as _
+from plone.supermodel import model
 from zope import schema
 from zope.interface import Interface
 
@@ -768,27 +769,15 @@ class IUnitConversions(Interface):
     """ A Unit Conversion container.
     """
 
-class IUnitConversion(Interface):
+class IUnitConversion(model.Schema):
     """ A Unit Conversion.
     """
-
-    unit = schema.TextLine(
-            title=u"Unit",
-            required=True,
-        )
-
     converted_unit = schema.TextLine(
             title=u"Converted Unit",
             required=True,
         )
-
     formula = schema.TextLine(
             title=u"Formula",
-            required=True,
-        )
-
-    description = schema.TextLine(
-            title=u"Description",
             required=True,
         )
 

@@ -38,7 +38,7 @@ class UnitConversionsView(BikaListingView):
 
         self.columns = {
             'Unit': {'title': _('Unit'),
-                      'index':'sortable_title'},
+                      'index':'title'},
             'Converted Unit': {'title': _('Converted Unit'),
                             'index': 'converted_unit',
                             'toggle': True},
@@ -85,7 +85,7 @@ class UnitConversionsView(BikaListingView):
             obj = item.get("obj", None)
             if obj is None:
                 continue
-            item['Unit'] = obj.unit
+            item['Unit'] = obj.title
             item['replace']['Unit'] = "<a href='%s' title='%s'>%s</a>" % \
                  (item['url'], item['url_href_title'], item['Unit'])
             item['Converted Unit'] = obj.converted_unit
