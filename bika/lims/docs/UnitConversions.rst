@@ -19,6 +19,12 @@ Needed Imports::
     >>> from bika.lims import api
     >>> from bika.lims.utils.analysisrequest import create_analysisrequest
 
+    >>> def create(container, portal_type, title=None):
+    ...     obj = api.create(container, portal_type, title=title)
+    ...     # doctest fixture to make the content visible for the test browser
+    ...     transaction.commit()  # somehow the created method did not appear until I added this
+    ...     return obj
+
 
 Variables::
 
@@ -48,7 +54,7 @@ A `client` lives in the `/clients` folder::
 A `UnitConversion` lives in `/bika_setup/bika_unitconversions` folder.::
 
     >>> unitconversions = self.portal.bika_setup.bika_unitconversions
-    >>> conversion = api.content.create(unitconversions, "UnitConversion", title="mg/L", converted_unit="%", formula="Value * 100", description="mg/L to percentage")
+    >>> conversion = api.create(unitconversions, "UnitConversion", title="mg/L", converted_unit="%", formula="Value * 100", description="mg/L to percentage")
     >>> transaction.commit()
     >>> conversion
     <UnitConversion at /plone/bika_setup/bika_unitconversions/unitconversion-1>
