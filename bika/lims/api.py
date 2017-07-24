@@ -104,6 +104,8 @@ def create(container, portal_type, *args, **kwargs):
 
     if fti.product:
         obj = _createObjectByType(portal_type, container, tmp_id)
+        obj.edit(**kwargs)
+        obj.processForm()
     else:
         # newstyle factory
         factory = getUtility(IFactory, fti.factory)
@@ -117,12 +119,6 @@ def create(container, portal_type, *args, **kwargs):
         # already by an event handler
         obj = container._getOb(obj.getId())
 
-    obj.edit(**kwargs)
-    # handle AT Content
-    if is_at_content(obj):
-        obj.processForm()
-    # explicit notification
-    modified(obj)
     return obj
 
 
