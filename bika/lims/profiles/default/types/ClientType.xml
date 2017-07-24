@@ -18,8 +18,7 @@
   <property name="klass">bika.lims.content.clienttype.ClientType</property>
 
   <property name="behaviors">
-     <element value="plone.app.content.interfaces.IGenerateID" />
-     <element value="plone.app.content.interfaces.INameFromTitle" />
+     <element value="bika.lims.interfaces.IGenerateID" />
      <element value="plone.app.dexterity.behaviors.metadata.IBasic"/>
    </property>
 
