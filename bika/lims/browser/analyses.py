@@ -786,12 +786,46 @@ class AnalysesView(BikaListingView):
                                             t(_("Assigned to: ${worksheet_id}", mapping={'worksheet_id': safe_unicode(ws.id)}))))
             item['after']['state_title'] = '&nbsp;'.join(after_icons)
 
+            # add unit conversion information
+            item['unit_conversions'] = []
+            print item['review_state']
+            if item['review_state'] not in (
+                    'retracted', 'sample_due', 'sampled', 'sample_received'):
+                for unit_conversion in service.getUnitConversions():
+                    if unit_conversion.get('SampleType') and \
+                       unit_conversion.get('Unit') and \
+                       unit_conversion.get('SampleType') == item['st_uid']:
+                        item['unit_conversions'].append(unit_conversion['Unit'])
+
         # the TAL requires values for all interim fields on all
         # items, so we set blank values in unused cells
+        def convert_unit(result, formula):
+            formula = formula.replace('Value', '%f')
+            return eval(formula % float(result))
+
+        new_results = []
         for item in items:
             for field in self.interim_columns:
                 if field not in item:
                     item[field] = ''
+            # piggy back on this loop to add converted result fields
+            new_results.append(item)
+            for uc_uid in item['unit_conversions']:
+                new = dict(item)
+                #zero identification fields
+                new['id'] = ''
+                new['uid'] = ''
+                unit_conversion = ploneapi.content.get(UID=uc_uid)
+                new['Unit'] = unit_conversion.converted_unit
+                #new['Result'] = '0'
+                #new['formatted_result'] = '0'
+                #new['Analyst'] = '----'
+                if item.get('Result'):
+                    new['Result'] = convert_unit(
+                                        item['Result'], unit_conversion.formula)
+                    new['formatted_result'] = str(new['Result'])
+                new_results.append(new)
+        items = new_results
 
         # XXX order the list of interim columns
         interim_keys = self.interim_columns.keys()

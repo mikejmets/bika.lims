@@ -1129,9 +1129,9 @@ schema = BikaSchema.copy() + Schema((
         allow_delete=True,
         allow_reorder=True,
         allow_empty_rows=False,
-        columns=('SampleTypes',
+        columns=('SampleType',
                  'Unit'),
-        default=[{'SampleTypes': [],
+        default=[{'SampleType': [],
                   'Unit': ''
                   }],
         widget=DataGridWidget(
@@ -1645,9 +1645,16 @@ class AnalysisService(BaseContent, HistoryAwareMixin):
         return vocabulary(allow_blank=True, portal_type='SampleType')
 
     def Vocabulary_UnitConversions(self):
-        vocabulary = CatalogVocabulary(self)
-        vocabulary.catalog = 'bika_setup_catalog'
-        return vocabulary(allow_blank=True, portal_type='UnitConversion')
+        catalog = getToolByName(self, 'bika_setup_catalog')
+        brains = catalog(portal_type='UnitConversion')
+        items = [('', '')]
+        for brain in brains:
+            obj = brain.getObject()
+            key = obj.UID()
+            value = '{} --> {}'.format(_c(obj.title), _c(obj.converted_unit))
+            items.append((key, value))
+
+        return DisplayList(items)
 
 
 registerType(AnalysisService, PROJECTNAME)
