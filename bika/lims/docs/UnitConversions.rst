@@ -19,12 +19,6 @@ Needed Imports::
     >>> from bika.lims import api
     >>> from bika.lims.utils.analysisrequest import create_analysisrequest
 
-    >>> def create(container, portal_type, title=None):
-    ...     obj = api.create(container, portal_type, title=title)
-    ...     # doctest fixture to make the content visible for the test browser
-    ...     transaction.commit()  # somehow the created method did not appear until I added this
-    ...     return obj
-
 
 Variables::
 
