@@ -20,17 +20,6 @@ Needed Imports::
     >>> from bika.lims import api
     >>> from bika.lims.utils.analysisrequest import create_analysisrequest
 
-    >>> def create(container, portal_type, title=None):
-    ...     # Creates a content in a container and manually calls processForm
-    ...     title = title is None and "Test {}".format(portal_type) or title
-    ...     _ = container.invokeFactory(portal_type, id="tmpID", title=title)
-    ...     obj = container.get(_)
-    ...     obj.processForm()
-    ...     modified(obj)  # notify explicitly for the test
-    ...     transaction.commit()  # somehow the created method did not appear until I added this
-    ...     return obj
-
-
 Variables::
 
     >>> portal = self.portal
@@ -49,9 +38,9 @@ ClientType
 
 A `ClientType` lives in `ClientTypes` folder::
 
-    >>> clienttype = api.content.create(clienttypes, "ClientType", title="Cultivator")
+    >>> clienttype = api.create(clienttypes, "ClientType", title="Cultivator")
     >>> clienttype
-    <ClientType at /plone/bika_setup/bika_clienttypes/cultivator>
+    <ClientType at /plone/bika_setup/bika_clienttypes/clienttype-1>
 
 
 Client
