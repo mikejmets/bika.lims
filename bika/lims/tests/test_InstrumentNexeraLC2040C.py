@@ -158,11 +158,6 @@ Total price excl Tax,,,,,,,,,,,,,,
             if an.getKeyword() == 'Ecoli':
                 if an.getResult() != '0.8':
                     self.fail("%s:Result did not get updated" % an.getKeyword())
-        #browser = self.getBrowser(loggedIn=True)
-        #browser.open(ar.getObject().absolute_url() + "/manage_results")
-        #content = browser.contents
-        #if '0.8' and '0.123' not in content:
-        #    self.fail("AR Result did not get updated")
 
 def test_suite():
     suite = unittest.TestSuite()
