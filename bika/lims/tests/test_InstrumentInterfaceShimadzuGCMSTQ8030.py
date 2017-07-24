@@ -132,7 +132,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         transaction.commit()
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
-        filename = '%s/files/GC-QQQ output.txt' % path
+        filename = '%s/files/TQ-8030.txt' % path
         if not os.path.isfile(filename):
             self.fail("File %s not found" % filename)
         data = open(filename, 'r').read()
