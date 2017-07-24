@@ -147,6 +147,8 @@ def create(container, portal_type, *args, **kwargs):
 
     if fti.product:
         obj = _createObjectByType(portal_type, container, tmp_id)
+        obj.edit(**kwargs)
+        obj.processForm()
     else:
         # newstyle factory
         factory = getUtility(IFactory, fti.factory)

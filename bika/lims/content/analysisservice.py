@@ -10,8 +10,18 @@ import transaction
 from AccessControl import ClassSecurityInfo
 from Products.ATExtensions.ateapi import RecordsField
 from Products.Archetypes.Registry import registerField
-from Products.Archetypes.public import BooleanField, BooleanWidget, \
-    DisplayList, MultiSelectionWidget, Schema, registerType
+from Products.Archetypes.public import DisplayList, ReferenceField, \
+    ComputedField, ComputedWidget, BooleanField, \
+    BooleanWidget, StringField, SelectionWidget, \
+    FixedPointField, DecimalWidget, IntegerField, \
+    IntegerWidget, StringWidget, BaseContent, \
+    Schema, registerType, MultiSelectionWidget, \
+    FloatField
+from Products.DataGridField import Column, DataGridField, DataGridWidget, \
+        SelectColumn
+from Products.Archetypes.utils import IntDisplayList
+from Products.Archetypes.references import HoldingReference
+from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.WorkflowCore import WorkflowException
 from Products.CMFCore.utils import getToolByName
 from bika.lims import PMF, bikaMessageFactory as _
@@ -27,6 +37,7 @@ from bika.lims.interfaces import IAnalysisService, IHaveIdentifiers
 from bika.lims.utils import to_utf8 as _c
 from magnitude import mg
 from zope.interface import implements
+from bika.lims.vocabularies import CatalogVocabulary
 
 
 def getContainers(instance,
@@ -612,6 +623,16 @@ class AnalysisService(AbstractBaseAnalysis):
                 pu.addPortalMessage(message, 'error')
                 transaction.get().abort()
                 raise WorkflowException
+
+    def Vocabulary_SampleTypes(self):
+        vocabulary = CatalogVocabulary(self)
+        vocabulary.catalog = 'bika_setup_catalog'
+        return vocabulary(allow_blank=True, portal_type='SampleType')
+
+    def Vocabulary_UnitConversions(self):
+        vocabulary = CatalogVocabulary(self)
+        vocabulary.catalog = 'bika_setup_catalog'
+        return vocabulary(allow_blank=True, portal_type='UnitConversion')
 
 
 registerType(AnalysisService, PROJECTNAME)

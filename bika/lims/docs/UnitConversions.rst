@@ -48,8 +48,25 @@ A `client` lives in the `/clients` folder::
 A `UnitConversion` lives in `/bika_setup/bika_unitconversions` folder.::
 
     >>> unitconversions = self.portal.bika_setup.bika_unitconversions
-    >>> conversion = api.create(unitconversions, "UnitConversion", title="mg/L", converted_unit="%", formula="Value * 100", description="mg/L to percentage")
+    >>> unitconv = api.create(unitconversions, "UnitConversion", title="mg/L", converted_unit="%", formula="Value * 100", description="mg/L to percentage")
     >>> transaction.commit()
-    >>> conversion
+    >>> unitconv
     <UnitConversion at /plone/bika_setup/bika_unitconversions/unitconversion-1>
+
+A `SampleType` lives in `/bika_setup/bika_sampletypes` folder.::
+
+    >>> sampletypes = self.portal.bika_setup.bika_sampletypes
+    >>> stype = api.create(sampletypes, 'SampleType', title='Food')
+    >>> transaction.commit()
+    >>> stype
+    <SampleType at /plone/bika_setup/bika_sampletypes/sampletype-1>
+
+A `AnalysisService` lives in `/bika_setup/bika_analysisservices` folder.::
+
+    >>> services = self.portal.bika_setup.bika_analysisservices
+    >>> aserv = api.create(services, 'AnalysisService', title='Ca')
+    >>> aserv.setUnitConversions([{'SampleType': stype.UID(), 'unit': unitconv.UID()},])
+    >>> transaction.commit()
+    >>> aserv
+    <AnalysisService at /plone/bika_setup/bika_analysisservices/analysisservice-1>
 
