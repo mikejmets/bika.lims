@@ -159,11 +159,6 @@ Total price excl Tax,,,,,,,,,,,,,,
             if an.getKeyword() == 'Diazinone':
                 if an.getResult() != '6.0':
                     self.fail("%s:Result did not get updated" % an.getKeyword())
-        #browser = self.getBrowser(loggedIn=True)
-        #browser.open(ar.getObject().absolute_url() + "/manage_results")
-        #content = browser.contents
-        #if '6' not in content:
-        #    self.fail("AR Result did not get updated")
 
 def test_suite():
     suite = unittest.TestSuite()
