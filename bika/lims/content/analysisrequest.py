@@ -1628,6 +1628,38 @@ schema = BikaSchema.copy() + Schema((
             visible=False,
         ),
     ),
+    StringField(
+        ' ClientStateLicenseID',
+        mode="rw",
+        read_permission=permissions.View,
+        write_permission=permissions.ModifyPortalContent,
+        vocabulary='getPreparationWorkflows',
+        acquire=True,
+        widget=SelectionWidget(
+            format="select",
+            label=_(" Client's State License ID"),
+            description=_("The needed preparation workflow for the sample in this request"),
+            visible={
+                'edit': 'visible',
+                'view': 'visible',
+                'add': 'edit',
+                'header_table': 'visible',
+                'sample_registered': {'view': 'visible', 'edit': 'visible', 'add': 'edit'},
+                'to_be_sampled': {'view': 'visible', 'edit': 'visible'},
+                'sampled': {'view': 'visible', 'edit': 'visible'},
+                'to_be_preserved': {'view': 'visible', 'edit': 'visible'},
+                'sample_due': {'view': 'visible', 'edit': 'visible'},
+                'sample_prep': {'view': 'visible', 'edit': 'invisible'},
+                'sample_received': {'view': 'visible', 'edit': 'invisible'},
+                'attachment_due': {'view': 'visible', 'edit': 'invisible'},
+                'to_be_verified': {'view': 'visible', 'edit': 'invisible'},
+                'verified': {'view': 'visible', 'edit': 'invisible'},
+                'published': {'view': 'visible', 'edit': 'invisible'},
+                'invalid': {'view': 'visible', 'edit': 'invisible'},
+            },
+            render_own_label=True,
+        ),
+    ),
 
     StringField(
         'PreparationWorkflow',
@@ -2524,6 +2556,7 @@ class AnalysisRequest(BaseFolder):
         """Return a list of sample preparation workflows.  These are identified
         by scanning all workflow IDs for those beginning with "sampleprep".
         """
+        import pdb; pdb.set_trace()
         wf = self.portal_workflow
         ids = wf.getWorkflowIds()
         sampleprep_ids = [wid for wid in ids if wid.startswith('sampleprep')]
