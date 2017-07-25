@@ -5,6 +5,7 @@ Changelog
 
 - Laboratory Supervisor field on the Laboratory(Bika Setup - Laboratory Information)
 - Laboratory License ID field on the Laboratory(Bika Setup - Laboratory Information)
+- Added Unit Conversions to allow analyses to be reported in more than one unit
 
 1.1.5 (Unreleased)
 ------------------
