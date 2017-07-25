@@ -788,7 +788,6 @@ class AnalysesView(BikaListingView):
 
             # add unit conversion information
             item['unit_conversions'] = []
-            print item['review_state']
             if item['review_state'] not in (
                     'retracted', 'sample_due', 'sampled', 'sample_received'):
                 for unit_conversion in service.getUnitConversions():
