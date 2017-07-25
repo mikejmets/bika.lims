@@ -20,6 +20,8 @@ import transaction
 from DateTime import DateTime
 from Products.Archetypes.interfaces import IDateTimeField, IFileField, \
     ILinesField, IReferenceField, IStringField, ITextField
+from plone import api as ploneapi
+from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.WorkflowCore import WorkflowException
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import _createObjectByType, safe_unicode
@@ -1269,7 +1271,7 @@ class AnalysisRequestDigester:
 
         return data
 
-    def _analyses_data(self, ar, analysis_states=None):
+    def _analyses_data(self, ar, analysis_states=None, sample=None):
         if not analysis_states:
             analysis_states = ['verified', 'published']
         analyses = []
@@ -1289,7 +1291,7 @@ class AnalysisRequestDigester:
                 continue
 
             # Build the analysis-specific dict
-            andict = self._analysis_data(an, dm)
+            andict = self._analysis_data(an, dm, sample)
 
             # Are there previous results for the same AS and batch?
             andict['previous'] = []
@@ -1311,10 +1313,35 @@ class AnalysisRequestDigester:
                 andict['previous_results'] = ", ".join(
                     [p['formatted_result'] for p in andict['previous'][-5:]])
 
+            #Append analysis
             analyses.append(andict)
+
+            def convert_unit(result, formula):
+                formula = formula.replace('Value', '%f')
+                return eval(formula % float(result))
+
+            #Append addition analysis for each unit conversion
+            if andict['unit_conversions']:
+                for uc_uid in andict['unit_conversions']:
+                    new = dict(andict)
+                    unit_conversion = ploneapi.content.get(UID=uc_uid)
+                    #new['title'] = andict['title'] + '1'
+                    new['unit'] = unit_conversion.converted_unit
+                    new['formatted_unit'] = unit_conversion.converted_unit
+                    if andict.get('result'):
+                        new['result'] = convert_unit(
+                                    andict['result'], unit_conversion.formula)
+                        new['formatted_result'] = str(new['result'])
+                    analyses.append(new)
         return analyses
 
+<<<<<<< HEAD
     def _analysis_data(self, analysis, decimalmark=None):
+=======
+    def _analysis_data(self, analysis, decimalmark=None, sample=None):
+        if analysis.UID() in self._cache['_analysis_data']:
+            return self._cache['_analysis_data'][analysis.UID()]
+>>>>>>> 69f3ff1... Introduced UnitConversions in publish views
 
         andict = {'obj': analysis,
                   'id': analysis.id,
@@ -1344,7 +1371,248 @@ class AnalysisRequestDigester:
                       else None,
                   'worksheet': None,
                   'specs': {},
-                  'formatted_specs': ''}
+                  'formatted_specs': '',
+                  'unit_conversions': [],
+                  }
+
+        if analysis.portal_type == 'DuplicateAnalysis':
+            andict['reftype'] = 'd'
+
+        ws = analysis.getBackReferences('WorksheetAnalysis')
+        andict['worksheet'] = ws[0].id if ws and len(ws) > 0 else None
+        andict['worksheet_url'] = ws[0].absolute_url if ws and len(ws) > 0 else None
+        andict['refsample'] = analysis.getSample().id \
+                            if analysis.portal_type == 'Analysis' \
+                            else '%s - %s' % (analysis.aq_parent.id, analysis.aq_parent.Title())
+
+        if analysis.portal_type == 'ReferenceAnalysis':
+            # The analysis is a Control or Blank. We might use the
+            # reference results instead other specs
+            uid = analysis.getServiceUID()
+            specs = analysis.aq_parent.getResultsRangeDict().get(uid, {})
+
+        else:
+            # Get the specs directly from the analysis. The getResultsRange
+            # function already takes care about which are the specs to be used:
+            # AR, client or lab.
+            specs = analysis.getResultsRange()
+
+        andict['specs'] = specs
+        scinot = self.context.bika_setup.getScientificNotationReport()
+        fresult =  analysis.getFormattedResult(specs=specs, sciformat=int(scinot), decimalmark=decimalmark)
+
+        # We don't use here cgi.encode because results fields must be rendered
+        # using the 'structure' wildcard. The reason is that the result can be
+        # expressed in sci notation, that may include <sup></sup> html tags.
+        # Please note the default value for the 'html' parameter from
+        # getFormattedResult signature is set to True, so the service will
+        # already take into account LDLs and UDLs symbols '<' and '>' and escape
+        # them if necessary.
+        andict['formatted_result'] = fresult;
+
+        fs = ''
+        if specs.get('min', None) and specs.get('max', None):
+            fs = '%s - %s' % (specs['min'], specs['max'])
+        elif specs.get('min', None):
+            fs = '> %s' % specs['min']
+        elif specs.get('max', None):
+            fs = '< %s' % specs['max']
+        andict['formatted_specs'] = formatDecimalMark(fs, decimalmark)
+        andict['formatted_uncertainty'] = format_uncertainty(analysis, analysis.getResult(), decimalmark=decimalmark, sciformat=int(scinot))
+
+        # Out of range?
+        if specs:
+            adapters = getAdapters((analysis, ), IResultOutOfRange)
+            bsc = getToolByName(self.context, "bika_setup_catalog")
+            for name, adapter in adapters:
+                ret = adapter(specification=specs)
+                if ret and ret['out_of_range']:
+                    andict['outofrange'] = True
+                    break
+        # Get unit conversions for result
+        st_uid = None
+        if sample and sample.get('sample_type') and \
+           sample['sample_type'].get('obj'):
+            st_uid = sample['sample_type']['obj'].UID()
+        if st_uid:
+            for unit_conversion in service.getUnitConversions():
+                if unit_conversion.get('SampleType') and \
+                   unit_conversion.get('Unit') and \
+                   unit_conversion.get('SampleType') == st_uid:
+                    andict['unit_conversions'].append(unit_conversion['Unit'])
+        self._cache['_analysis_data'][analysis.UID()]  = andict
+        return andict
+
+    def _qcanalyses_data(self, ar, analysis_states=['verified', 'published']):
+        if ar.UID() in self._cache['_qcanalyses_data']:
+            return self._cache['_qcanalyses_data'][ar.UID()]
+        analyses = []
+        batch = ar.getBatch()
+        workflow = getToolByName(self.context, 'portal_workflow')
+        for an in ar.getQCAnalyses(review_state=analysis_states):
+
+            # Build the analysis-specific dict
+            andict = self._analysis_data(an)
+
+            # Are there previous results for the same AS and batch?
+            andict['previous'] = []
+            andict['previous_results'] = ""
+
+            analyses.append(andict)
+        analyses.sort(lambda x, y: cmp(x.get('title').lower(), y.get('title').lower()))
+        self._cache['_qcanalyses_data'][ar.UID()] = analyses
+        return analyses
+
+    def _reporter_data(self, ar):
+        data = {}
+        member = self.context.portal_membership.getAuthenticatedMember()
+        if member:
+            username = member.getUserName()
+            data['username'] = username
+            data['fullname'] = to_utf8(self.user_fullname(username))
+            data['email'] = to_utf8(self.user_email(username))
+
+            c = [x for x in self.bika_setup_catalog(portal_type='LabContact')
+                 if x.getObject().getUsername() == username]
+            if c:
+                sf = c[0].getObject().getSignature()
+                if sf:
+                    data['signature'] = sf.absolute_url() + "/Signature"
+
+        return data
+
+    def _managers_data(self, ar):
+        managers = {'ids': [], 'dict': {}}
+        departments = {}
+        ar_mngrs = ar.getResponsible()
+        for id in ar_mngrs['ids']:
+            new_depts = ar_mngrs['dict'][id]['departments'].split(',')
+            if id in managers['ids']:
+                for dept in new_depts:
+                    if dept not in departments[id]:
+                        departments[id].append(dept)
+            else:
+                departments[id] = new_depts
+                managers['ids'].append(id)
+                managers['dict'][id] = ar_mngrs['dict'][id]
+
+        mngrs = departments.keys()
+        for mngr in mngrs:
+            final_depts = ''
+            for dept in departments[mngr]:
+                if final_depts:
+                    final_depts += ', '
+                final_depts += to_utf8(dept)
+            managers['dict'][mngr]['departments'] = final_depts
+
+        return managers
+
+    def localise_images(self, htmlreport):
+        """WeasyPrint will attempt to retrieve attachments directly from the URL
+        referenced in the HTML report, which may refer back to a single-threaded
+        (and currently occupied) zeoclient, hanging it.  All "attachments"
+        using urls ending with at_download/AttachmentFile must be converted
+        to local files.
+
+        Returns a list of files which were created, and a modified copy
+        of htmlreport.
+        """
+        cleanup = []
+
+        _htmltext = to_utf8(htmlreport)
+        # first regular image tags
+        for match in re.finditer("""http.*at_download\/AttachmentFile""", _htmltext, re.I):
+            url = match.group()
+            att_path = url.replace(self.portal_url+"/", "")
+            attachment = self.portal.unrestrictedTraverse(att_path)
+            af = attachment.getAttachmentFile()
+            filename = af.filename
+            extension = "."+filename.split(".")[-1]
+            outfile, outfilename = tempfile.mkstemp(suffix=extension)
+            outfile = open(outfilename, 'wb')
+            outfile.write(str(af.data))
+            outfile.close()
+            _htmltext.replace(url, outfilename)
+            cleanup.append(outfilename)
+        return cleanup, _htmltext
+
+    def publishFromPOST(self):
+        html = self.request.form.get('html')
+        style = self.request.form.get('style')
+        uids = self.request.form.get('uid').split(':')
+        reporthtml = "<html><head>%s</head><body><div id='report'>%s</body></html>" % (style, html)
+        publishedars = []
+        for uid in uids:
+            ars = self.publishFromHTML(uid, safe_unicode(reporthtml).encode('utf-8'))
+            publishedars.extend(ars)
+        return publishedars
+
+    def publishFromHTML(self, aruid, results_html):
+        # The AR can be published only and only if allowed
+        uc = getToolByName(self.context, 'uid_catalog')
+        ars = uc(UID=aruid)
+        if not ars or len(ars) != 1:
+            return []
+
+        ar = ars[0].getObject();
+        wf = getToolByName(ar, 'portal_workflow')
+        allowed_states = ['verified', 'published']
+        # Publish/Republish allowed?
+        if wf.getInfoFor(ar, 'review_state') not in allowed_states:
+            # Pre-publish allowed?
+            if not ar.getAnalyses(review_state=allowed_states):
+                return []
+
+        # HTML written to debug file
+        debug_mode = App.config.getConfiguration().debug_mode
+        if debug_mode:
+            tmp_fn = tempfile.mktemp(suffix=".html")
+            logger.debug("Writing HTML for %s to %s" % (ar.Title(), tmp_fn))
+            open(tmp_fn, "wb").write(results_html)
+
+        # Create the pdf report (will always be attached to the AR)
+        # we must supply the file ourself so that createPdf leaves it alone.
+        pdf_fn = tempfile.mktemp(suffix=".pdf")
+        pdf_report = createPdf(htmlreport=results_html, outfile=pdf_fn)
+
+        # PDF written to debug file
+        if debug_mode:
+            logger.debug("Writing PDF for %s to %s" % (ar.Title(), pdf_fn))
+        else:
+            os.remove(pdf_fn)
+
+        recipients = []
+        contact = ar.getContact()
+        lab = ar.bika_setup.laboratory
+        if pdf_report:
+            if contact:
+                recipients = [{
+                    'UID': contact.UID(),
+                    'Username': to_utf8(contact.getUsername()),
+                    'Fullname': to_utf8(contact.getFullname()),
+                    'EmailAddress': to_utf8(contact.getEmailAddress()),
+                    'PublicationModes': contact.getPublicationPreference()
+                }]
+            reportid = ar.generateUniqueId('ARReport')
+            report = _createObjectByType("ARReport", ar, reportid)
+            report.edit(
+                AnalysisRequest=ar.UID(),
+                Pdf=pdf_report,
+                Html=results_html,
+                Recipients=recipients
+            )
+            report.unmarkCreationFlag()
+            renameAfterCreation(report)
+
+            # Set status to prepublished/published/republished
+            status = wf.getInfoFor(ar, 'review_state')
+            transitions = {'verified': 'publish',
+                           'published' : 'republish'}
+            transition = transitions.get(status, 'prepublish')
+            try:
+                wf.doActionFor(ar, transition)
+            except WorkflowException:
+                pass
 
         if analysis.portal_type == 'DuplicateAnalysis':
             andict['reftype'] = 'd'
