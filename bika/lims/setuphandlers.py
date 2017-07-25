@@ -143,6 +143,7 @@ class BikaGenerator:
                        'bika_subgroups',
                        'bika_suppliers',
                        'bika_referencedefinitions',
+                       'bika_unitconversions',
                        'bika_worksheettemplates'):
             try:
                 obj = bika_setup._getOb(obj_id)
