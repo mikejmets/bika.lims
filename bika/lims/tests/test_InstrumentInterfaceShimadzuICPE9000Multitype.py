@@ -6,7 +6,6 @@
 from DateTime import DateTime
 from Products.CMFPlone.utils import _createObjectByType
 from bika.lims import logger
-from bika.lims.content.analysis import Analysis
 from bika.lims.exportimport.instruments.shimadzu.icpe.multitype import Import
 from bika.lims.testing import BIKA_SIMPLE_FIXTURE
 from bika.lims.tests.base import BikaSimpleTestCase
@@ -63,7 +62,7 @@ class TestInstrumentImport(BikaSimpleTestCase):
         self.addthing(self.portal.bika_setup.bika_arpriorities, 'ARPriority',
                       title='Normal', sortKey=1)
         a = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='CAL1', Keyword="CAL1")
+                          'AnalysisService', title='As', Keyword="As")
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
                       Service=[a.UID()])
@@ -79,15 +78,17 @@ class TestInstrumentImport(BikaSimpleTestCase):
         arimport.unmarkCreationFlag()
         arimport.setFilename("test1.csv")
         arimport.setOriginalFile("""
+
 Header,      File name,  Client name,  Client ID, Contact,     CC Names - Report, CC Emails - Report, CC Names - Invoice, CC Emails - Invoice, No of Samples, Client Order Number, Client Reference,,
 Header Data, test1.csv,  Happy Hills,  HH,        Rita Mohale,                  ,                   ,                    ,                    , 10,            HHPO-001,                            ,,
 Batch Header, id,       title,     description,    ClientBatchID, ClientBatchComment, BatchLabels, ReturnSampleToClient,,,
 Batch Data,   B15-0123, New Batch, Optional descr, CC 201506,     Just a batch,                  , TRUE                ,,,
-Samples,    ClientSampleID,    SamplingDate,DateSampled,Sampler,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,CAL1,,,,MicroBio,,
+Samples,    ClientSampleID,    SamplingDate,DateSampled,Sampler,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,,,,,MicroBio,,
 Analysis price,,,,,,,,,,,,,,
 "Total Analyses or Profiles",,,,,,,,,,,,,9,,,
 Total price excl Tax,,,,,,,,,,,,,,
 "Sample 1", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
+"Sample 2", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
         """)
 
         # check that values are saved without errors
@@ -126,11 +127,12 @@ Total price excl Tax,,,,,,,,,,,,,,
         bc = getToolByName(self.portal, 'bika_catalog')
         ars = bc(portal_type='AnalysisRequest')
         ar = ars[0]
-        api.content.transition(obj=ar.getObject(), transition='receive')
-        transaction.commit()
+        for ar in ars:
+            api.content.transition(obj=ar.getObject(), transition='receive')
+            transaction.commit()
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
-        filename = '%s/files/icp output.txt' % path
+        filename = '%s/files/ICPE-9000-Multitype.txt' % path
         if not os.path.isfile(filename):
             self.fail("File %s not found" % filename)
         data = open(filename, 'r').read()
@@ -146,14 +148,19 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 1 ARs and 1 results updated'
+        text = 'Import finished successfully: 2 ARs and 2 results updated'
         if text not in results:
             self.fail("AR Import failed")
-        browser = self.getBrowser(loggedIn=True)
-        browser.open(ar.getObject().absolute_url() + "/manage_results")
-        content = browser.contents
-        if '193.759' not in content:
-            self.fail("AR Result did not get updated")
+        for ar in ars:
+            if ar.id == '1-0001-R01':
+                analysis = ar.getObject().getAnalyses(full_objects=True)[0]
+                if analysis.getResult() != '193.759':
+                    self.fail("AR: %s  Result did not get updated" % ar.id)
+
+            if ar.id == '1-0002-R01':
+                analysis = ar.getObject().getAnalyses(full_objects=True)[0]
+                if analysis.getResult() != '0.0':
+                    self.fail("AR: %s  Result did not get updated" % ar.id)
 
 def test_suite():
     suite = unittest.TestSuite()
