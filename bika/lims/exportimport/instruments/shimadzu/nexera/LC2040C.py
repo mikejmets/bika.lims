@@ -148,9 +148,34 @@ class TSVParser(InstrumentCSVResultsFileParser):
             except ValueError:
                 self.err("Invalid Output Time format",
                          numline=self._numline, line=line)
+
+            result = _results[_results['DefaultResult']]
+            column_name = _results['DefaultResult']
+            result = self.zeroValueDefaultInstrumentResults(
+                                                    column_name, result, line)
+            _results[_results['DefaultResult']] = result
+
             self._addRawResult(_results['Sample ID'],
                                values={self._currentanalysiskw:_results},
-                               override=True)
+                               override=False)
+
+    def zeroValueDefaultInstrumentResults(self, column_name, result, line):
+        result = str(result)
+        if result.startswith('--'):
+            return 0.0
+
+        try:
+            result = float(result)
+            if result < 0.0:
+                result  = 0.0
+        except ValueError:
+            self.err(
+                "No valid number ${result} in column (${column_name})",
+                mapping={"result": result,
+                         "column_name": column_name},
+                numline=self._numline, line=line)
+            return
+        return result
 
 class LC2040C_Importer(AnalysisResultsImporter):
 
