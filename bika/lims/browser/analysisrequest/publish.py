@@ -1327,6 +1327,8 @@ class AnalysisRequestDigester:
                     unit_conversion = ploneapi.content.get(UID=uc_uid)
                     #new['title'] = andict['title'] + '1'
                     new['unit'] = unit_conversion.converted_unit
+                    new['uncertainty'] = ''
+                    new['formatted_specs'] = ''
                     new['formatted_unit'] = unit_conversion.converted_unit
                     if andict.get('result'):
                         new['result'] = convert_unit(
