@@ -123,7 +123,7 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
         # Metals Mix Method with IS longer cali\tCAL1\tBlank\t9/23/2016 11:54:59 AM\t\tMRC\tAs\tQUANT\t193.759\t1\tppb\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tAfter Drift Correction\t-0.0936625\t-0.1063610\t-0.1266098\t\t\t\t\t\t\t\t-0.1088778\t0.0166172\t15.26
 
         splitted = [token.strip() for token in line.split('\t')]
-        quantitation = {'DefaultResult': 'Title8'}
+        quantitation = {'DefaultResult': 'Title21'}
         # File has no headers
         self._quantitationresultsheader  = ['Title%s' % x for x in range(44)]
         for colname in self._quantitationresultsheader:
@@ -137,13 +137,8 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
                     try:
                         quantitation[colname] = float(token)
                     except ValueError:
-                        self.warn(
-                            "No valid number ${token} in column ${index} (${column_name})",
-                            mapping={"token": token,
-                                     "index": str(i + 1),
-                                     "column_name": colname},
-                            numline=self._numline, line=line)
                         quantitation[colname] = token
+
                 elif colname == 'Title3':
                     d = datetime.strptime(token, "%m/%d/%Y %I:%M:%S %p")
                     quantitation[colname] = d
@@ -168,7 +163,7 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
 
     def zeroValueDefaultInstrumentResults(self, column_name, result, line):
         result = str(result)
-        if result.startswith('--'):
+        if result.startswith('--') or result == '':
             return 0.0
 
         try:
