@@ -800,7 +800,10 @@ class AnalysesView(BikaListingView):
         # items, so we set blank values in unused cells
         def convert_unit(result, formula):
             formula = formula.replace('Value', '%f')
-            return eval(formula % float(result))
+            dec = len(result.split(dmk)[-1])
+            new =  eval(formula % float(result))
+            fmt = '{{:.{}f}}'.format(dec)
+            return fmt.format(new)
 
         new_results = []
         for item in items:
@@ -816,13 +819,10 @@ class AnalysesView(BikaListingView):
                 new['uid'] = ''
                 unit_conversion = ploneapi.content.get(UID=uc_uid)
                 new['Unit'] = unit_conversion.converted_unit
-                #new['Result'] = '0'
-                #new['formatted_result'] = '0'
-                #new['Analyst'] = '----'
                 if item.get('Result'):
-                    new['Result'] = convert_unit(
-                                        item['Result'], unit_conversion.formula)
-                    new['formatted_result'] = str(new['Result'])
+                    new['formatted_result'] = new['Result'] = convert_unit(
+                                                    item['formatted_result'],
+                                                    unit_conversion.formula)
                 new_results.append(new)
         items = new_results
 
