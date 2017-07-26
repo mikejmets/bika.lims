@@ -159,7 +159,7 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
         val = re.sub(r"\W", "", splitted[6])
         self._addRawResult(quantitation['Title2'],
                            values={val:quantitation},
-                           override=True)
+                           override=False)
 
     def zeroValueDefaultInstrumentResults(self, column_name, result, line):
         result = str(result)
