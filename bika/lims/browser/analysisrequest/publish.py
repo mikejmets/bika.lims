@@ -12,7 +12,7 @@ from bika.lims.config import POINTS_OF_CAPTURE
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import IAnalysisRequest
 from bika.lims.interfaces import IResultOutOfRange
-from bika.lims.utils import isnumber
+from bika.lims.utils import isnumber, convert_unit
 from bika.lims.utils import to_utf8, encode_header, createPdf, attachPdf
 from bika.lims.utils import to_utf8, formatDecimalMark, format_supsub
 from bika.lims.utils.analysis import format_uncertainty
@@ -708,14 +708,6 @@ class AnalysisRequestPublishView(BrowserView):
             #Append analysis
             analyses.append(andict)
 
-            def convert_unit(result, formula):
-                formula = formula.replace('Value', '%f')
-                dec = len(result.split(dm)[-1])
-                new =  eval(formula % float(result))
-                fmt = '{{:.{}f}}'.format(dec)
-                print fmt.format(new)
-                return fmt.format(new)
-
             #Append addition analysis for each unit conversion
             if andict['unit_conversions']:
                 for uc_uid in andict['unit_conversions']:
@@ -728,7 +720,8 @@ class AnalysisRequestPublishView(BrowserView):
                     if andict.get('result'):
                         new['formatted_result'] = new['result'] = convert_unit(
                                     andict['formatted_result'],
-                                    unit_conversion.formula)
+                                    unit_conversion.formula,
+                                    dmk)
                     analyses.append(new)
         return analyses
 
