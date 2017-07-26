@@ -1318,22 +1318,25 @@ class AnalysisRequestDigester:
 
             def convert_unit(result, formula):
                 formula = formula.replace('Value', '%f')
-                return eval(formula % float(result))
+                dec = len(result.split(dm)[-1])
+                new =  eval(formula % float(result))
+                fmt = '{{:.{}f}}'.format(dec)
+                print fmt.format(new)
+                return fmt.format(new)
 
             #Append addition analysis for each unit conversion
             if andict['unit_conversions']:
                 for uc_uid in andict['unit_conversions']:
                     new = dict(andict)
                     unit_conversion = ploneapi.content.get(UID=uc_uid)
-                    #new['title'] = andict['title'] + '1'
                     new['unit'] = unit_conversion.converted_unit
                     new['uncertainty'] = ''
                     new['formatted_specs'] = ''
                     new['formatted_unit'] = unit_conversion.converted_unit
                     if andict.get('result'):
-                        new['result'] = convert_unit(
-                                    andict['result'], unit_conversion.formula)
-                        new['formatted_result'] = str(new['result'])
+                        new['formatted_result'] = new['result'] = convert_unit(
+                                    andict['formatted_result'],
+                                    unit_conversion.formula)
                     analyses.append(new)
         return analyses
 
