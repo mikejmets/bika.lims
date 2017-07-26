@@ -6,9 +6,7 @@
 import os
 import re
 import tempfile
-import traceback
 from copy import copy
-from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 from operator import itemgetter
@@ -35,8 +33,7 @@ from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import IAnalysisRequest, IResultOutOfRange
 from bika.lims.interfaces.field import IUIDReferenceField
 from bika.lims.utils import attachPdf, createPdf, encode_header, \
-    format_supsub, \
-    isnumber
+    format_supsub, isnumber, convert_unit
 from bika.lims.utils import formatDecimalMark, to_utf8
 from bika.lims.utils.analysis import format_uncertainty
 from bika.lims.vocabularies import getARReportTemplates
@@ -1316,14 +1313,6 @@ class AnalysisRequestDigester:
             #Append analysis
             analyses.append(andict)
 
-            def convert_unit(result, formula):
-                formula = formula.replace('Value', '%f')
-                dec = len(result.split(dm)[-1])
-                new =  eval(formula % float(result))
-                fmt = '{{:.{}f}}'.format(dec)
-                print fmt.format(new)
-                return fmt.format(new)
-
             #Append addition analysis for each unit conversion
             if andict['unit_conversions']:
                 for uc_uid in andict['unit_conversions']:
@@ -1336,17 +1325,14 @@ class AnalysisRequestDigester:
                     if andict.get('result'):
                         new['formatted_result'] = new['result'] = convert_unit(
                                     andict['formatted_result'],
-                                    unit_conversion.formula)
+                                    unit_conversion.formula,
+                                    dmk)
                     analyses.append(new)
         return analyses
 
-<<<<<<< HEAD
-    def _analysis_data(self, analysis, decimalmark=None):
-=======
     def _analysis_data(self, analysis, decimalmark=None, sample=None):
         if analysis.UID() in self._cache['_analysis_data']:
             return self._cache['_analysis_data'][analysis.UID()]
->>>>>>> 69f3ff1... Introduced UnitConversions in publish views
 
         andict = {'obj': analysis,
                   'id': analysis.id,

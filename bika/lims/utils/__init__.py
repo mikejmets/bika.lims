@@ -640,7 +640,6 @@ def getFromString(obj, string):
             break
     return attrobj if attrobj else None
 
-
 def user_fullname(obj, userid):
     """
     Returns the user full name as string.
@@ -706,3 +705,16 @@ def copy_field_values(src, dst, ignore_fieldnames=None, ignore_fieldtypes=None):
         value = field.get(src)
         if value:
             dst_schema[fieldname].set(dst, value)
+""" Convert Analysis result using a give formula with "Value" """
+def convert_unit(result, formula, dmk):
+    try:
+        formula = formula.replace('Value', '%f')
+        dec = len(result.split(dmk)[-1])
+        new =  eval(formula % float(result))
+        fmt = '{{:.{}f}}'.format(dec)
+        formatted = fmt.format(new)
+    except ValueError, e:
+        logger.info('convert unit failed to eval %s - %s: %s' % (
+            formula, result, str(e)))
+        return '-'
+    return formatted
