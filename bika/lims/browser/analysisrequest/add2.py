@@ -1614,9 +1614,6 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             # Selected Analysis UIDs
             selected_analysis_uids = record.get("Analyses", [])
 
-            # Default Container UID
-            default_container_uid = record.get("DefaultContainerType_uid")
-
             # Partitions defined in Template
             template_parts = {}
             template_uid = record.get("Template_uid")
@@ -1637,17 +1634,18 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
                 if service_uid not in selected_analysis_uids:
                     continue
                 # Container UID for this part
-                # -> either from the template or the default container
-                container_uid = default_container_uid
+                container_uids = []
                 template_part = template_parts.get(part_id)
                 if template_part:
-                    container_uid = template_part.get("container_uid", container_uid)
+                    container_uid = template_part.get("container_uid")
+                    if container_uid:
+                        container_uids.append(container_uid)
 
                 # remember the part id and the services
                 if part_id not in partitions:
                     partitions[part_id] = {
                         "part_id": part_id,
-                        "container_uid": [container_uid],
+                        "container_uid": container_uids,
                         "services": [service_uid],
                     }
                 else:
