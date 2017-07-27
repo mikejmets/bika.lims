@@ -10,12 +10,12 @@ from zope.interface import implements
 from plone.indexer import indexer
 from plone.dexterity.content import Item
 
-from bika.lims.interfaces import IClientType
+from bika.lims.interfaces import IUnitConversion
 from bika.lims.interfaces import IBikaSetupCatalog
 
 
-class ClientType(Item):
-    implements(IClientType)
+class UnitConversion(Item):
+    implements(IUnitConversion)
 
     # Bika catalog multiplex for Dexterity contents
     # please see event handlers in bika.lims.subscribers.catalogobject
@@ -24,13 +24,13 @@ class ClientType(Item):
     ]
 
 
-@indexer(IClientType, IBikaSetupCatalog)
-def clienttype_title_indexer(obj):
+@indexer(IUnitConversion, IBikaSetupCatalog)
+def unitconversion_title_indexer(obj):
     if obj.title:
         return obj.title
 
 
-@indexer(IClientType, IBikaSetupCatalog)
-def clienttype_sortable_title_indexer(obj):
+@indexer(IUnitConversion, IBikaSetupCatalog)
+def unitconversion_sortable_title_indexer(obj):
     if obj.title:
         return [w.lower() for w in obj.title.split(' ')]

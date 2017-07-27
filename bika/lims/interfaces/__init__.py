@@ -5,6 +5,9 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
+from bika.lims import bikaMessageFactory as _
+from plone.supermodel import model
+from zope import schema
 from zope.interface import Interface
 
 
@@ -15,6 +18,9 @@ class IBikaLIMS(Interface):
        "bika" theme, this interface must be its layer
     """
 
+class IGenerateID(Interface):
+    """Marker Interface to generate an ID
+    """
 
 class IHaveNoBreadCrumbs(Interface):
 
@@ -751,11 +757,30 @@ class INumberGenerator(Interface):
     """A utility to generates unique numbers by key
     """
 
+class IClientTypes(Interface):
+    """ A Client Types container.
+    """
+
 class IClientType(Interface):
     """ A Client Type.
     """
 
-class IClientTypes(Interface):
-    """ A Client Types container.
+class IUnitConversions(Interface):
+    """ A Unit Conversion container.
     """
+
+class IUnitConversion(model.Schema):
+    """ A Unit Conversion.
+    """
+    converted_unit = schema.TextLine(
+            title=u"Converted Unit",
+            description=u"The name of the new converted unit.",
+            required=True,
+        )
+    formula = schema.TextLine(
+            title=u"Formula",
+            description=u'The formula that is used to convert the unit. Use the keyword "Value" to indicate where the existing result fits into the formula.',
+            required=True,
+        )
+
 
