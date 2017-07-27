@@ -1628,6 +1628,38 @@ schema = BikaSchema.copy() + Schema((
             visible=False,
         ),
     ),
+    StringField(
+        'ClientStateLicenseID',
+        mode="rw",
+        read_permission=permissions.View,
+        write_permission=permissions.ModifyPortalContent,
+        vocabulary='getClientLicenses',
+        acquire=True,
+        widget=SelectionWidget(
+            format="select",
+            label=_("Client's State License ID"),
+            description=_("Client's State License"),
+            visible={
+                'edit': 'visible',
+                'view': 'visible',
+                'add': 'edit',
+                'header_table': 'visible',
+                'sample_registered': {'view': 'visible', 'edit': 'visible', 'add': 'edit'},
+                'to_be_sampled': {'view': 'visible', 'edit': 'visible'},
+                'sampled': {'view': 'visible', 'edit': 'visible'},
+                'to_be_preserved': {'view': 'visible', 'edit': 'visible'},
+                'sample_due': {'view': 'visible', 'edit': 'visible'},
+                'sample_prep': {'view': 'visible', 'edit': 'invisible'},
+                'sample_received': {'view': 'visible', 'edit': 'invisible'},
+                'attachment_due': {'view': 'visible', 'edit': 'invisible'},
+                'to_be_verified': {'view': 'visible', 'edit': 'invisible'},
+                'verified': {'view': 'visible', 'edit': 'invisible'},
+                'published': {'view': 'visible', 'edit': 'invisible'},
+                'invalid': {'view': 'visible', 'edit': 'invisible'},
+            },
+            render_own_label=True,
+        ),
+    ),
 
     StringField(
         'PreparationWorkflow',
@@ -2532,6 +2564,21 @@ class AnalysisRequest(BaseFolder):
             workflow = wf.getWorkflowById(workflow_id)
             prep_workflows.append([workflow_id, workflow.title])
         return DisplayList(prep_workflows)
+
+    def getClientLicenses(self):
+        """Return a list of sample preparation workflows.  These are identified
+        by scanning all workflow IDs for those beginning with "sampleprep".
+        """
+        bsc = getToolByName(self, 'portal_catalog')
+        licenses = [['', ''], ]
+        for license in self.getLicenses():
+            license_types = bsc(portal_type='ClientType', UID=license['LicenseType'])
+            if len(license_types) == 1:
+                license_type = license_types[0].Title
+                id_value = '{},{LicenseID},{LicenseNumber},{Authority}'.format(license_type, **license)
+                value = license_type
+                licenses.append([id_value, value])
+        return DisplayList(licenses)
 
     def getDepartments(self):
         """Returns a set with the departments assigned to the Analyses
