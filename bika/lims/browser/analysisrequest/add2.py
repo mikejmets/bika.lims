@@ -466,6 +466,10 @@ class AnalysisRequestAddView(BrowserView):
         services = bsc(query)
         categories = self.get_service_categories(restricted=False)
         analyses = {key: [] for key in map(lambda c: c.Title, categories)}
+
+        # append the empty category as well
+        analyses[""] = []
+
         for brain in services:
             category = brain.getCategoryTitle
             analyses[category].append(brain)
