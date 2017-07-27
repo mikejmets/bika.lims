@@ -1629,16 +1629,16 @@ schema = BikaSchema.copy() + Schema((
         ),
     ),
     StringField(
-        ' ClientStateLicenseID',
+        'ClientStateLicenseID',
         mode="rw",
         read_permission=permissions.View,
         write_permission=permissions.ModifyPortalContent,
-        vocabulary='getPreparationWorkflows',
+        vocabulary='getClientLicenses',
         acquire=True,
         widget=SelectionWidget(
             format="select",
-            label=_(" Client's State License ID"),
-            description=_("The needed preparation workflow for the sample in this request"),
+            label=_("Client's State License ID"),
+            description=_("Client's State License"),
             visible={
                 'edit': 'visible',
                 'view': 'visible',
@@ -2556,7 +2556,6 @@ class AnalysisRequest(BaseFolder):
         """Return a list of sample preparation workflows.  These are identified
         by scanning all workflow IDs for those beginning with "sampleprep".
         """
-        import pdb; pdb.set_trace()
         wf = self.portal_workflow
         ids = wf.getWorkflowIds()
         sampleprep_ids = [wid for wid in ids if wid.startswith('sampleprep')]
@@ -2565,6 +2564,21 @@ class AnalysisRequest(BaseFolder):
             workflow = wf.getWorkflowById(workflow_id)
             prep_workflows.append([workflow_id, workflow.title])
         return DisplayList(prep_workflows)
+
+    def getClientLicenses(self):
+        """Return a list of sample preparation workflows.  These are identified
+        by scanning all workflow IDs for those beginning with "sampleprep".
+        """
+        bsc = getToolByName(self, 'portal_catalog')
+        licenses = [['', ''], ]
+        for license in self.getLicenses():
+            license_types = bsc(portal_type='ClientType', UID=license['LicenseType'])
+            if len(license_types) == 1:
+                license_type = license_types[0].Title
+                id_value = '{},{LicenseID},{LicenseNumber},{Authority}'.format(license_type, **license)
+                value = license_type
+                licenses.append([id_value, value])
+        return DisplayList(licenses)
 
     def getDepartments(self):
         """Returns a set with the departments assigned to the Analyses
