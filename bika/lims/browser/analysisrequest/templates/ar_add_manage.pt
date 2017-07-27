@@ -8,7 +8,7 @@
     <metal:block fill-slot="javascript_head_slot"
                  tal:define="portal context/@@plone_portal_state/portal;">
       <link rel="stylesheet" type="text/css" media="all" href=""
-            tal:attributes="href string:${portal/absolute_url}/++resource++bechem.lims.www/css/bika.lims.analysisrequest.add.css"/>
+            tal:attributes="href string:${portal/absolute_url}/++resource++bika.lims.css/bika.lims.analysisrequest.add.css"/>
       <style>
        #fieldlist {
            list-style-type: none!important;
