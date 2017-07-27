@@ -138,7 +138,7 @@ class GCMSQP2010SECSVParser(InstrumentCSVResultsFileParser):
             return 0
         else:
             self._currentresultsheader = ['Title%s' % i for i in range(len(split_row))]
-            _results = {'DefaultResult': 'Title2'}
+            _results = {'DefaultResult': 'Title3'}
             _results.update(dict(zip(self._currentresultsheader, split_row)))
 
             result = _results[_results['DefaultResult']]
