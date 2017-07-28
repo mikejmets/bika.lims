@@ -913,6 +913,17 @@ class AnalysisRequestsView(BikaListingView):
                 review_states.append(review_state)
             self.review_states = review_states
 
+        # Don't know where else to hook this in
+        if True: #TODO iwho can do print coc?
+            review_states = []
+            for review_state in self.review_states:
+                review_state.get('custom_actions', []).extend(
+                    [{'id': 'print_coc',
+                      'title': _('Print COC'),
+                      'url': 'workflow_action?action=copy_to_new'}, ])
+                review_states.append(review_state)
+            self.review_states = review_states
+
         # Hide Preservation/Sampling workflow actions if the edit columns
         # are not displayed.
         toggle_cols = self.get_toggle_cols()
