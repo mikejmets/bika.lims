@@ -19,8 +19,10 @@
             <td class="instrument-import"><label i18n:translate="" for="override">Results override</label></td>
             <td class="instrument-import">
                 <select name="override" id="override">
+                    <!--
                     <option value="nooverride">Don't override results</option>
                     <option value="override">Override non-empty results</option>
+                    -->
                     <option value="overrideempty">Override all</option>
                 </select>
             </td>
