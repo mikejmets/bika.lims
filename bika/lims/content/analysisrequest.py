@@ -2702,7 +2702,8 @@ class AnalysisRequest(BaseFolder):
         """
         bsc = getToolByName(self, 'portal_catalog')
         licenses = [['', ''], ]
-        for license in self.getLicenses():
+        client = self.getClient()
+        for license in client.getLicenses():
             license_types = bsc(portal_type='ClientType', UID=license['LicenseType'])
             if len(license_types) == 1:
                 license_type = license_types[0].Title
