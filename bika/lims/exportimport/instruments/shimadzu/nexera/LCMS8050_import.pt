@@ -11,7 +11,7 @@
             <td class="instrument-import">
                 <select name="artoapply" id="artoapply">
                     <option value="received">Received</option>
-                    <option value="received_tobeverified">Received and to be verified</option>
+                    <option value="received_tobeverified">Received and To Be Verified</option>
                 </select>
             </td>
         </tr>
@@ -19,9 +19,11 @@
             <td class="instrument-import"><label i18n:translate="" for="override">Results override</label></td>
             <td class="instrument-import">
                 <select name="override" id="override">
+                    <!--
                     <option value="nooverride">Don't override results</option>
                     <option value="override">Override non-empty results</option>
-                    <option value="overrideempty">Override non-empty results (also with empty)</option>
+                    -->
+                    <option value="overrideempty">Override all</option>
                 </select>
             </td>
         </tr>
