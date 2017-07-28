@@ -148,6 +148,54 @@ class WorkflowAction:
         self.request.response.redirect(url)
         return
 
+    def workflow_action_print_coc(self):
+        """Invoke the ar_add form in the current context, passing the UIDs of
+        the source ARs as request parameters.
+        """
+        objects = WorkflowAction._get_selected_items(self)
+        if not objects:
+            message = self.context.translate(
+                _("No analyses have been selected"))
+            self.context.plone_utils.addPortalMessage(message, 'info')
+            self.destination_url = self.context.absolute_url() + \
+                                   "/batchbook"
+            self.request.response.redirect(self.destination_url)
+            return
+
+        #Validate client
+        if not self.context.getLicenses():
+            message = 'Licenses not set for current client'
+            self.context.plone_utils.addPortalMessage(message, 'error')
+            self.request.response.redirect(self.destination_url)
+            return 
+        #Validate selected ARs
+        licence_id = ''
+        for item in objects:
+            ar = objects[item]
+            client_state_id_lst = \
+                    ar.getClientStateLicenseID().split(',')
+            if len(client_state_id_lst) != 4:
+                message = 'License not set for AR {}'.format(ar.Title())
+                self.context.plone_utils.addPortalMessage(message, 'error')
+                self.request.response.redirect(self.destination_url)
+                return 
+            if licence_id == '' or \
+               licence_id == client_state_id_lst[1]:
+                licence_id = client_state_id_lst[1]
+            else:
+                message = 'Selected ARs have different Licenses'
+                self.context.plone_utils.addPortalMessage(message, 'error')
+                self.request.response.redirect(self.destination_url)
+                return
+
+        #Validation complete
+        url = '{}/coc?items={}'.format(
+                self.context.absolute_url(),
+                ','.join(objects.keys()))
+        print url
+        self.request.response.redirect(url)
+        return
+
     def __call__(self):
         request = self.request
         form = request.form
