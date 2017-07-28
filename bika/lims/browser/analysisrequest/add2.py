@@ -1677,11 +1677,15 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             if not client:
                 raise RuntimeError("No client found")
 
+            # get the specifications and pass them directly to the AR create function.
+            specifications = record.pop("Specifications", {})
+
             # Create the Analysis Request
             ar = crar(
                 client,
                 self.request,
                 record,
+                specifications=specifications,
             )
             ARs.append(ar.Title())
 
