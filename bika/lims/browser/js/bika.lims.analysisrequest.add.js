@@ -1058,14 +1058,18 @@
        * Copies the value of the first field in this row to the remaining.
        * XXX Refactor
        */
-      var arnum, checkbox, checkbox_other, e, el, fieldname, html, i, input, input_other, me, multi_div, multi_divX, nr_ars, option, select_options, selected, td, td1, tr, uid1, val1, value;
+      var $el, $td1, $tr, ar_count, arnum, e, el, fieldname, html, me, multi_div, multi_divX, nr_ars, td, td1, tr, uid1, val1;
       console.debug("°°° on_copy_button_click °°°");
       nr_ars = parseInt($('input[id="ar_count"]').val(), 10);
       me = this;
+      ar_count = parseInt($('input[id="ar_count"]').val(), 10);
       el = event.target;
-      tr = $(el).closest('tr')[0];
+      $el = $(el);
+      tr = $el.closest('tr')[0];
+      $tr = $(tr);
+      td1 = $(tr).find('td[arnum="0"]').first();
+      $td1 = $(td1);
       fieldname = $(tr).attr('fieldname');
-      td1 = $(tr).find('td[arnum="0"]')[0];
       e = void 0;
       td = void 0;
       html = void 0;
@@ -1085,97 +1089,68 @@
           $('#' + fieldname + '-' + arnum + '-listing').replaceWith(multi_divX);
           arnum++;
         }
-      } else if ($(td1).find('.RejectionWidget').length > 0) {
-        checkbox = $(td1).find('.rejectionwidget-checkbox').prop('checked');
-        arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('.rejectionwidget-checkbox')[0];
-          if (checkbox) {
-            $(e).attr('checked', true);
-          } else {
-            $(e).removeAttr('checked');
-          }
-          arnum++;
-        }
-        checkbox_other = $(td1).find('.rejectionwidget-checkbox-other').prop('checked');
-        arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('.rejectionwidget-checkbox-other')[0];
-          if (checkbox_other) {
-            $(e).attr('checked', true);
-          } else {
-            $(e).removeAttr('checked');
-          }
-          $(e).trigger('copy');
-          arnum++;
-        }
-        input_other = $(td1).find('.rejectionwidget-input-other').val();
-        arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('.rejectionwidget-input-other')[0];
-          $(e).val(input_other);
-          arnum++;
-        }
-        select_options = $(td1).find('.rejectionwidget-multiselect').find('option');
-        i = 0;
-        while (select_options.length > i) {
-          option = select_options[i];
-          value = $(option).val();
-          selected = option.selected;
-          arnum = 1;
-          while (arnum < nr_ars) {
-            td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-            e = $(td).find('.rejectionwidget-multiselect option[value="' + value + '"]');
-            $(e).attr('selected', selected);
-            $(td).find('select.rejectionwidget-multiselect').trigger('copy');
-            arnum++;
-          }
-          i++;
-        }
-      } else if ($(td1).find('select').length > 0) {
-        input = $(td1).find('select').val();
-        arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('select')[0];
-          $(e).val(input);
-          arnum++;
-        }
-      } else if ($(td1).find('input[type="checkbox"]').length > 0) {
-        val1 = $(td1).find('input[type="checkbox"]').prop('checked');
-        arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('input[type="checkbox"]')[0];
-          if (val1) {
-            $(e).attr('checked', true);
-          } else {
-            $(e).removeAttr('checked');
-          }
-          arnum++;
-        }
-      } else if ($(td1).find('input[type="text"]').length > 0) {
-        val1 = $(td1).find('input').val();
-        arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('input')[0];
-          $(e).val(val1);
-          arnum++;
-        }
-      } else if ($(td1).find('textarea').length > 0) {
-        val1 = $(td1).find('textarea').val();
-        arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('textarea')[0];
-          $(e).val(val1);
-          arnum++;
-        }
+        return;
       }
+      $td1.find("input[type=checkbox]").each(function(index, el) {
+        var checked, i, results;
+        $el = $(el);
+        checked = $el.prop("checked");
+        return $.each((function() {
+          results = [];
+          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
+          return results;
+        }).apply(this), function(ar_index, arnum) {
+          var _el, _td;
+          _td = $tr.find("td[arnum=" + arnum + "]");
+          _el = $(_td).find("input[type=checkbox]")[index];
+          return $(_el).prop("checked", checked);
+        });
+      });
+      $td1.find("select").each(function(index, el) {
+        var i, results, value;
+        $el = $(el);
+        value = $el.val();
+        return $.each((function() {
+          results = [];
+          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
+          return results;
+        }).apply(this), function(ar_index, arnum) {
+          var _el, _td;
+          _td = $tr.find("td[arnum=" + arnum + "]");
+          _el = $(_td).find("select")[index];
+          return $(_el).val(value);
+        });
+      });
+      $td1.find("input[type=text]").each(function(index, el) {
+        var i, results, value;
+        $el = $(el);
+        value = $el.val();
+        return $.each((function() {
+          results = [];
+          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
+          return results;
+        }).apply(this), function(ar_index, arnum) {
+          var _el, _td;
+          _td = $tr.find("td[arnum=" + arnum + "]");
+          _el = $(_td).find("input[type=text]")[index];
+          return $(_el).val(value);
+        });
+      });
+      $td1.find("textarea").each(function(index, el) {
+        var i, results, value;
+        $el = $(el);
+        value = $el.val();
+        return $.each((function() {
+          results = [];
+          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
+          return results;
+        }).apply(this), function(ar_index, arnum) {
+          var _el, _td;
+          _td = $tr.find("td[arnum=" + arnum + "]");
+          _el = $(_td).find("textarea")[index];
+          return $(_el).val(value);
+        });
+      });
       return $(me).trigger("form:changed");
     };
 

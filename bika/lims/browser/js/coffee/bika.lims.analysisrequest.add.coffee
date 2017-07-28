@@ -1165,10 +1165,18 @@ class window.AnalysisRequestAdd
     nr_ars = parseInt($('input[id="ar_count"]').val(), 10)
 
     me = this
+    ar_count = parseInt($('input[id="ar_count"]').val(), 10)
+
     el = event.target
-    tr = $(el).closest('tr')[0]
+    $el = $(el)
+
+    tr = $el.closest('tr')[0]
+    $tr = $(tr)
+
+    td1 = $(tr).find('td[arnum="0"]').first()
+    $td1 = $(td1)
+
     fieldname = $(tr).attr('fieldname')
-    td1 = $(tr).find('td[arnum="0"]')[0]
     e = undefined
     td = undefined
     html = undefined
@@ -1193,84 +1201,43 @@ class window.AnalysisRequestAdd
         $(multi_divX).attr 'id', fieldname + '-' + arnum + '-listing'
         $('#' + fieldname + '-' + arnum + '-listing').replaceWith multi_divX
         arnum++
-    else if $(td1).find('.RejectionWidget').length > 0
-      checkbox = $(td1).find('.rejectionwidget-checkbox').prop('checked')
-      arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('.rejectionwidget-checkbox')[0]
-        if checkbox
-          $(e).attr 'checked', true
-        else
-          $(e).removeAttr 'checked'
-        arnum++
-      checkbox_other = $(td1).find('.rejectionwidget-checkbox-other').prop('checked')
-      arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('.rejectionwidget-checkbox-other')[0]
-        if checkbox_other
-          $(e).attr 'checked', true
-        else
-          $(e).removeAttr 'checked'
-        $(e).trigger 'copy'
-        arnum++
-      input_other = $(td1).find('.rejectionwidget-input-other').val()
-      arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('.rejectionwidget-input-other')[0]
-        $(e).val input_other
-        arnum++
-      select_options = $(td1).find('.rejectionwidget-multiselect').find('option')
-      i = 0
-      while select_options.length > i
-        option = select_options[i]
-        value = $(option).val()
-        selected = option.selected
-        arnum = 1
-        while arnum < nr_ars
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-          e = $(td).find('.rejectionwidget-multiselect option[value="' + value + '"]')
-          $(e).attr 'selected', selected
-          $(td).find('select.rejectionwidget-multiselect').trigger 'copy'
-          arnum++
-        i++
-    else if $(td1).find('select').length > 0
-      input = $(td1).find('select').val()
-      arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('select')[0]
-        $(e).val input
-        arnum++
-    else if $(td1).find('input[type="checkbox"]').length > 0
-      val1 = $(td1).find('input[type="checkbox"]').prop('checked')
-      arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('input[type="checkbox"]')[0]
-        if val1
-          $(e).attr 'checked', true
-        else
-          $(e).removeAttr 'checked'
-        arnum++
-    else if $(td1).find('input[type="text"]').length > 0
-      val1 = $(td1).find('input').val()
-      arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('input')[0]
-        $(e).val val1
-        arnum++
-    else if $(td1).find('textarea').length > 0
-      val1 = $(td1).find('textarea').val()
-      arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('textarea')[0]
-        $(e).val val1
-        arnum++
+      return
+
+    # Copy <input type="checkbox"> fields
+    $td1.find("input[type=checkbox]").each (index, el) ->
+      $el = $(el)
+      checked = $el.prop "checked"
+      $.each [1..ar_count], (ar_index, arnum) ->
+        _td = $tr.find("td[arnum=#{arnum}]")
+        _el = $(_td).find("input[type=checkbox]")[index]
+        $(_el).prop "checked", checked
+
+    # Copy <select> fields
+    $td1.find("select").each (index, el) ->
+      $el = $(el)
+      value = $el.val()
+      $.each [1..ar_count], (ar_index, arnum) ->
+        _td = $tr.find("td[arnum=#{arnum}]")
+        _el = $(_td).find("select")[index]
+        $(_el).val value
+
+    # Copy <input type="text"> fields
+    $td1.find("input[type=text]").each (index, el) ->
+      $el = $(el)
+      value = $el.val()
+      $.each [1..ar_count], (ar_index, arnum) ->
+        _td = $tr.find("td[arnum=#{arnum}]")
+        _el = $(_td).find("input[type=text]")[index]
+        $(_el).val value
+
+    # Copy <textarea> fields
+    $td1.find("textarea").each (index, el) ->
+      $el = $(el)
+      value = $el.val()
+      $.each [1..ar_count], (ar_index, arnum) ->
+        _td = $tr.find("td[arnum=#{arnum}]")
+        _el = $(_td).find("textarea")[index]
+        $(_el).val value
 
     # trigger form:changed event
     $(me).trigger "form:changed"
