@@ -154,7 +154,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         for ar in ars:
             if ar.id == '1-0001-R01':
                 analysis = ar.getObject().getAnalyses(full_objects=True)[0]
-                if analysis.getResult() != '193.759':
+                if analysis.getResult() != '20.0':
                     self.fail("AR: %s  Result did not get updated" % ar.id)
 
             if ar.id == '1-0002-R01':
