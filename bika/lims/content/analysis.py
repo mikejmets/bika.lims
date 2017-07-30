@@ -686,7 +686,8 @@ class Analysis(BaseContent):
         if specification == 'ar' or specification is None:
             if an.aq_parent and an.aq_parent.portal_type == 'AnalysisRequest':
                 rr = an.aq_parent.getResultsRange()
-                rr = [r for r in rr if r.get('keyword', '') == an.getKeyword()]
+                #rr = [r for r in rr if r.get('keyword', '') == an.getKeyword()]
+                rr = [] #TODO Monster Hack - Not used in BC and takes 80 seconds
                 rr = rr[0] if rr and len(rr) > 0 else {}
                 if rr:
                     rr['uid'] = self.UID()
