@@ -59,6 +59,7 @@
       this._ = window.jarn.i18n.MessageFactory('bika');
       $('input[type=text]').prop('autocomplete', 'off');
       this.records_snapshot = {};
+      this.applied_templates = {};
       $(".blurrable").removeClass("blurrable");
       this.bind_eventhandler();
       return this.recalculate_records();
@@ -199,9 +200,6 @@
           var lock;
           lock = $("#" + uid + "-" + arnum + "-lockbtn");
           if (uid in record.service_to_profiles) {
-            lock.show();
-          }
-          if (uid in record.service_to_templates) {
             lock.show();
           }
           if (uid in record.service_to_dms) {
@@ -517,7 +515,18 @@
       /*
        * Apply the template data to all fields of arnum
        */
-      var field, me, part_selectors, title, uid;
+      var field, me, part_selectors, template_uid, title, uid;
+      me = this;
+      field = $("#Template-" + arnum);
+      uid = field.attr("uid");
+      template_uid = template.uid;
+      if (arnum in this.applied_templates) {
+        if (this.applied_templates[arnum] === template_uid) {
+          console.debug("Skipping already applied template");
+          return;
+        }
+      }
+      this.applied_templates[arnum] = template_uid;
       field = $("#SampleType-" + arnum);
       uid = template.sample_type_uid;
       title = template.sample_type_title;
@@ -536,6 +545,9 @@
       field.prop("checked", template.composite);
       field = $("#ReportDryMatter-" + arnum);
       field.prop("checked", template.report_dry_matter);
+      $.each(template.service_uids, function(index, uid) {
+        return me.set_service(arnum, uid, true);
+      });
       me = this;
       part_selectors = $(".part-select-" + arnum);
       return $.each(part_selectors, function(index, part_selector) {

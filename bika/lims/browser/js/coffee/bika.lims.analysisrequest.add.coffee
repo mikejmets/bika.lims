@@ -19,6 +19,9 @@ class window.AnalysisRequestAdd
     # returns a mapping of arnum -> services data
     @records_snapshot = {}
 
+    # brain for already applied templates
+    @applied_templates = {}
+
     # Remove the '.blurrable' class to avoid inline field validation
     $(".blurrable").removeClass("blurrable")
 
@@ -193,8 +196,8 @@ class window.AnalysisRequestAdd
         if uid of record.service_to_profiles
           lock.show()
         # service is part of the template
-        if uid of record.service_to_templates
-          lock.show()
+        # if uid of record.service_to_templates
+        #   lock.show()
         # service is part of the drymatter service
         if uid of record.service_to_dms
           lock.show()
@@ -561,6 +564,21 @@ class window.AnalysisRequestAdd
      * Apply the template data to all fields of arnum
     ###
 
+    me = this
+
+    # apply template only once
+    field = $("#Template-#{arnum}")
+    uid = field.attr "uid"
+    template_uid = template.uid
+
+    if arnum of @applied_templates
+      if @applied_templates[arnum] == template_uid
+        console.debug "Skipping already applied template"
+        return
+
+    # remember the template for this ar
+    @applied_templates[arnum] = template_uid
+
     # set the sample type
     field = $("#SampleType-#{arnum}")
     uid = template.sample_type_uid
@@ -590,6 +608,11 @@ class window.AnalysisRequestAdd
     # set the drymatter checkbox
     field = $("#ReportDryMatter-#{arnum}")
     field.prop "checked", template.report_dry_matter
+
+    # set the services
+    $.each template.service_uids, (index, uid) ->
+      # select the service
+      me.set_service arnum, uid, yes
 
     # PARTITIONS
     me = this

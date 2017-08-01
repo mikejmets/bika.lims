@@ -1350,7 +1350,7 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
                     # append service to services mapping
                     service = self.get_object_by_uid(service_uid)
                     # remember the service
-                    _services[service_uid] = service
+                    # _services[service_uid] = service
                     # remember the template of all services
                     if service_uid in service_to_templates:
                         service_to_templates[service_uid].append(uid)
