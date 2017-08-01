@@ -914,7 +914,8 @@ class AnalysisRequestsView(BikaListingView):
             self.review_states = review_states
 
         # Don't know where else to hook this in
-        if True: #TODO iwho can do print coc?
+        #if True: #TODO iwho can do print coc?
+        if self.context.portal_type == "Client":
             review_states = []
             for review_state in self.review_states:
                 review_state.get('custom_actions', []).extend(
