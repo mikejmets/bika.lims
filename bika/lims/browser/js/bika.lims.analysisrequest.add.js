@@ -893,26 +893,31 @@
       has_template_selected = $el.val();
       console.debug("°°° on_analysis_template_change::UID=" + uid + " Template=" + val + "°°°");
       if (!has_template_selected && uid) {
+        this.applied_templates[arnum] = null;
         $("input[type=hidden]", $el.parent()).val("");
         record = this.records_snapshot[arnum];
         template_metadata = record.template_metadata[uid];
         template_services = [];
         $.each(record.template_to_services[uid], function(index, uid) {
-          return template_services.push(record.service_metadata[uid]);
+          if (uid in record.service_metadata) {
+            return template_services.push(record.service_metadata[uid]);
+          }
         });
-        context = {};
-        context["template"] = template_metadata;
-        context["services"] = template_services;
-        dialog = this.template_dialog("template-remove-template", context);
-        dialog.on("yes", function() {
-          $.each(template_services, function(index, service) {
-            return me.set_service(arnum, service.uid, false);
+        if (template_services) {
+          context = {};
+          context["template"] = template_metadata;
+          context["services"] = template_services;
+          dialog = this.template_dialog("template-remove-template", context);
+          dialog.on("yes", function() {
+            $.each(template_services, function(index, service) {
+              return me.set_service(arnum, service.uid, false);
+            });
+            return $(me).trigger("form:changed");
           });
-          return $(me).trigger("form:changed");
-        });
-        dialog.on("no", function() {
-          return $(me).trigger("form:changed");
-        });
+          dialog.on("no", function() {
+            return $(me).trigger("form:changed");
+          });
+        }
       }
       return $(me).trigger("form:changed");
     };

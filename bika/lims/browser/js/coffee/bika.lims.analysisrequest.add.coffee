@@ -994,6 +994,9 @@ class window.AnalysisRequestAdd
 
     # deselect the template if the field is empty
     if not has_template_selected and uid
+      # forget the applied template
+      @applied_templates[arnum] = null
+
       # XXX manually flush UID field
       $("input[type=hidden]", $el.parent()).val("")
 
@@ -1003,22 +1006,25 @@ class window.AnalysisRequestAdd
 
       # prepare a list of services used by the template with the given UID
       $.each record.template_to_services[uid], (index, uid) ->
-        template_services.push record.service_metadata[uid]
+        # service might be deselected before and thus, absent
+        if uid of record.service_metadata
+          template_services.push record.service_metadata[uid]
 
-      context = {}
-      context["template"] = template_metadata
-      context["services"] = template_services
+      if template_services
+        context = {}
+        context["template"] = template_metadata
+        context["services"] = template_services
 
-      dialog = @template_dialog "template-remove-template", context
-      dialog.on "yes", ->
-        # deselect the services
-        $.each template_services, (index, service) ->
-          me.set_service arnum, service.uid, no
-        # trigger form:changed event
-        $(me).trigger "form:changed"
-      dialog.on "no", ->
-        # trigger form:changed event
-        $(me).trigger "form:changed"
+        dialog = @template_dialog "template-remove-template", context
+        dialog.on "yes", ->
+          # deselect the services
+          $.each template_services, (index, service) ->
+            me.set_service arnum, service.uid, no
+          # trigger form:changed event
+          $(me).trigger "form:changed"
+        dialog.on "no", ->
+          # trigger form:changed event
+          $(me).trigger "form:changed"
 
     # trigger form:changed event
     $(me).trigger "form:changed"
