@@ -966,7 +966,7 @@ class window.AnalysisRequestAdd
     console.debug "°°° on_analysis_template_change::UID=#{uid} Template=#{val}°°°"
 
     # deselect the template if the field is empty
-    if not has_template_selected
+    if not has_template_selected and uid
       # XXX manually flush UID field
       $("input[type=hidden]", $el.parent()).val("")
 

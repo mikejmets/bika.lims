@@ -879,7 +879,7 @@
       arnum = $el.closest("[arnum]").attr("arnum");
       has_template_selected = $el.val();
       console.debug("°°° on_analysis_template_change::UID=" + uid + " Template=" + val + "°°°");
-      if (!has_template_selected) {
+      if (!has_template_selected && uid) {
         $("input[type=hidden]", $el.parent()).val("");
         record = this.records_snapshot[arnum];
         template_metadata = record.template_metadata[uid];
