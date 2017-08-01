@@ -329,7 +329,8 @@
         return;
       }
       field.val("");
-      return $("input[type=hidden]", field.parent()).val("");
+      $("input[type=hidden]", field.parent()).val("");
+      return $(".multiValued-listing", field.parent()).empty();
     };
 
     AnalysisRequestAdd.prototype.set_reference_field_query = function(field, query, type) {
@@ -377,7 +378,7 @@
        * Set the value and the uid of a reference field
        * XXX This is lame! The field should handle this on data change.
        */
-      var $field, $parent, div, existing_uids, fieldname, img, me, mvc, portal_url, src, uids, uids_field;
+      var $field, $parent, div, existing_uids, fieldname, img, me, mvl, portal_url, src, uids, uids_field;
       me = this;
       $field = $(field);
       $parent = field.closest("div.field");
@@ -396,8 +397,8 @@
         uids_field.val(uids.join(","));
       }
       $field.val(title);
-      mvc = $(".multiValued-listing", $parent);
-      if (mvc.length > 0) {
+      mvl = $(".multiValued-listing", $parent);
+      if (mvl.length > 0) {
         portal_url = this.get_portal_url();
         src = portal_url + "/++resource++bika.lims.images/delete.png";
         img = $("<img class='deletebtn'/>");
@@ -409,7 +410,7 @@
         div.attr("uid", uid);
         div.append(img);
         div.append(title);
-        mvc.append(div);
+        mvl.append(div);
         return $field.val("");
       }
     };
@@ -1058,37 +1059,37 @@
        * Copies the value of the first field in this row to the remaining.
        * XXX Refactor
        */
-      var $el, $td1, $tr, ar_count, arnum, e, el, fieldname, html, me, multi_div, multi_divX, nr_ars, td, td1, tr, uid1, val1;
+      var $el, $td1, $tr, ar_count, arnum, e, el, fieldname, me, multi_div, multi_divX, td, td1, tr, uid1, val1;
       console.debug("°°° on_copy_button_click °°°");
-      nr_ars = parseInt($('input[id="ar_count"]').val(), 10);
       me = this;
-      ar_count = parseInt($('input[id="ar_count"]').val(), 10);
       el = event.target;
       $el = $(el);
       tr = $el.closest('tr')[0];
       $tr = $(tr);
       td1 = $(tr).find('td[arnum="0"]').first();
       $td1 = $(td1);
-      fieldname = $(tr).attr('fieldname');
-      e = void 0;
-      td = void 0;
-      html = void 0;
+      ar_count = parseInt($('input[id="ar_count"]').val(), 10);
+      if (!(ar_count > 1)) {
+        return;
+      }
       if ($(td1).find('.ArchetypesReferenceWidget').length > 0) {
         val1 = $(td1).find('input[type="text"]').val();
         uid1 = $(td1).find('input[type="text"]').attr('uid');
-        multi_div = $('#' + fieldname + '-0-listing');
+        fieldname = $(tr).attr('fieldname');
+        multi_div = $("#" + fieldname + "-0-listing");
         arnum = 1;
-        while (arnum < nr_ars) {
-          td = $(tr).find('td[arnum="' + arnum + '"]')[0];
-          e = $(td).find('input[type="text"]');
+        while (arnum < ar_count) {
+          td = $(tr).find("td[arnum=" + arnum + "]")[0];
+          e = $(td).find("input[type=text]");
           $(e).val(val1);
-          $(e).attr('uid', uid1);
+          $(e).attr("uid", uid1);
           $(td).find('input[id$="_uid"]').val(uid1);
           multi_divX = multi_div.clone(true);
-          $(multi_divX).attr('id', fieldname + '-' + arnum + '-listing');
-          $('#' + fieldname + '-' + arnum + '-listing').replaceWith(multi_divX);
+          $(multi_divX).attr('id', fieldname + "-" + arnum + "-listing");
+          $("#" + fieldname + "-" + arnum + "-listing").replaceWith(multi_divX);
           arnum++;
         }
+        $(me).trigger("form:changed");
         return;
       }
       $td1.find("input[type=checkbox]").each(function(index, el) {
@@ -1099,8 +1100,11 @@
           results = [];
           for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
           return results;
-        }).apply(this), function(ar_index, arnum) {
+        }).apply(this), function(arnum) {
           var _el, _td;
+          if (!(arnum > 0)) {
+            return;
+          }
           _td = $tr.find("td[arnum=" + arnum + "]");
           _el = $(_td).find("input[type=checkbox]")[index];
           return $(_el).prop("checked", checked);
@@ -1114,8 +1118,11 @@
           results = [];
           for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
           return results;
-        }).apply(this), function(ar_index, arnum) {
+        }).apply(this), function(arnum) {
           var _el, _td;
+          if (!(arnum > 0)) {
+            return;
+          }
           _td = $tr.find("td[arnum=" + arnum + "]");
           _el = $(_td).find("select")[index];
           return $(_el).val(value);
@@ -1129,8 +1136,11 @@
           results = [];
           for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
           return results;
-        }).apply(this), function(ar_index, arnum) {
+        }).apply(this), function(arnum) {
           var _el, _td;
+          if (!(arnum > 0)) {
+            return;
+          }
           _td = $tr.find("td[arnum=" + arnum + "]");
           _el = $(_td).find("input[type=text]")[index];
           return $(_el).val(value);
@@ -1144,8 +1154,11 @@
           results = [];
           for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
           return results;
-        }).apply(this), function(ar_index, arnum) {
+        }).apply(this), function(arnum) {
           var _el, _td;
+          if (!(arnum > 0)) {
+            return;
+          }
           _td = $tr.find("td[arnum=" + arnum + "]");
           _el = $(_td).find("textarea")[index];
           return $(_el).val(value);

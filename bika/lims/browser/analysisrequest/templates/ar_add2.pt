@@ -278,7 +278,7 @@
     </metal:title>
     <metal:description fill-slot="content-description">
         <div id="manage-ar-form"
-            tal:condition="python:user.has_role('LabManager') or user.has_role('Manager')">
+             tal:condition="python:user.has_role('LabManager') or user.has_role('Manager')">
           <a id="manage-ar-link"
             href=""
             class="btn btn-link"

@@ -325,6 +325,7 @@ class window.AnalysisRequestAdd
     # flush values
     field.val("")
     $("input[type=hidden]", field.parent()).val("")
+    $(".multiValued-listing", field.parent()).empty()
 
 
   set_reference_field_query: (field, query, type="base_query") =>
@@ -404,8 +405,8 @@ class window.AnalysisRequestAdd
     $field.val title
 
     # handle multivalued reference fields
-    mvc = $(".multiValued-listing", $parent)
-    if mvc.length > 0
+    mvl = $(".multiValued-listing", $parent)
+    if mvl.length > 0
       portal_url = @get_portal_url()
       src = "#{portal_url}/++resource++bika.lims.images/delete.png"
       img = $("<img class='deletebtn'/>")
@@ -417,7 +418,7 @@ class window.AnalysisRequestAdd
       div.attr "uid", uid
       div.append img
       div.append title
-      mvc.append div
+      mvl.append div
       $field.val("")
 
 
@@ -1162,10 +1163,8 @@ class window.AnalysisRequestAdd
      * XXX Refactor
     ###
     console.debug "°°° on_copy_button_click °°°"
-    nr_ars = parseInt($('input[id="ar_count"]').val(), 10)
 
     me = this
-    ar_count = parseInt($('input[id="ar_count"]').val(), 10)
 
     el = event.target
     $el = $(el)
@@ -1176,38 +1175,44 @@ class window.AnalysisRequestAdd
     td1 = $(tr).find('td[arnum="0"]').first()
     $td1 = $(td1)
 
-    fieldname = $(tr).attr('fieldname')
-    e = undefined
-    td = undefined
-    html = undefined
+    ar_count = parseInt($('input[id="ar_count"]').val(), 10)
+    return unless ar_count > 1
+
 
     # ReferenceWidget cannot be simply copied, the combogrid dropdown widgets
     # don't cooperate and the multiValued div must be copied.
     if $(td1).find('.ArchetypesReferenceWidget').length > 0
       val1 = $(td1).find('input[type="text"]').val()
       uid1 = $(td1).find('input[type="text"]').attr('uid')
-      multi_div = $('#' + fieldname + '-0-listing')
+      fieldname = $(tr).attr('fieldname')
+      multi_div = $("##{fieldname}-0-listing")
       arnum = 1
-      while arnum < nr_ars
-        td = $(tr).find('td[arnum="' + arnum + '"]')[0]
-        e = $(td).find('input[type="text"]')
+      while arnum < ar_count
+        td = $(tr).find("td[arnum=#{arnum}]")[0]
+        e = $(td).find("input[type=text]")
         # First we copy the attributes of the text input:
         $(e).val val1
-        $(e).attr 'uid', uid1
+        $(e).attr "uid", uid1
         # then the hidden *_uid shadow field
         $(td).find('input[id$="_uid"]').val uid1
         # then the multiValued div
-        multi_divX = multi_div.clone(true)
-        $(multi_divX).attr 'id', fieldname + '-' + arnum + '-listing'
-        $('#' + fieldname + '-' + arnum + '-listing').replaceWith multi_divX
+        multi_divX = multi_div.clone yes
+        $(multi_divX).attr 'id', "#{fieldname}-#{arnum}-listing"
+        $("##{fieldname}-#{arnum}-listing").replaceWith multi_divX
         arnum++
+
+      # trigger form:changed event
+      $(me).trigger "form:changed"
       return
 
     # Copy <input type="checkbox"> fields
     $td1.find("input[type=checkbox]").each (index, el) ->
       $el = $(el)
       checked = $el.prop "checked"
-      $.each [1..ar_count], (ar_index, arnum) ->
+      # iterate over columns, starting from column 2
+      $.each [1..ar_count], (arnum) ->
+        # skip the first column
+        return unless arnum > 0
         _td = $tr.find("td[arnum=#{arnum}]")
         _el = $(_td).find("input[type=checkbox]")[index]
         $(_el).prop "checked", checked
@@ -1216,7 +1221,9 @@ class window.AnalysisRequestAdd
     $td1.find("select").each (index, el) ->
       $el = $(el)
       value = $el.val()
-      $.each [1..ar_count], (ar_index, arnum) ->
+      $.each [1..ar_count], (arnum) ->
+        # skip the first column
+        return unless arnum > 0
         _td = $tr.find("td[arnum=#{arnum}]")
         _el = $(_td).find("select")[index]
         $(_el).val value
@@ -1225,7 +1232,9 @@ class window.AnalysisRequestAdd
     $td1.find("input[type=text]").each (index, el) ->
       $el = $(el)
       value = $el.val()
-      $.each [1..ar_count], (ar_index, arnum) ->
+      $.each [1..ar_count], (arnum) ->
+        # skip the first column
+        return unless arnum > 0
         _td = $tr.find("td[arnum=#{arnum}]")
         _el = $(_td).find("input[type=text]")[index]
         $(_el).val value
@@ -1234,7 +1243,9 @@ class window.AnalysisRequestAdd
     $td1.find("textarea").each (index, el) ->
       $el = $(el)
       value = $el.val()
-      $.each [1..ar_count], (ar_index, arnum) ->
+      $.each [1..ar_count], (arnum) ->
+        # skip the first column
+        return unless arnum > 0
         _td = $tr.find("td[arnum=#{arnum}]")
         _el = $(_td).find("textarea")[index]
         $(_el).val value
