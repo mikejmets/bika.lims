@@ -682,7 +682,7 @@
       $.each(field_ids, function(index, id) {
         var field;
         field = me.get_field_by_id(id, arnum);
-        return me.flush_reference_field(field, arnum);
+        return me.flush_reference_field(field);
       });
       return $(me).trigger("form:changed");
     };
@@ -840,7 +840,7 @@
       $.each(field_ids, function(index, id) {
         var field;
         field = me.get_field_by_id(id, arnum);
-        return me.flush_reference_field(field, arnum);
+        return me.flush_reference_field(field);
       });
       return $(me).trigger("form:changed");
     };
@@ -1059,7 +1059,7 @@
        * Copies the value of the first field in this row to the remaining.
        * XXX Refactor
        */
-      var $el, $td1, $tr, ar_count, arnum, e, el, fieldname, me, multi_div, multi_divX, td, td1, tr, uid1, val1;
+      var $el, $td1, $tr, ar_count, el, field, i, me, mvl, record_one, results, td1, tr, uid, value;
       console.debug("°°° on_copy_button_click °°°");
       me = this;
       el = event.target;
@@ -1072,34 +1072,49 @@
       if (!(ar_count > 1)) {
         return;
       }
+      record_one = this.records_snapshot[0];
       if ($(td1).find('.ArchetypesReferenceWidget').length > 0) {
-        val1 = $(td1).find('input[type="text"]').val();
-        uid1 = $(td1).find('input[type="text"]').attr('uid');
-        fieldname = $(tr).attr('fieldname');
-        multi_div = $("#" + fieldname + "-0-listing");
-        arnum = 1;
-        while (arnum < ar_count) {
-          td = $(tr).find("td[arnum=" + arnum + "]")[0];
-          e = $(td).find("input[type=text]");
-          $(e).val(val1);
-          $(e).attr("uid", uid1);
-          $(td).find('input[id$="_uid"]').val(uid1);
-          multi_divX = multi_div.clone(true);
-          $(multi_divX).attr('id', fieldname + "-" + arnum + "-listing");
-          $("#" + fieldname + "-" + arnum + "-listing").replaceWith(multi_divX);
-          arnum++;
-        }
+        console.debug("-> Copy reference field");
+        el = $(td1).find(".ArchetypesReferenceWidget");
+        field = el.find("input[type=text]");
+        uid = field.attr("uid");
+        value = field.val();
+        mvl = el.find(".multiValued-listing");
+        $.each((function() {
+          results = [];
+          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
+          return results;
+        }).apply(this), function(arnum) {
+          var _el, _field, _td;
+          if (!(arnum > 0)) {
+            return;
+          }
+          _td = $tr.find("td[arnum=" + arnum + "]");
+          _el = $(_td).find(".ArchetypesReferenceWidget");
+          _field = _el.find("input[type=text]");
+          me.flush_reference_field(_field);
+          if (mvl.length > 0) {
+            return $.each(mvl.children(), function(idx, item) {
+              uid = $(item).attr("uid");
+              value = $(item).text();
+              return me.set_reference_field(_field, uid, value);
+            });
+          } else {
+            return me.set_reference_field(_field, uid, value);
+          }
+        });
         $(me).trigger("form:changed");
         return;
       }
       $td1.find("input[type=checkbox]").each(function(index, el) {
-        var checked, i, results;
+        var checked, j, results1;
+        console.debug("-> Copy checkbox field");
         $el = $(el);
         checked = $el.prop("checked");
         return $.each((function() {
-          results = [];
-          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
-          return results;
+          results1 = [];
+          for (var j = 1; 1 <= ar_count ? j <= ar_count : j >= ar_count; 1 <= ar_count ? j++ : j--){ results1.push(j); }
+          return results1;
         }).apply(this), function(arnum) {
           var _el, _td;
           if (!(arnum > 0)) {
@@ -1111,13 +1126,14 @@
         });
       });
       $td1.find("select").each(function(index, el) {
-        var i, results, value;
+        var j, results1;
+        console.debug("-> Copy select field");
         $el = $(el);
         value = $el.val();
         return $.each((function() {
-          results = [];
-          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
-          return results;
+          results1 = [];
+          for (var j = 1; 1 <= ar_count ? j <= ar_count : j >= ar_count; 1 <= ar_count ? j++ : j--){ results1.push(j); }
+          return results1;
         }).apply(this), function(arnum) {
           var _el, _td;
           if (!(arnum > 0)) {
@@ -1129,13 +1145,14 @@
         });
       });
       $td1.find("input[type=text]").each(function(index, el) {
-        var i, results, value;
+        var j, results1;
+        console.debug("-> Copy text field");
         $el = $(el);
         value = $el.val();
         return $.each((function() {
-          results = [];
-          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
-          return results;
+          results1 = [];
+          for (var j = 1; 1 <= ar_count ? j <= ar_count : j >= ar_count; 1 <= ar_count ? j++ : j--){ results1.push(j); }
+          return results1;
         }).apply(this), function(arnum) {
           var _el, _td;
           if (!(arnum > 0)) {
@@ -1147,13 +1164,14 @@
         });
       });
       $td1.find("textarea").each(function(index, el) {
-        var i, results, value;
+        var j, results1;
+        console.debug("-> Copy textarea field");
         $el = $(el);
         value = $el.val();
         return $.each((function() {
-          results = [];
-          for (var i = 1; 1 <= ar_count ? i <= ar_count : i >= ar_count; 1 <= ar_count ? i++ : i--){ results.push(i); }
-          return results;
+          results1 = [];
+          for (var j = 1; 1 <= ar_count ? j <= ar_count : j >= ar_count; 1 <= ar_count ? j++ : j--){ results1.push(j); }
+          return results1;
         }).apply(this), function(arnum) {
           var _el, _td;
           if (!(arnum > 0)) {

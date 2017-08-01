@@ -748,7 +748,7 @@ class window.AnalysisRequestAdd
     ]
     $.each field_ids, (index, id) ->
       field = me.get_field_by_id id, arnum
-      me.flush_reference_field field, arnum
+      me.flush_reference_field field
 
     # trigger form:changed event
     $(me).trigger "form:changed"
@@ -922,7 +922,7 @@ class window.AnalysisRequestAdd
     ]
     $.each field_ids, (index, id) ->
       field = me.get_field_by_id id, arnum
-      me.flush_reference_field field, arnum
+      me.flush_reference_field field
 
     # trigger form:changed event
     $(me).trigger "form:changed"
@@ -1178,28 +1178,40 @@ class window.AnalysisRequestAdd
     ar_count = parseInt($('input[id="ar_count"]').val(), 10)
     return unless ar_count > 1
 
+    # the record data of the first AR
+    record_one = @records_snapshot[0]
 
     # ReferenceWidget cannot be simply copied, the combogrid dropdown widgets
     # don't cooperate and the multiValued div must be copied.
     if $(td1).find('.ArchetypesReferenceWidget').length > 0
-      val1 = $(td1).find('input[type="text"]').val()
-      uid1 = $(td1).find('input[type="text"]').attr('uid')
-      fieldname = $(tr).attr('fieldname')
-      multi_div = $("##{fieldname}-0-listing")
-      arnum = 1
-      while arnum < ar_count
-        td = $(tr).find("td[arnum=#{arnum}]")[0]
-        e = $(td).find("input[type=text]")
-        # First we copy the attributes of the text input:
-        $(e).val val1
-        $(e).attr "uid", uid1
-        # then the hidden *_uid shadow field
-        $(td).find('input[id$="_uid"]').val uid1
-        # then the multiValued div
-        multi_divX = multi_div.clone yes
-        $(multi_divX).attr 'id', "#{fieldname}-#{arnum}-listing"
-        $("##{fieldname}-#{arnum}-listing").replaceWith multi_divX
-        arnum++
+      console.debug "-> Copy reference field"
+
+      el = $(td1).find(".ArchetypesReferenceWidget")
+      field = el.find("input[type=text]")
+      uid = field.attr("uid")
+      value = field.val()
+      mvl = el.find(".multiValued-listing")
+
+      $.each [1..ar_count], (arnum) ->
+        # skip the first column
+        return unless arnum > 0
+
+        _td = $tr.find("td[arnum=#{arnum}]")
+        _el = $(_td).find(".ArchetypesReferenceWidget")
+        _field = _el.find("input[type=text]")
+
+        # flush the field completely
+        me.flush_reference_field _field
+
+        if mvl.length > 0
+          # multi valued reference field
+          $.each mvl.children(), (idx, item) ->
+            uid = $(item).attr "uid"
+            value = $(item).text()
+            me.set_reference_field _field, uid, value
+        else
+          # single reference field
+          me.set_reference_field _field, uid, value
 
       # trigger form:changed event
       $(me).trigger "form:changed"
@@ -1207,6 +1219,7 @@ class window.AnalysisRequestAdd
 
     # Copy <input type="checkbox"> fields
     $td1.find("input[type=checkbox]").each (index, el) ->
+      console.debug "-> Copy checkbox field"
       $el = $(el)
       checked = $el.prop "checked"
       # iterate over columns, starting from column 2
@@ -1219,6 +1232,7 @@ class window.AnalysisRequestAdd
 
     # Copy <select> fields
     $td1.find("select").each (index, el) ->
+      console.debug "-> Copy select field"
       $el = $(el)
       value = $el.val()
       $.each [1..ar_count], (arnum) ->
@@ -1230,6 +1244,7 @@ class window.AnalysisRequestAdd
 
     # Copy <input type="text"> fields
     $td1.find("input[type=text]").each (index, el) ->
+      console.debug "-> Copy text field"
       $el = $(el)
       value = $el.val()
       $.each [1..ar_count], (arnum) ->
@@ -1241,6 +1256,7 @@ class window.AnalysisRequestAdd
 
     # Copy <textarea> fields
     $td1.find("textarea").each (index, el) ->
+      console.debug "-> Copy textarea field"
       $el = $(el)
       value = $el.val()
       $.each [1..ar_count], (arnum) ->
