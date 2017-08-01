@@ -30,6 +30,7 @@ DOCTESTS = [
     "../docs/ClientTypes.rst",
     "../docs/LaboratorySupervisorField.rst",
     "../docs/SamplingCOCSetupTab.rst",
+    "../docs/UnitConversions.rst",
 ]
 
 

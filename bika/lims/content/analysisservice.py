@@ -25,6 +25,8 @@ from Products.Archetypes.public import DisplayList, ReferenceField, \
     IntegerWidget, StringWidget, BaseContent, \
     Schema, registerType, MultiSelectionWidget, \
     FloatField
+from Products.DataGridField import Column, DataGridField, DataGridWidget, \
+        SelectColumn
 from Products.Archetypes.utils import IntDisplayList
 from Products.Archetypes.references import HoldingReference
 from Products.CMFCore.utils import getToolByName
@@ -45,6 +47,7 @@ from bika.lims.config import PROJECTNAME
 from bika.lims.config import SERVICE_POINT_OF_CAPTURE
 from bika.lims.content.bikaschema import BikaSchema
 from bika.lims.interfaces import IAnalysisService, IHaveIdentifiers
+from bika.lims.vocabularies import CatalogVocabulary
 
 
 def getContainers(instance,
@@ -1120,6 +1123,30 @@ schema = BikaSchema.copy() + Schema((
             description=_("The service's analytical protocol ID")
         ),
     ),
+    DataGridField('UnitConversions',
+        schemata="Result Options",
+        allow_insert=True,
+        allow_delete=True,
+        allow_reorder=True,
+        allow_empty_rows=False,
+        columns=('SampleType',
+                 'Unit'),
+        default=[{'SampleType': [],
+                  'Unit': ''
+                  }],
+        widget=DataGridWidget(
+            label=_("Reporting Units per Sample Type"),
+            description=_("Analyses can be reported with more that one unit. Here is the list of additional reporting units per Sample Type."),
+            columns={
+                'SampleType': SelectColumn(
+                    'Sample Type',
+                    vocabulary='Vocabulary_SampleTypes'),
+                'Unit': SelectColumn(
+                    'Unit',
+                    vocabulary='Vocabulary_UnitConversions'),
+            }
+        )
+    ),
 ))
 
 schema['id'].widget.visible = False
@@ -1611,6 +1638,23 @@ class AnalysisService(BaseContent, HistoryAwareMixin):
                 pu.addPortalMessage(message, 'error')
                 transaction.get().abort()
                 raise WorkflowException
+
+    def Vocabulary_SampleTypes(self):
+        vocabulary = CatalogVocabulary(self)
+        vocabulary.catalog = 'bika_setup_catalog'
+        return vocabulary(allow_blank=True, portal_type='SampleType')
+
+    def Vocabulary_UnitConversions(self):
+        catalog = getToolByName(self, 'bika_setup_catalog')
+        brains = catalog(portal_type='UnitConversion')
+        items = [('', '')]
+        for brain in brains:
+            obj = brain.getObject()
+            key = obj.UID()
+            value = '{} --> {}'.format(_c(obj.title), _c(obj.converted_unit))
+            items.append((key, value))
+
+        return DisplayList(items)
 
 
 registerType(AnalysisService, PROJECTNAME)
