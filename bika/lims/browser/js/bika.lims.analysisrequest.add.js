@@ -537,10 +537,11 @@
       field = $("#ReportDryMatter-" + arnum);
       field.prop("checked", template.report_dry_matter);
       me = this;
-      part_selectors = $(".part-select");
+      part_selectors = $(".part-select-" + arnum);
       return $.each(part_selectors, function(index, part_selector) {
         var $el, context, partitions, parts, selected_part;
         $el = $(part_selector);
+        $el.parent().show();
         $el.empty();
         uid = $el.attr("uid");
         selected_part = "part-1";

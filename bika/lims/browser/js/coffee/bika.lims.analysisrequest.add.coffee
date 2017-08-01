@@ -593,11 +593,15 @@ class window.AnalysisRequestAdd
 
     # PARTITIONS
     me = this
-    part_selectors = $(".part-select")
+    part_selectors = $(".part-select-#{arnum}")
 
     $.each part_selectors, (index, part_selector) ->
       # the selection widget of a service
       $el = $(part_selector)
+
+      # make the selector visible
+      $el.parent().show()
+
       # flush existing options (usually part-1)
       $el.empty()
 

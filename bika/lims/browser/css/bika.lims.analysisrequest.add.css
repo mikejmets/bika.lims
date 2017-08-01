@@ -81,6 +81,9 @@
 .ar-table tr.service {
     display: none;
 }
+.ar-table tr.service .part {
+    display: none;
+}
 .ar-table tr.service.visible {
     display: table-row;
 }
