@@ -1303,31 +1303,6 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
                 # remember the sampletype metadata
                 client_metadata[uid] = metadata
 
-            # DRY MATTER
-            dms = self.get_drymatter_service()
-            if dms and record.get("ReportDryMatter"):
-                # get the UID of the drymatter service
-                dms_uid = api.get_uid(dms)
-                # get the drymatter metadata
-                metadata = self.get_service_info(dms)
-                # remember the metadata of the drymatter service
-                dms_metadata[dms_uid] = metadata
-                # add the drymatter service to the service collection (processed later)
-                _services[dms_uid] = dms
-                # get the dependencies of the drymatter service
-                dms_deps = self.get_calculation_dependencies_for(dms)
-                # add the drymatter service dependencies to the service collection (processed later)
-                _services.update(dms_deps)
-                # remember a mapping of dms uid -> services
-                dms_to_services[dms_uid] = dms_deps.keys() + [dms_uid]
-                # remember a mapping of dms dependency uid -> dms
-                service_to_dms[dms_uid] = [dms_uid]
-                for dep_uid, dep in dms_deps.iteritems():
-                    if dep_uid in service_to_dms:
-                        service_to_dms[dep_uid].append(dms_uid)
-                    else:
-                        service_to_dms[dep_uid] = [dms_uid]
-
             # SPECIFICATIONS
             for uid, obj in _specifications.iteritems():
                 # get the specification metadata
@@ -1351,6 +1326,9 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
                 metadata = self.get_template_info(obj)
                 # remember the template metadata
                 template_metadata[uid] = metadata
+
+                # XXX notify below to include the drymatter service as well
+                record["ReportDryMatter"] = obj.getReportDryMatter()
 
                 # profile from the template
                 profile = obj.getAnalysisProfile()
@@ -1378,6 +1356,32 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
                         service_to_templates[service_uid].append(uid)
                     else:
                         service_to_templates[service_uid] = [uid]
+
+            # DRY MATTER
+            dms = self.get_drymatter_service()
+            if dms and record.get("ReportDryMatter"):
+                # get the UID of the drymatter service
+                dms_uid = api.get_uid(dms)
+                # get the drymatter metadata
+                metadata = self.get_service_info(dms)
+                # remember the metadata of the drymatter service
+                dms_metadata[dms_uid] = metadata
+                # add the drymatter service to the service collection (processed later)
+                _services[dms_uid] = dms
+                # get the dependencies of the drymatter service
+                dms_deps = self.get_calculation_dependencies_for(dms)
+                # add the drymatter service dependencies to the service collection (processed later)
+                _services.update(dms_deps)
+                # remember a mapping of dms uid -> services
+                dms_to_services[dms_uid] = dms_deps.keys() + [dms_uid]
+                # remember a mapping of dms dependency uid -> dms
+                service_to_dms[dms_uid] = [dms_uid]
+                for dep_uid, dep in dms_deps.iteritems():
+                    if dep_uid in service_to_dms:
+                        service_to_dms[dep_uid].append(dms_uid)
+                    else:
+                        service_to_dms[dep_uid] = [dms_uid]
+
 
             # PROFILES
             for uid, obj in _profiles.iteritems():
