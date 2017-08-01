@@ -971,7 +971,7 @@ class window.AnalysisRequestAdd
       $("input[type=hidden]", $el.parent()).val("")
 
       record = @records_snapshot[arnum]
-      template_metadata = record.profile_metadata[uid]
+      template_metadata = record.template_metadata[uid]
       template_services = []
 
       # prepare a list of services used by the template with the given UID

@@ -882,7 +882,7 @@
       if (!has_template_selected) {
         $("input[type=hidden]", $el.parent()).val("");
         record = this.records_snapshot[arnum];
-        template_metadata = record.profile_metadata[uid];
+        template_metadata = record.template_metadata[uid];
         template_services = [];
         $.each(record.template_to_services[uid], function(index, uid) {
           return template_services.push(record.service_metadata[uid]);
