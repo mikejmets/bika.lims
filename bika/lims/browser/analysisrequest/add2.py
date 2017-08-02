@@ -1719,7 +1719,9 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
         # Automatic label printing won't print "register" labels for Secondary. ARs
         bika_setup = api.get_bika_setup()
         auto_print = bika_setup.getAutoPrintStickers()
-        new_ars = [a for a in ARs if a[-2:] == '01']
+
+        # https://github.com/bikalabs/bika.lims/pull/2153
+        new_ars = [a for a in ARs if a[-1] == '1']
 
         if 'register' in auto_print and new_ars:
             return {
