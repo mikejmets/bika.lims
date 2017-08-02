@@ -583,12 +583,14 @@ class window.AnalysisRequestAdd
     field = $("#SampleType-#{arnum}")
     uid = template.sample_type_uid
     title = template.sample_type_title
+    @flush_reference_field field
     @set_reference_field field, uid, title
 
     # set the sample point
     field = $("#SamplePoint-#{arnum}")
     uid = template.sample_point_uid
     title = template.sample_point_title
+    @flush_reference_field field
     @set_reference_field field, uid, title
 
     # set the analysis profile

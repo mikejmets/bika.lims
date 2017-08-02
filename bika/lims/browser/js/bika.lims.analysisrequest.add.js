@@ -530,10 +530,12 @@
       field = $("#SampleType-" + arnum);
       uid = template.sample_type_uid;
       title = template.sample_type_title;
+      this.flush_reference_field(field);
       this.set_reference_field(field, uid, title);
       field = $("#SamplePoint-" + arnum);
       uid = template.sample_point_uid;
       title = template.sample_point_title;
+      this.flush_reference_field(field);
       this.set_reference_field(field, uid, title);
       field = $("#Profiles-" + arnum);
       uid = template.analysis_profile_uid;
