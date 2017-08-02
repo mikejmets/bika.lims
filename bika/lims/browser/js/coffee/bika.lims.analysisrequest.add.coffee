@@ -597,6 +597,7 @@ class window.AnalysisRequestAdd
     field = $("#Profiles-#{arnum}")
     uid = template.analysis_profile_uid
     title = template.analysis_profile_title
+    @flush_reference_field field
     @set_reference_field field, uid, title
 
     # set the remarks

@@ -540,6 +540,7 @@
       field = $("#Profiles-" + arnum);
       uid = template.analysis_profile_uid;
       title = template.analysis_profile_title;
+      this.flush_reference_field(field);
       this.set_reference_field(field, uid, title);
       field = $("#Remarks-" + arnum);
       field.text(template.remarks);
