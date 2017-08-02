@@ -501,10 +501,15 @@
        * Recalculate partitions
        * Filter Sample Points
        */
-      var field, query;
+      var field, query, title, uid;
       field = $("#SamplePoint-" + arnum);
       query = sampletype.filter_queries.samplepoint;
       this.set_reference_field_query(field, query);
+      field = $("#DefaultContainerType-" + arnum);
+      uid = sampletype.container_type_uid;
+      title = sampletype.container_type_title;
+      this.flush_reference_field(field);
+      this.set_reference_field(field, uid, title);
       field = $("#Specification-" + arnum);
       query = sampletype.filter_queries.specification;
       return this.set_reference_field_query(field, query);

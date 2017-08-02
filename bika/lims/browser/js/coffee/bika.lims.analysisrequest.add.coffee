@@ -553,6 +553,13 @@ class window.AnalysisRequestAdd
     query = sampletype.filter_queries.samplepoint
     @set_reference_field_query field, query
 
+    # set the default container
+    field = $("#DefaultContainerType-#{arnum}")
+    uid = sampletype.container_type_uid
+    title = sampletype.container_type_title
+    @flush_reference_field field
+    @set_reference_field field, uid, title
+
     # restrict the specifications
     field = $("#Specification-#{arnum}")
     query = sampletype.filter_queries.specification
