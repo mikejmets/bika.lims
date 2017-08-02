@@ -555,10 +555,12 @@ class window.AnalysisRequestAdd
 
     # set the default container
     field = $("#DefaultContainerType-#{arnum}")
-    uid = sampletype.container_type_uid
-    title = sampletype.container_type_title
-    @flush_reference_field field
-    @set_reference_field field, uid, title
+    # apply default container if the field is empty
+    if not field.val()
+      uid = sampletype.container_type_uid
+      title = sampletype.container_type_title
+      @flush_reference_field field
+      @set_reference_field field, uid, title
 
     # restrict the specifications
     field = $("#Specification-#{arnum}")
