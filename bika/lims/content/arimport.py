@@ -371,6 +371,7 @@ class ARImport(BaseFolder):
                 workflow.doActionFor(sample, 'no_sampling_workflow')
             part = _createObjectByType('SamplePartition', sample, 'part-1')
             part.unmarkCreationFlag()
+            renameAfterCreation(part)
             if swe:
                 workflow.doActionFor(part, 'sampling_workflow')
             else:

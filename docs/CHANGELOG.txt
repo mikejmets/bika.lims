@@ -2,6 +2,8 @@
 ------------------
 
 - Saving '-----' and negetive values as 0(Only for Shimadzu instruments)
+- Laboratory Supervisor field on the Laboratory(Bika Setup - Laboratory Information)
+- Laboratory License ID field on the Laboratory(Bika Setup - Laboratory Information)
 - Add instrument Agilent-Masshunter
 - Issue-2145: Client Departments/Types structure not preserved on reinstall
 - Issue-2143: Make Bika API work with DX types properly
@@ -12,6 +14,7 @@
 - Added Unit Conversions to allow analyses to be reported in more than one unit
 - Issue-2152: Fixed AR sticker autoprint to work regardless of AR number format
 - BC-99: Added Print Stickers button to AR listings
+- Issue-2152: Fixed AR sticker autoprint to work regardless of AR number format
 
 
 3.3.0 (unreleased)
