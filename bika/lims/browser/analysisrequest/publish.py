@@ -12,7 +12,7 @@ from bika.lims.config import POINTS_OF_CAPTURE
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import IAnalysisRequest
 from bika.lims.interfaces import IResultOutOfRange
-from bika.lims.utils import isnumber
+from bika.lims.utils import isnumber, convert_unit
 from bika.lims.utils import to_utf8, encode_header, createPdf, attachPdf
 from bika.lims.utils import to_utf8, formatDecimalMark, format_supsub
 from bika.lims.utils.analysis import format_uncertainty
@@ -22,6 +22,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.Utils import formataddr
 from operator import itemgetter
+from plone import api as ploneapi
 from plone.registry.interfaces import IRegistry
 from plone.resource.utils import iterDirectoriesOfType, queryResourceDirectory
 from Products.CMFCore.utils import getToolByName
@@ -353,7 +354,8 @@ class AnalysisRequestPublishView(BrowserView):
         data['sample'] = self._sample_data(ar)
         data['batch'] = self._batch_data(ar)
         data['specifications'] = self._specs_data(ar)
-        data['analyses'] = self._analyses_data(ar, ['verified', 'published'])
+        data['analyses'] = self._analyses_data(
+                                ar, ['verified', 'published'], data['sample'])
         data['qcanalyses'] = self._qcanalyses_data(ar, ['verified', 'published'])
         data['points_of_capture'] = sorted(set([an['point_of_capture'] for an in data['analyses']]))
         data['categories'] = sorted(set([an['category'] for an in data['analyses']]))
@@ -665,7 +667,7 @@ class AnalysisRequestPublishView(BrowserView):
 
         return data
 
-    def _analyses_data(self, ar, analysis_states=['verified', 'published']):
+    def _analyses_data(self, ar, analysis_states=['verified', 'published'], sample=None):
         analyses = []
         dm = ar.aq_parent.getDecimalMark()
         batch = ar.getBatch()
@@ -683,7 +685,7 @@ class AnalysisRequestPublishView(BrowserView):
                     continue
 
             # Build the analysis-specific dict
-            andict = self._analysis_data(an, dm)
+            andict = self._analysis_data(an, dm, sample)
 
             # Are there previous results for the same AS and batch?
             andict['previous'] = []
@@ -703,10 +705,27 @@ class AnalysisRequestPublishView(BrowserView):
                 andict['previous'] = sorted(andict['previous'], key=itemgetter("capture_date"))
                 andict['previous_results'] = ", ".join([p['formatted_result'] for p in andict['previous'][-5:]])
 
+            #Append analysis
             analyses.append(andict)
+
+            #Append addition analysis for each unit conversion
+            if andict['unit_conversions']:
+                for uc_uid in andict['unit_conversions']:
+                    new = dict(andict)
+                    unit_conversion = ploneapi.content.get(UID=uc_uid)
+                    new['unit'] = unit_conversion.converted_unit
+                    new['uncertainty'] = ''
+                    new['formatted_specs'] = ''
+                    new['formatted_unit'] = unit_conversion.converted_unit
+                    if andict.get('result'):
+                        new['formatted_result'] = new['result'] = convert_unit(
+                                    andict['formatted_result'],
+                                    unit_conversion.formula,
+                                    dmk)
+                    analyses.append(new)
         return analyses
 
-    def _analysis_data(self, analysis, decimalmark=None):
+    def _analysis_data(self, analysis, decimalmark=None, sample=None):
         if analysis.UID() in self._cache['_analysis_data']:
             return self._cache['_analysis_data'][analysis.UID()]
 
@@ -739,7 +758,9 @@ class AnalysisRequestPublishView(BrowserView):
                             else None,
                   'worksheet': None,
                   'specs': {},
-                  'formatted_specs': ''}
+                  'formatted_specs': '',
+                  'unit_conversions': [],
+                  }
 
         if analysis.portal_type == 'DuplicateAnalysis':
             andict['reftype'] = 'd'
@@ -795,6 +816,17 @@ class AnalysisRequestPublishView(BrowserView):
                 if ret and ret['out_of_range']:
                     andict['outofrange'] = True
                     break
+        # Get unit conversions for result
+        st_uid = None
+        if sample and sample.get('sample_type') and \
+           sample['sample_type'].get('obj'):
+            st_uid = sample['sample_type']['obj'].UID()
+        if st_uid:
+            for unit_conversion in service.getUnitConversions():
+                if unit_conversion.get('SampleType') and \
+                   unit_conversion.get('Unit') and \
+                   unit_conversion.get('SampleType') == st_uid:
+                    andict['unit_conversions'].append(unit_conversion['Unit'])
         self._cache['_analysis_data'][analysis.UID()]  = andict
         return andict
 

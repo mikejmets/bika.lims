@@ -60,7 +60,8 @@ def generateUniqueId(context, parent=False):
 
     def getLastCounter(context, config):
         if config.get('counter_type', '') == 'backreference':
-            return len(context.getBackReferences(config['counter_reference'])) - 1
+            return \
+                len(context.getBackReferences(config['counter_reference'])) - 1
         elif config.get('counter_type', '') == 'contained':
             return len(context.objectItems(config['counter_reference'])) - 1
         else:

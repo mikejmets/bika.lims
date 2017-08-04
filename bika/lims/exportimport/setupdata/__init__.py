@@ -10,6 +10,7 @@ import os.path
 import datetime
 import transaction
 
+from plone import api as ploneapi
 from zope.interface import implements
 
 from pkg_resources import resource_filename
@@ -2327,3 +2328,16 @@ class Client_Types(WorksheetImporter):
                 obj = api.create(folder, 'ClientType',  # noqa
                                  title=row['title'],
                                  description=row.get('description', ''))
+
+class Unit_Conversions(WorksheetImporter):
+
+    def Import(self):
+        folder = self.context.bika_setup.bika_unitconversions
+        for row in self.get_rows(3):
+            if row['unit']:
+                obj = api.create(folder, 'UnitConversion',
+                        title=row['unit'],
+                        converted_unit=row['converted_unit'],
+                        formula=row['formula'],
+                        description=row['description'])
+

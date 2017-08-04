@@ -290,4 +290,10 @@
       provides="bika.lims.interfaces.ISetupDataImporter"
       for="Products.CMFPlone.interfaces.IPloneSiteRoot"/>
 
+    <adapter
+      name="Unit_Conversions"
+      factory="bika.lims.exportimport.setupdata.Unit_Conversions"
+      provides="bika.lims.interfaces.ISetupDataImporter"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"/>
+
 </configure>
