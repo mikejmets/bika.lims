@@ -824,8 +824,6 @@ class AnalysisRequestsView(BikaListingView):
                     DateTime(), long_format=True)
                 item['class']['getDateSampled'] = 'provisional'
             sampler = sample.getSampler().strip()
-            if sampler:
-                item['replace']['getSampler'] = self.user_fullname(sampler)
             if 'Sampler' in member.getRoles() and not sampler:
                 sampler = member.id
                 item['class']['getSampler'] = 'provisional'
@@ -838,7 +836,7 @@ class AnalysisRequestsView(BikaListingView):
         # sampling workflow - inline edits for Sampler and Date Sampled
         checkPermission = self.context.portal_membership.checkPermission
         state = self.workflow.getInfoFor(obj, 'review_state')
-        if state == 'to_be_sampled' \
+        if state in ('to_be_sampled', 'sample_due', 'sample_received') \
                 and checkPermission(SampleSample, obj) \
                 and (not sd or not sd > DateTime()):
             item['required'] = ['getSampler', 'getDateSampled']
