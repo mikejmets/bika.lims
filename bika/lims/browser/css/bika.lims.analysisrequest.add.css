@@ -1,8 +1,15 @@
 #edit-bar {
     display: none;
 }
+#ar-header {
+    display: inline-block;
+}
 /* Manage AR Add */
-#manage-ar-form {
+#manage-ar-fields {
+    display: inline-block;
+    vertical-align: top;
+}
+#manage-ar-fields-link {
 }
 /* /Manage AR Add */
 
