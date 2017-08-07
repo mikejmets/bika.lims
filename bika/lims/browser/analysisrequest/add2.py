@@ -367,9 +367,8 @@ class AnalysisRequestAddView(BrowserView):
         :rtype: Client object or None
         """
         catalog = api.get_tool("portal_catalog")
-        parent = api.get_parent(self.context)
         client = self.get_client()
-        path = api.get_path(parent)
+        path = api.get_path(self.context)
         if client:
             path = api.get_path(client)
         query = {
