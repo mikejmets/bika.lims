@@ -1401,7 +1401,6 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
                     else:
                         service_to_dms[dep_uid] = [dms_uid]
 
-
             # PROFILES
             for uid, obj in _profiles.iteritems():
                 # get the profile metadata
