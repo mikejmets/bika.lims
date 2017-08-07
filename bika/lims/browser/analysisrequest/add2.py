@@ -15,6 +15,7 @@ from BTrees.OOBTree import OOBTree
 
 from plone import protect
 # from plone.memoize.ram import cache
+from plone.memoize import view
 
 from zope.annotation.interfaces import IAnnotations
 from zope.publisher.interfaces import IPublishTraverse
@@ -84,9 +85,6 @@ class AnalysisRequestAddView(BrowserView):
         self.context = context
         self.fieldvalues = {}
         self.tmp_ar = None
-        # need to be ready on __init__
-        self.defaultPriority = self.get_default_priority()
-        self.ShowPrices = self.bika_setup.getShowPrices()
 
     def __call__(self):
         self.portal = api.get_portal()
@@ -99,6 +97,7 @@ class AnalysisRequestAddView(BrowserView):
         self.ar_count = self.get_ar_count()
         self.fieldvalues = self.generate_fieldvalues(self.ar_count)
         self.specifications = self.generate_specifications(self.ar_count)
+        self.ShowPrices = self.bika_setup.getShowPrices()
         logger.info("*** Prepared data for {} ARs ***".format(self.ar_count))
         return self.template()
 
@@ -288,8 +287,9 @@ class AnalysisRequestAddView(BrowserView):
             if contact is not None:
                 default = contact
         if name == "Priority":
-            if self.defaultPriority is not None:
-                return self.defaultPriority
+            default_priority = self.get_default_priority()
+            if default_priority is not None:
+                return default_priority
         logger.info("get_default_value: context={} field={} value={}".format(
             context, name, default))
         return default
@@ -360,17 +360,18 @@ class AnalysisRequestAddView(BrowserView):
 
         return out
 
+    @view.memoize
     def get_default_priority(self):
         """Try to fetch the default priority
         """
         bika_setup = api.get_bika_setup()
         ar_priorities = bika_setup.bika_arpriorities
-        # XXX we call objectValues in here, because there is no catalog index
-        #     for that and we don't expext too many priorities
-        defaults = filter(lambda prio: prio.getIsDefault(), ar_priorities.objectValues())
-        if defaults:
+        # XXX: we call objectValues in here, because there is no catalog index
+        # for that and we don't expext too many priorities
+        default_priorities = filter(lambda prio: prio.getIsDefault(), ar_priorities.objectValues())
+        if default_priorities:
             # more than one priority can be set as default!
-            return defaults[0]
+            return default_priorities[0]
         return None
 
     def get_default_contact(self):
