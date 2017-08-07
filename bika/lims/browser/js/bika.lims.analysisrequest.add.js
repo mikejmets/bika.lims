@@ -5,10 +5,12 @@
 
 (function() {
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    hasProp = {}.hasOwnProperty;
+    hasProp = {}.hasOwnProperty,
+    indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   window.AnalysisRequestAdd = (function() {
     function AnalysisRequestAdd() {
+      this.init_file_fields = bind(this.init_file_fields, this);
       this.on_form_submit = bind(this.on_form_submit, this);
       this.on_ajax_end = bind(this.on_ajax_end, this);
       this.on_ajax_start = bind(this.on_ajax_start, this);
@@ -62,6 +64,7 @@
       this.applied_templates = {};
       $(".blurrable").removeClass("blurrable");
       this.bind_eventhandler();
+      this.init_file_fields();
       return this.recalculate_records();
     };
 
@@ -1323,6 +1326,52 @@
           return window.location.replace(base_url);
         }
       });
+    };
+
+    AnalysisRequestAdd.prototype.init_file_fields = function() {
+      var me;
+      me = this;
+      return $('tr[fieldname] input[type="file"]').each(function(index, element) {
+        var add_btn, add_btn_src, file_field, file_field_div;
+        file_field = $(element);
+        file_field.wrap("<div class='field'/>");
+        file_field_div = file_field.parent();
+        add_btn_src = window.portal_url + "/++resource++bika.lims.images/add.png";
+        add_btn = $("<img class='addbtn' style='cursor:pointer;' src='" + add_btn_src + "' />");
+        add_btn.on("click", element, function(event) {
+          return me.file_addbtn_click(event, element);
+        });
+        return file_field_div.append(add_btn);
+      });
+    };
+
+    AnalysisRequestAdd.prototype.file_addbtn_click = function(event, element) {
+      var arnum, counter, del_btn, del_btn_src, existing_file_field_names, existing_file_fields, file_field, file_field_div, holding_div, name, newfieldname, ref;
+      file_field = $(element).clone();
+      file_field.val("");
+      file_field.wrap("<div class='field'/>");
+      file_field_div = file_field.parent();
+      ref = $(element).attr("name").split("-"), name = ref[0], arnum = ref[1];
+      holding_div = $(element).parent().parent();
+      existing_file_fields = holding_div.find("input[type='file']");
+      existing_file_field_names = existing_file_fields.map(function(index, element) {
+        return $(element).attr("name");
+      });
+      counter = 0;
+      newfieldname = $(element).attr("name");
+      while (indexOf.call(existing_file_field_names, newfieldname) >= 0) {
+        newfieldname = name + "_" + counter + "-" + arnum;
+        counter++;
+      }
+      file_field.attr("name", newfieldname);
+      file_field.attr("id", newfieldname);
+      del_btn_src = window.portal_url + "/++resource++bika.lims.images/delete.png";
+      del_btn = $("<img class='delbtn' style='cursor:pointer;' src='" + del_btn_src + "' />");
+      del_btn.on("click", element, function(event) {
+        return $(this).parent().remove();
+      });
+      file_field_div.append(del_btn);
+      return $(element).parent().parent().append(file_field_div);
     };
 
     return AnalysisRequestAdd;
