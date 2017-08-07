@@ -28,6 +28,12 @@ class window.AnalysisRequestAdd
     # bind the event handler to the elements
     @bind_eventhandler()
 
+    # N.B.: The new AR Add form handles File fields like this:
+    # - File fields can carry more than one field (see init_file_fields)
+    # - All uploaded files are extracted and added as attachments to the new created AR
+    # - The file field itself (Plone) will stay empty therefore
+    @init_file_fields()
+
     # recalculate records on load (needed for AR copies)
     @recalculate_records()
 
@@ -1430,3 +1436,61 @@ class window.AnalysisRequestAdd
         window.location.replace destination + q
       else
         window.location.replace base_url
+
+
+  init_file_fields: =>
+    me = this
+    $('tr[fieldname] input[type="file"]').each (index, element) ->
+      # Wrap the initial field into a div
+      file_field = $(element)
+      file_field.wrap "<div class='field'/>"
+      file_field_div = file_field.parent()
+      # Create and add an ADD Button on the fly
+      add_btn_src = "#{window.portal_url}/++resource++bika.lims.images/add.png"
+      add_btn = $("<img class='addbtn' style='cursor:pointer;' src='#{add_btn_src}' />")
+
+      # bind ADD event handler
+      add_btn.on "click", element, (event) ->
+        me.file_addbtn_click event, element
+
+      # Attach the Button into the same div container
+      file_field_div.append add_btn
+
+  file_addbtn_click: (event, element) ->
+    # Clone the file field and wrap it into a div
+    file_field = $(element).clone()
+    file_field.val("")
+    file_field.wrap "<div class='field'/>"
+    file_field_div = file_field.parent()
+    [name, arnum] = $(element).attr("name").split("-")
+
+    # Get all existing input fields and their names
+    holding_div = $(element).parent().parent()
+    existing_file_fields = holding_div.find("input[type='file']")
+    existing_file_field_names = existing_file_fields.map (index, element) ->
+      $(element).attr("name")
+
+    # Generate a new name for the field and ensure it is not taken by another field already
+    counter = 0
+    newfieldname = $(element).attr("name")
+    while newfieldname in existing_file_field_names
+      newfieldname = "#{name}_#{counter}-#{arnum}"
+      counter++
+
+    # set the new id, name
+    file_field.attr("name", newfieldname)
+    file_field.attr("id", newfieldname)
+
+    # Create and add an DELETE Button on the fly
+    del_btn_src = "#{window.portal_url}/++resource++bika.lims.images/delete.png"
+    del_btn = $("<img class='delbtn' style='cursor:pointer;' src='#{del_btn_src}' />")
+
+    # Bind an DELETE event handler
+    del_btn.on "click", element, (event) ->
+      $(this).parent().remove()
+
+    # Attach the Button into the same div container
+    file_field_div.append del_btn
+
+    # Attach the new field to the outer div of the passed file field
+    $(element).parent().parent().append file_field_div

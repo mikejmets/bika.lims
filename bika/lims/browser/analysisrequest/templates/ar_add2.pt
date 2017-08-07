@@ -271,24 +271,23 @@
   <body>
 
     <metal:title fill-slot="content-title">
-      <h1>
+      <h1 id="ar-header">
         <img tal:condition="view/icon | nothing" tal:attributes="src view/icon"/>
         <span i18n:translate="">Request new analyses</span>
       </h1>
+      <div id="manage-ar-fields"
+           tal:condition="python:user.has_role('LabManager') or user.has_role('Manager')">
+        <a id="manage-ar-fields-link"
+           href=""
+           class="btn btn-link"
+           target="_blank"
+           i18n:translate=""
+           tal:attributes="href python:context.absolute_url() + '/ar_add_manage'">
+          (&#9998; Manage Fields)
+        </a>
+      </div>
     </metal:title>
     <metal:description fill-slot="content-description">
-        <div id="manage-ar-form"
-             tal:condition="python:user.has_role('LabManager') or user.has_role('Manager')">
-          <a id="manage-ar-link"
-            href=""
-            class="btn btn-link"
-            target="_blank"
-            i18n:translate=""
-            tal:attributes="href python:context.absolute_url() + '/ar_add_manage'">
-            Manage AR Add Fields
-          </a>
-        </div>
-
     </metal:description>
 
     <div metal:fill-slot="content-core"
