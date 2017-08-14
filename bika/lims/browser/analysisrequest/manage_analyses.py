@@ -183,6 +183,7 @@ class AnalysisRequestAnalysesView(BikaListingView):
         self.allow_edit = mtool.checkPermission('Modify portal content',
                                                 self.context)
 
+        import pdb; pdb.set_trace()
         items = BikaListingView.folderitems(self)
         analyses = self.context.getAnalyses(full_objects=True)
 
@@ -194,13 +195,14 @@ class AnalysisRequestAnalysesView(BikaListingView):
         for x in range(len(items)):
             if not 'obj' in items[x]:
                 continue
-            obj = items[x]['obj']
+            brain = items[x]['obj']
 
-            cat = obj.getCategoryTitle()
+            cat = brain.getCategoryTitle
             items[x]['category'] = cat
             if cat not in self.categories:
                 self.categories.append(cat)
 
+            items[x]['required'].append('getRe')
             items[x]['selected'] = items[x]['uid'] in self.selected
 
             items[x]['class']['Title'] = 'service_title'
@@ -217,14 +219,14 @@ class AnalysisRequestAnalysesView(BikaListingView):
             #     row_data['disabled'] = True
             items[x]['row_data'] = json.dumps(row_data)
 
-            calculation = obj.getCalculation()
+            calculation = '' #brain.getCalculation
             items[x]['Calculation'] = calculation and calculation.Title()
 
             locale = locales.getLocale('en')
             currency = self.context.bika_setup.getCurrency()
             symbol = locale.numbers.currencies[currency].symbol
             items[x]['before']['Price'] = symbol
-            items[x]['Price'] = obj.getPrice()
+            items[x]['Price'] = brain.getPrice
             items[x]['class']['Price'] = 'nowrap'
             items[x]['Priority'] = ''
 
@@ -236,8 +238,8 @@ class AnalysisRequestAnalysesView(BikaListingView):
             items[x]['required'].append('Partition')
             items[x]['choices']['Partition'] = partitions
 
-            if obj.UID() in self.analyses:
-                analysis = self.analyses[obj.UID()]
+            if brain.UID in self.analyses:
+                analysis = self.analyses[brain.UID]
                 part = analysis.getSamplePartition()
                 part = part and part or obj
                 items[x]['Partition'] = part.Title()
@@ -258,28 +260,28 @@ class AnalysisRequestAnalysesView(BikaListingView):
                 items[x]["Priority"] = ''
 
             after_icons = ''
-            if obj.getAccredited():
+            if brain.getAccredited:
                 after_icons += "<img\
                 src='%s/++resource++bika.lims.images/accredited.png'\
                 title='%s'>" % (
                     self.portal_url,
                     t(_("Accredited"))
                 )
-            if obj.getReportDryMatter():
+            if brain.getReportDryMatter:
                 after_icons += "<img\
                 src='%s/++resource++bika.lims.images/dry.png'\
                 title='%s'>" % (
                     self.portal_url,
                     t(_("Can be reported as dry matter"))
                 )
-            if obj.getAttachmentOption() == 'r':
+            if False: #brain.getAttachmentOption == 'r':
                 after_icons += "<img\
                 src='%s/++resource++bika.lims.images/attach_reqd.png'\
                 title='%s'>" % (
                     self.portal_url,
                     t(_("Attachment required"))
                 )
-            if obj.getAttachmentOption() == 'n':
+            if False: #brain.getAttachmentOption == 'n':
                 after_icons += "<img\
                 src='%s/++resource++bika.lims.images/attach_no.png'\
                 title='%s'>" % (
@@ -291,9 +293,9 @@ class AnalysisRequestAnalysesView(BikaListingView):
 
 
             # Display analyses for this Analysis Service in results?
-            ser = self.context.getAnalysisServiceSettings(obj.UID())
+            ser = self.context.getAnalysisServiceSettings(brain.UID)
             items[x]['allow_edit'] = ['Hidden', ]
-            items[x]['Hidden'] = ser.get('hidden', obj.getHidden())
+            items[x]['Hidden'] = ser.get('hidden', '')
 
         self.categories.sort()
         return items

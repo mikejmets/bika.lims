@@ -912,7 +912,7 @@ class BikaListingView(BrowserView):
         results = []
         self.show_more = False
         brains = brains[self.limit_from:]
-        for i, obj in enumerate(brains):
+        for i, brain in enumerate(brains):
             # avoid creating unnecessary info for items outside the current
             # batch;  only the path is needed for the "select all" case...
             # we only take allowed items into account
@@ -922,62 +922,69 @@ class BikaListingView(BrowserView):
                 break
 
             # we don't know yet if it's a brain or an object
-            path = hasattr(obj, 'getPath') and obj.getPath() or \
-                 "/".join(obj.getPhysicalPath())
+            path = hasattr(brain, 'getPath') and brain.getPath() or \
+                 "/".join(brain.getPhysicalPath())
 
             # This item must be rendered, we need the object instead of a brain
-            obj = obj.getObject() if hasattr(obj, 'getObject') else obj
+            #obj = obj.getObject() if hasattr(obj, 'getObject') else obj
 
             # check if the item must be rendered or not (prevents from
             # doing it later in folderitems) and dealing with paging
-            if not obj or not self.isItemAllowed(obj):
+            if not brain or not self.isItemAllowed(brain):
                 continue
 
-            uid = obj.UID()
-            title = obj.Title()
-            description = obj.Description()
-            icon = plone_layout.getIcon(obj)
-            url = obj.absolute_url()
-            relative_url = obj.absolute_url(relative=True)
+            uid = brain.UID #obj.UID()
+            title = brain.Title #obj.Title()
+            description = brain.Description #obj.Description()
+            icon = None #plone_layout.getIcon(obj)
+            url = brain.getURL() #obj.absolute_url()
+            relative_url = brain.getPath() #obj.absolute_url(relative=True)
 
-            fti = portal_types.get(obj.portal_type)
-            if fti is not None:
-                type_title_msgid = fti.Title()
-            else:
-                type_title_msgid = obj.portal_type
+            #fti = portal_types.get(obj.portal_type)
+            #if fti is not None:
+            #    type_title_msgid = fti.Title()
+            #else:
+            #    type_title_msgid = obj.portal_type
+            type_title_msgid = brain.portal_type
 
             url_href_title = '%s at %s: %s' % (
                 t(type_title_msgid),
                 path,
                 to_utf8(description))
 
-            modified = self.ulocalized_time(obj.modified()),
+            try:
+                modified = self.ulocalized_time(brain.modified)
+            except:
+                #TODO WTF
+                modified = self.ulocalized_time(brain.modified())
 
             # element css classes
             type_class = 'contenttype-' + \
-                plone_utils.normalizeString(obj.portal_type)
+                plone_utils.normalizeString(brain.portal_type)
 
             state_class = ''
             states = {}
-            for w in workflow.getWorkflowsFor(obj):
-                state = w._getWorkflowStateOf(obj).id
-                states[w.state_var] = state
-                state_class += "state-%s " % state
+            #for w in workflow.getWorkflowsFor(obj):
+            #    state = w._getWorkflowStateOf(obj).id
+            #    states[w.state_var] = state
+            #    state_class += "state-%s " % state
 
             results_dict = dict(
-                obj=obj,
-                id=obj.getId(),
+                obj=brain,
+                id=brain.id,
+                getRequestID=title,
                 title=title,
                 uid=uid,
                 path=path,
                 url=url,
-                fti=fti,
+                fti=None, #fti,
                 item_data=json.dumps([]),
                 url_href_title=url_href_title,
-                obj_type=obj.Type,
-                size=obj.getObjSize,
+                obj_type=brain.Type,
+                size=0,
                 modified=modified,
-                icon=icon.html_tag(),
+                #icon=icon.html_tag(),
+                icon=None, #icon.html_tag(),
                 type_class=type_class,
                 # a list of lookups for single-value-select fields
                 choices={},
@@ -1009,9 +1016,10 @@ class BikaListingView(BrowserView):
             )
 
             try:
-                rs = workflow.getInfoFor(obj, 'review_state')
-                st_title = workflow.getTitleForStateOnType(rs, obj.portal_type)
-                st_title = _(st_title)
+                rs = brain.review_state #workflow.getInfoFor(obj, 'review_state')
+                #st_title = workflow.getTitleForStateOnType(rs, obj.portal_type)
+                #st_title = _(st_title)
+                st_title = _(rs)
             except:
                 rs = 'active'
                 st_title = None
@@ -1022,23 +1030,23 @@ class BikaListingView(BrowserView):
             for state_var, state in states.items():
                 if not st_title:
                     st_title = workflow.getTitleForStateOnType(
-                        state, obj.portal_type)
+                        state, brain.portal_type)
                 results_dict[state_var] = state
             results_dict['state_title'] = st_title
 
             # extra classes for individual fields on this item { field_id : "css classes" }
             results_dict['class'] = {}
-            for name, adapter in getAdapters((obj, ), IFieldIcons):
-                auid = obj.UID() if hasattr(obj, 'UID') and callable(obj.UID) else None
-                if not auid:
-                    continue
-                alerts = adapter()
-                # logger.info(str(alerts))
-                if alerts and auid in alerts:
-                    if auid in self.field_icons:
-                        self.field_icons[auid].extend(alerts[auid])
-                    else:
-                        self.field_icons[auid] = alerts[auid]
+            #for name, adapter in getAdapters((obj, ), IFieldIcons):
+            #    auid = obj.UID() if hasattr(obj, 'UID') and callable(obj.UID) else None
+            #    if not auid:
+            #        continue
+            #    alerts = adapter()
+            #    # logger.info(str(alerts))
+            #    if alerts and auid in alerts:
+            #        if auid in self.field_icons:
+            #            self.field_icons[auid].extend(alerts[auid])
+            #        else:
+            #            self.field_icons[auid] = alerts[auid]
 
             # Search for values for all columns in obj
             for key in self.columns.keys():
@@ -1046,28 +1054,32 @@ class BikaListingView(BrowserView):
                 # then we don't replace it's value
                 value = results_dict.get(key, '')
                 if key not in results_dict:
-                    attrobj = getFromString(obj, key)
+                    attrobj = None #getFromString(obj, key)
                     value = attrobj if attrobj else value
 
                     # Custom attribute? Inspect to set the value
                     # for the current column dinamically
                     vattr = self.columns[key].get('attr', None)
                     if vattr:
-                        attrobj = getFromString(obj, vattr)
+                        attrobj = None #getFromString(obj, vattr)
                         value = attrobj if attrobj else value
                     results_dict[key] = value
 
                 # Replace with an url?
                 replace_url = self.columns[key].get('replace_url', None)
+                if key == 'getRequestID':
+                    results_dict['replace'][key] = \
+                        '<a href="%s">%s</a>' % (
+                                results_dict['view_url'], value)
                 if replace_url:
                     attrobj = getFromString(obj, replace_url)
                     if attrobj:
                         results_dict['replace'][key] = \
                             '<a href="%s">%s</a>' % (attrobj, value)
 
-            # The item basics filled. Delegate additional actions to folderitem
+            # Th item basics filled. Delegate additional actions to folderitem
             # service. folderitem service is frequently overriden by child objects
-            item = self.folderitem(obj, results_dict, idx)
+            item = self.folderitem(brain, results_dict, idx)
             if item:
                 results.append(item)
                 idx += 1
@@ -1293,6 +1305,8 @@ class BikaListingTable(tableview.Table):
                        that templates require.
         :return: rendered HTML text
         """
+        import pdb; pdb.set_trace()
+        print 'render_items: %s' % cat
         self.cat = cat
         for key, val in kwargs.items():
             self.__setattr__(key, val)

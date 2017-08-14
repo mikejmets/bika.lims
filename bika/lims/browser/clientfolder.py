@@ -172,19 +172,19 @@ class ClientFolderContentsView(BikaListingView):
         for item in items:
             if "obj" not in item:
                 continue
-            obj = item['obj']
+            brain = item['obj']
 
             item['replace']['title'] = "<a href='%s/%s'>%s</a>" % \
                 (item['url'], landing_page.encode('ascii'), item['title'])
 
-            item['EmailAddress'] = obj.getEmailAddress()
-            item['replace']['EmailAddress'] = "<a href='%s'>%s</a>" % \
-                ('mailto:%s' % obj.getEmailAddress(), obj.getEmailAddress())
-            item['Phone'] = obj.getPhone()
-            item['Fax'] = obj.getFax()
-            item['ClientID'] = obj.getClientID()
-            item['BulkDiscount'] = obj.getBulkDiscount() and 'Y' or 'N'
-            item['MemberDiscountApplies'] = obj.getMemberDiscountApplies() and 'Y' or 'N'
+            item['EmailAddress'] = '' #obj.getEmailAddress()
+            #item['replace']['EmailAddress'] = "<a href='%s'>%s</a>" % \
+            #    ('mailto:%s' % obj.getEmailAddress(), obj.getEmailAddress())
+            item['Phone'] = '' #obj.getPhone()
+            item['Fax'] = '' #obj.getFax()
+            item['ClientID'] = '' #obj.getClientID()
+            item['BulkDiscount'] = '' #obj.getBulkDiscount() and 'Y' or 'N'
+            item['MemberDiscountApplies'] = '' #obj.getMemberDiscountApplies() and 'Y' or 'N'
 
         return items
 

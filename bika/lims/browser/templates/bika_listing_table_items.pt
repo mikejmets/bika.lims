@@ -21,7 +21,7 @@
                       uid python: item['uid'] if 'uid' in item else None;
                       keyword python: keyword if keyword else None;
                       as_uid python: suid if suid else None;
-                      title python: item['title'] if 'title' in item else None;
+                      title python: item['title'] if 'title' in item else 'KAK';
                       price python: item['price'] if 'price' in item else None;
                       vat_percentage python: item['vat_percentage'] if 'vat_percentage' in item else None">
 
@@ -84,7 +84,7 @@
                                item_title item/title;
                                alt item/title;
                                tabindex string:1000;
-                               selector python:str(item['obj'].aq_parent.getId() if hasattr(item.get('obj', ''), 'aq_parent') else '') + '_' + item['id'];
+                               selector python: item['id'];
                                checked python:item.has_key('selected') and item['selected'] and 'yes' or '';
                                data-valid_transitions python:','.join(item.get('valid_transitions', []))"/>
         <input type="hidden"

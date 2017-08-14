@@ -727,33 +727,33 @@ class AnalysisRequestsView(BikaListingView):
             and 'LabManager' not in roles \
             and 'LabClerk' not in roles
 
-        sample = obj.getSample()
-        url = obj.absolute_url()
-        if getSecurityManager().checkPermission(EditResults, obj):
-            url += "/manage_results"
+        #sample = obj.getSample()
+        url = obj.getURL()
+        #if getSecurityManager().checkPermission(EditResults, obj):
+        #    url += "/manage_results"
 
-        item['Client'] = obj.aq_parent.Title()
-        if (hideclientlink == False):
-            item['replace']['Client'] = "<a href='%s'>%s</a>" % \
-                (obj.aq_parent.absolute_url(), obj.aq_parent.Title())
-        item['Creator'] = self.user_fullname(obj.Creator())
-        item['getRequestID'] = obj.getRequestID()
-        item['replace']['getRequestID'] = "<a href='%s'>%s</a>" % \
-             (url, item['getRequestID'])
-        item['getSample'] = sample
-        item['replace']['getSample'] = \
-            "<a href='%s'>%s</a>" % (sample.absolute_url(), sample.Title())
+        item['Client'] = ''#obj.aq_parent.Title()
+        #if (hideclientlink == False):
+        #    item['replace']['Client'] = "<a href='%s'>%s</a>" % \
+        #        (obj.aq_parent.absolute_url(), obj.aq_parent.Title())
+        item['Creator'] = ''#self.user_fullname(obj.Creator())
+        #item['getRequestID'] = '' #obj.getRequestID()
+        #item['replace']['getRequestID'] = "<a href='%s'>%s</a>" % \
+        #     (url, item['getRequestID'])
+        item['getSample'] = None
+        #item['replace']['getSample'] = \
+        #    "<a href='%s'>%s</a>" % (sample.absolute_url(), sample.Title())
 
-        item['replace']['getProfilesTitle'] = ", ".join(
-            [p.Title() for p in obj.getProfiles()])
+        #item['replace']['getProfilesTitle'] = ", ".join(
+        #    [p.Title() for p in obj.getProfiles()])
 
-        analysesnum = obj.getAnalysesNum()
+        analysesnum = None #obj.getAnalysesNum()
         if analysesnum:
             item['getAnalysesNum'] = str(analysesnum[0]) + '/' + str(analysesnum[1])
         else:
             item['getAnalysesNum'] = ''
 
-        batch = obj.getBatch()
+        batch = None #obj.getBatch()
         if batch:
             item['BatchID'] = batch.getBatchID()
             item['replace']['BatchID'] = "<a href='%s'>%s</a>" % \
@@ -761,53 +761,54 @@ class AnalysisRequestsView(BikaListingView):
         else:
             item['BatchID'] = ''
 
-        val = obj.Schema().getField('SubGroup').get(obj)
-        item['SubGroup'] = val.Title() if val else ''
+        #val = obj.Schema().getField('SubGroup').get(obj)
+        item['SubGroup'] = '' #val.Title() if val else ''
 
-        sd = obj.getSample().getSamplingDate()
+        #sd = obj.getSample().getSamplingDate()
         item['SamplingDate'] = \
-            self.ulocalized_time(sd, long_format=1) if sd else ''
+            '' #self.ulocalized_time(sd, long_format=1) if sd else ''
         item['getDateReceived'] = \
-            self.ulocalized_time(obj.getDateReceived())
+            '' #self.ulocalized_time(obj.getDateReceived())
         item['getDatePublished'] = \
-            self.ulocalized_time(getTransitionDate(obj, 'publish'))
+            '' #self.ulocalized_time(getTransitionDate(obj, 'publish'))
         item['getDateVerified'] = \
-            self.ulocalized_time(getTransitionDate(obj, 'verify'))
+            '' #self.ulocalized_time(getTransitionDate(obj, 'verify'))
 
-        deviation = sample.getSamplingDeviation()
-        item['SamplingDeviation'] = deviation and deviation.Title() or ''
-        priority = obj.getPriority()
+        #deviation = sample.getSamplingDeviation()
+        item['SamplingDeviation'] = '' #deviation and deviation.Title() or ''
+        #priority = obj.getPriority()
         item['Priority'] = '' # priority.Title()
 
-        item['getStorageLocation'] = sample.getStorageLocation() and sample.getStorageLocation().Title() or ''
-        item['AdHoc'] = sample.getAdHoc() and True or ''
+        item['getStorageLocation'] = '' #sample.getStorageLocation() and sample.getStorageLocation().Title() or ''
+        item['AdHoc'] = '' #sample.getAdHoc() and True or ''
 
         after_icons = ""
-        state = self.workflow.getInfoFor(obj, 'worksheetanalysis_review_state')
-        if state == 'assigned':
-            after_icons += "<img src='%s/++resource++bika.lims.images/worksheet.png' title='%s'/>" % \
-                (self.portal_url, t(_("All analyses assigned")))
-        if self.workflow.getInfoFor(obj, 'review_state') == 'invalid':
-            after_icons += "<img src='%s/++resource++bika.lims.images/delete.png' title='%s'/>" % \
-                (self.portal_url, t(_("Results have been withdrawn")))
-        if obj.getLate():
-            after_icons += "<img src='%s/++resource++bika.lims.images/late.png' title='%s'>" % \
-                (self.portal_url, t(_("Late Analyses")))
-        if sd and sd > DateTime():
-            after_icons += "<img src='%s/++resource++bika.lims.images/calendar.png' title='%s'>" % \
-                (self.portal_url, t(_("Future dated sample")))
-        if obj.getInvoiceExclude():
-            after_icons += "<img src='%s/++resource++bika.lims.images/invoice_exclude.png' title='%s'>" % \
-                (self.portal_url, t(_("Exclude from invoice")))
-        if sample.getSampleType().getHazardous():
-            after_icons += "<img src='%s/++resource++bika.lims.images/hazardous.png' title='%s'>" % \
-                (self.portal_url, t(_("Hazardous")))
+        #state = self.workflow.getInfoFor(obj, 'worksheetanalysis_review_state')
+        #if state == 'assigned':
+        #    after_icons += "<img src='%s/++resource++bika.lims.images/worksheet.png' title='%s'/>" % \
+        #        (self.portal_url, t(_("All analyses assigned")))
+        #if self.workflow.getInfoFor(obj, 'review_state') == 'invalid':
+        #    after_icons += "<img src='%s/++resource++bika.lims.images/delete.png' title='%s'/>" % \
+        #        (self.portal_url, t(_("Results have been withdrawn")))
+        #if obj.getLate():
+        #    after_icons += "<img src='%s/++resource++bika.lims.images/late.png' title='%s'>" % \
+        #        (self.portal_url, t(_("Late Analyses")))
+        #if sd and sd > DateTime():
+        #    after_icons += "<img src='%s/++resource++bika.lims.images/calendar.png' title='%s'>" % \
+        #        (self.portal_url, t(_("Future dated sample")))
+        #if obj.getInvoiceExclude():
+        #    after_icons += "<img src='%s/++resource++bika.lims.images/invoice_exclude.png' title='%s'>" % \
+        #        (self.portal_url, t(_("Exclude from invoice")))
+        #if sample.getSampleType().getHazardous():
+        #    after_icons += "<img src='%s/++resource++bika.lims.images/hazardous.png' title='%s'>" % \
+        #        (self.portal_url, t(_("Hazardous")))
         if after_icons:
             item['after']['getRequestID'] = after_icons
 
-        item['Created'] = self.ulocalized_time(obj.created())
+        #item['Created'] = self.ulocalized_time(obj.created())
+        item['Created'] = obj.created
 
-        contact = obj.getContact()
+        contact = '' #obj.getContact()
         if contact:
             item['ClientContact'] = contact.Title()
             item['replace']['ClientContact'] = "<a href='%s'>%s</a>" % \
@@ -815,7 +816,7 @@ class AnalysisRequestsView(BikaListingView):
         else:
             item['ClientContact'] = ""
 
-        SamplingWorkflowEnabled = sample.getSamplingWorkflowEnabled()
+        SamplingWorkflowEnabled = '' #sample.getSamplingWorkflowEnabled()
         if SamplingWorkflowEnabled and (not sd or not sd > DateTime()):
             datesampled = self.ulocalized_time(
                 sample.getDateSampled(), long_format=True)
@@ -837,7 +838,7 @@ class AnalysisRequestsView(BikaListingView):
 
         # sampling workflow - inline edits for Sampler and Date Sampled
         checkPermission = self.context.portal_membership.checkPermission
-        state = self.workflow.getInfoFor(obj, 'review_state')
+        state = '' #self.workflow.getInfoFor(obj, 'review_state')
         if state == 'to_be_sampled' \
                 and checkPermission(SampleSample, obj) \
                 and (not sd or not sd > DateTime()):

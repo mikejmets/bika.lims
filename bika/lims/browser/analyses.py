@@ -330,10 +330,10 @@ class AnalysesView(BikaListingView):
             # self.contentsMethod may return brains or objects.
             obj = api.get_object(item["obj"])
 
-            if workflow.getInfoFor(obj, 'review_state') == 'retracted' \
-               and not checkPermission(ViewRetractedAnalyses, self.context):
-                logger.info("Skipping retracted analysis {}".format(obj.getId()))
-                continue
+            #if workflow.getInfoFor(obj, 'review_state') == 'retracted' \
+            #   and not checkPermission(ViewRetractedAnalyses, self.context):
+            #    logger.info("Skipping retracted analysis {}".format(obj.getId()))
+            #    continue
 
             result = obj.getResult()
             service = obj.getService()
@@ -772,19 +772,19 @@ class AnalysesView(BikaListingView):
                     "<img src='++resource++bika.lims.images/warning.png' title='%s'/>" %
                     (t(_("Submited and verified by the same user- " + submitter))))
 
-            # add icon for assigned analyses in AR views
-            if self.context.portal_type == 'AnalysisRequest':
-                obj = item['obj']
-                if obj.portal_type in ['ReferenceAnalysis',
-                                       'DuplicateAnalysis'] or \
-                   workflow.getInfoFor(obj, 'worksheetanalysis_review_state') == 'assigned':
-                    br = obj.getBackReferences('WorksheetAnalysis')
-                    if len(br) > 0:
-                        ws = br[0]
-                        after_icons.append("<a href='%s'><img src='++resource++bika.lims.images/worksheet.png' title='%s'/></a>" %
-                                           (ws.absolute_url(),
-                                            t(_("Assigned to: ${worksheet_id}", mapping={'worksheet_id': safe_unicode(ws.id)}))))
-            item['after']['state_title'] = '&nbsp;'.join(after_icons)
+            ## add icon for assigned analyses in AR views
+            #if self.context.portal_type == 'AnalysisRequest':
+            #    obj = item['obj']
+            #    if obj.portal_type in ['ReferenceAnalysis',
+            #                           'DuplicateAnalysis'] or \
+            #       workflow.getInfoFor(obj, 'worksheetanalysis_review_state') == 'assigned':
+            #        br = obj.getBackReferences('WorksheetAnalysis')
+            #        if len(br) > 0:
+            #            ws = br[0]
+            #            after_icons.append("<a href='%s'><img src='++resource++bika.lims.images/worksheet.png' title='%s'/></a>" %
+            #                               (ws.absolute_url(),
+            #                                t(_("Assigned to: ${worksheet_id}", mapping={'worksheet_id': safe_unicode(ws.id)}))))
+            #item['after']['state_title'] = '&nbsp;'.join(after_icons)
 
         # the TAL requires values for all interim fields on all
         # items, so we set blank values in unused cells
