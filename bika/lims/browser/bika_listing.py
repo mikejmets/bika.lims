@@ -902,9 +902,6 @@ class BikaListingView(BrowserView):
         """Returns an object dictionary suitable for the listing view
         """
 
-        # this one goes out
-        item = {}
-
         # ensure we have an object
         obj = api.get_object(obj)
 
@@ -942,19 +939,19 @@ class BikaListingView(BrowserView):
         try:
             review_state = workflow.getInfoFor(obj, 'review_state')
             wf_state_title = workflow.getTitleForStateOnType(review_state, portal_type)
-            state_title = _(wf_st_title)
+            state_title = _(wf_state_title)
         except:
             review_state = "active"
             state_title = _("Active")
 
-        for state_var, state in states.items():
-            if not state_title:
-                state_title = workflow.getTitleForStateOnType(state, portal_type)
-            item.update({
-                state_var: state
-            })
+        #for state_var, state in states.items():
+        #    if not state_title:
+        #        state_title = workflow.getTitleForStateOnType(state, portal_type)
+        #    item.update({
+        #        state_var: state
+        #    })
 
-        # extra classes for individual fields on this item { field_id : "css classes" }
+        # allow field icons to alert in a listing row
         for name, adapter in getAdapters((obj, ), IFieldIcons):
             alerts = adapter()
             if alerts and uid in alerts:
@@ -963,7 +960,7 @@ class BikaListingView(BrowserView):
                 else:
                     self.field_icons[uid] = alerts[uid]
 
-        item.update({
+        return {
             "obj": obj,
             "id": id,
             "uid": uid,
@@ -1011,9 +1008,7 @@ class BikaListingView(BrowserView):
             "before": {},
             "after": {},
             "replace": {},
-        })
-
-        return item
+        }
 
 
     def folderitems(self, full_objects=False):
