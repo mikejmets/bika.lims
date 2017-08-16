@@ -872,138 +872,148 @@ class BikaListingView(BrowserView):
         """
         return item
 
+    def get_icon(self, obj):
+        plone_layout = api.get_view(
+            "plone_layout", context=obj, request=self.request)
+        return plone_layout.getIcon(obj)
+
+    def get_workflow_info(self, obj):
+        out = {}
+        workflow = api.get_tool('portal_workflow')
+        for wf in workflow.getWorkflowsFor(obj):
+            state = wf._getWorkflowStateOf(obj).id
+            state_var = wf.state_var
+            out[state_var] = state
+        return out
+
+    def get_fti(self, obj):
+        portal_types = api.get_tool('portal_types')
+        portal_type = api.get_portal_type(obj)
+        return portal_types.get(portal_type)
+
+    def get_type_title(self, obj):
+        fti = self.get_fti(obj)
+        if fti is None:
+            return api.get_portal_type(obj)
+        return fti.Title()
+
     @cache(cache_key, store_on_context)
-    def get_object_info(self, obj):
+    def make_listing_item(self, obj):
+        """Returns an object dictionary suitable for the listing view
+        """
+
+        # this one goes out
+        item = {}
+
+        # ensure we have an object
         obj = api.get_object(obj)
-        state_class = ''
-        states = {}
-        workflow = ploneapi.portal.get_tool('portal_workflow')
-        for w in workflow.getWorkflowsFor(obj):
-            state = w._getWorkflowStateOf(obj).id
-            states[w.state_var] = state
-            state_class += "state-%s " % state
 
-        # we don't know yet if it's a brain or an object
-        path = hasattr(obj, 'getPath') and obj.getPath() or \
-             "/".join(obj.getPhysicalPath())
-
-        description = obj.Description()
-        plone_layout = getMultiAdapter(
-                        (obj, self.request), name=u'plone_layout')
-        icon = plone_layout.getIcon(obj)
+        # prepare some data
+        id = api.get_id(obj)
+        uid = api.get_uid(obj)
+        url = api.get_url(obj)
         relative_url = obj.absolute_url(relative=True)
-        portal_types = ploneapi.portal.get_tool('portal_types')
-        fti = portal_types.get(obj.portal_type)
-        if fti is not None:
-            type_title_msgid = fti.Title()
-        else:
-            type_title_msgid = obj.portal_type
+        title = api.get_title(obj)
+        description = api.get_description(obj)
+        portal_type = api.get_portal_type(obj)
+        path = api.get_path(obj)
+        fti = self.get_fti(obj)
+        icon = self.get_icon(obj)
+        created = self.ulocalized_time(obj.created())
+        modified = self.ulocalized_time(obj.modified())
+        css_class = {}
 
+        # get the workflow states for all the attached workflows
+        states = self.get_workflow_info(obj)
+        state_class = ""
+        for state in states.values():
+            state_class += "state-{} ".format(state)
+
+        type_title_msgid = self.get_type_title(obj)
         url_href_title = '%s at %s: %s' % (
-            t(type_title_msgid),
-            path,
-            to_utf8(description))
-
-        modified = self.ulocalized_time(obj.modified()),
+            t(type_title_msgid), path, to_utf8(description))
 
         # element css classes
-        plone_utils = ploneapi.portal.get_tool('plone_utils')
+        plone_utils = api.get_tool('plone_utils')
         type_class = 'contenttype-' + \
-            plone_utils.normalizeString(obj.portal_type)
+            plone_utils.normalizeString(portal_type)
 
-        results_dict = {
+        workflow = api.get_tool("portal_workflow")
+        try:
+            review_state = workflow.getInfoFor(obj, 'review_state')
+            wf_state_title = workflow.getTitleForStateOnType(review_state, portal_type)
+            state_title = _(wf_st_title)
+        except:
+            review_state = "active"
+            state_title = _("Active")
+
+        for state_var, state in states.items():
+            if not state_title:
+                state_title = workflow.getTitleForStateOnType(state, portal_type)
+            item.update({
+                state_var: state
+            })
+
+        # extra classes for individual fields on this item { field_id : "css classes" }
+        for name, adapter in getAdapters((obj, ), IFieldIcons):
+            alerts = adapter()
+            if alerts and uid in alerts:
+                if uid in self.field_icons:
+                    self.field_icons[uid].extend(alerts[uid])
+                else:
+                    self.field_icons[uid] = alerts[uid]
+
+        item.update({
             "obj": obj,
-            "id": api.get_id(obj),
-            "uid": api.get_uid(obj),
-            "url": api.get_url(obj),
-            "title": api.get_title(obj),
-            "portal_type": api.get_portal_type(obj),
-            "path": api.get_path(obj),
-            "icon": icon,
-            "created": obj.created().ISO8601(),
-            "review_state": api.get_workflow_status_of(obj),
-            "state_title": api.get_workflow_status_of(obj),
-            "state_class": state_class,
+            "id": id,
+            "uid": uid,
+            "url": url,
+            "relative_url": relative_url,
+            "title": title,
+            "description": description,
+            "portal_type": portal_type,
+            "path": path,
+            "icon": icon.html_tag(),
+            "created": created,
+            "modified": modified,
+            "review_state": review_state,
+            "state_title": state_title,
             "states": states,
-            "class": {},
-            "choices": {},
-            "replace": {},
-            "before": {},
-            "after": {},
-            "field": {},
-            "allow_edit": [],
-            "required": [],
-            "item_data": json.dumps([]),
+            "state_class": state_class,
+            "url_href_title": url_href_title,
+            "class": css_class,
+            "item_data": "[]",
             "table_row_class": "",
-            "category": 'None',
+            "category": "None",
             "path": path,
             "fti": fti,
-            "url_href_title": url_href_title,
             "obj_type": obj.Type,
             "size": obj.getObjSize,
             "type_class": type_class,
-            "relative_url": relative_url,
             "view_url": api.get_url(obj),
-            "modified": modified,
-        }
+            # a list of lookups for single-value-select fields
+            "choices": {},
+            # a dict where the column name works as a key and the value is
+            # the name of the field related with the column. It is used
+            # when the name given to the column and the content field it
+            # represents diverges. bika_listing_table_items.pt defines an
+            # attribute for each item, this attribute is named 'field' and
+            # the system fills it taking advantage of this dictionary or
+            # the name of the column if it isn't defined in the dict.
+            "field": {},
+            # a list of names of fields that may be edited on this item
+            "allow_edit": [],
+            # a list of names of fields that are compulsory (if editable)
+            "required": [],
+            # "before", "after" and replace: dictionary (key is column ID)
+            # A snippet of HTML which will be rendered
+            # before/after/instead of the table cell content.
+            "before": {},
+            "after": {},
+            "replace": {},
+        })
 
-        try:
-            rs = workflow.getInfoFor(obj, 'review_state')
-            st_title = workflow.getTitleForStateOnType(rs, obj.portal_type)
-            st_title = _(st_title)
-        except:
-            rs = 'active'
-            st_title = None
-
-        if rs:
-            results_dict['review_state'] = rs
-
-        for state_var, state in states.items():
-            if not st_title:
-                st_title = workflow.getTitleForStateOnType(
-                    state, obj.portal_type)
-            results_dict[state_var] = state
-        results_dict['state_title'] = st_title
-
-        # extra classes for individual fields on this item { field_id : "css classes" }
-        results_dict['class'] = {}
-        for name, adapter in getAdapters((obj, ), IFieldIcons):
-            auid = obj.UID() if hasattr(obj, 'UID') and callable(obj.UID) else None
-            if not auid:
-                continue
-            alerts = adapter()
-            # logger.info(str(alerts))
-            if alerts and auid in alerts:
-                if auid in self.field_icons:
-                    self.field_icons[auid].extend(alerts[auid])
-                else:
-                    self.field_icons[auid] = alerts[auid]
-
-        # Search for values for all columns in obj
-        for key in self.columns.keys():
-            # if the key is already in the results dict
-            # then we don't replace it's value
-            value = results_dict.get(key, '')
-            if key not in results_dict:
-                attrobj = getFromString(obj, key)
-                value = attrobj if attrobj else value
-
-                # Custom attribute? Inspect to set the value
-                # for the current column dinamically
-                vattr = self.columns[key].get('attr', None)
-                if vattr:
-                    attrobj = getFromString(obj, vattr)
-                    value = attrobj if attrobj else value
-                results_dict[key] = value
-
-            # Replace with an url?
-            replace_url = self.columns[key].get('replace_url', None)
-            if replace_url:
-                attrobj = getFromString(obj, replace_url)
-                if attrobj:
-                    results_dict['replace'][key] = \
-                        '<a href="%s">%s</a>' % (attrobj, value)
-        return results_dict
+        return item
 
 
     def folderitems(self, full_objects=False):
@@ -1093,7 +1103,33 @@ class BikaListingView(BrowserView):
             if not obj or not self.isItemAllowed(obj):
                 continue
 
-            results_dict = self.get_object_info(obj)
+            # create a listing item
+            results_dict = self.make_listing_item(obj)
+
+            # Search for values for all columns in obj
+            for key in self.columns.keys():
+                # if the key is already in the results dict
+                # then we don't replace it's value
+                value = results_dict.get(key, '')
+                if key not in results_dict:
+                    attrobj = getFromString(obj, key)
+                    value = attrobj if attrobj else value
+
+                    # Custom attribute? Inspect to set the value
+                    # for the current column dinamically
+                    vattr = self.columns[key].get('attr', None)
+                    if vattr:
+                        attrobj = getFromString(obj, vattr)
+                        value = attrobj if attrobj else value
+                    results_dict[key] = value
+
+                # Replace with an url?
+                replace_url = self.columns[key].get('replace_url', None)
+                if replace_url:
+                    attrobj = getFromString(obj, replace_url)
+                    if attrobj:
+                        results_dict['replace'][key] = \
+                            '<a href="%s">%s</a>' % (attrobj, value)
 
             # The item basics filled. Delegate additional actions to folderitem
             # service. folderitem service is frequently overriden by child objects
