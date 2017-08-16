@@ -80,7 +80,6 @@ def cache_key(method, self):
         raise DontCache
     uid = api.get_uid(self)
     modified = self.modified().ISO8601()
-    service = self.getService()
     return "{}-{}".format(uid, modified)
 
 
