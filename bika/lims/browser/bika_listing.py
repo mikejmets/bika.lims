@@ -43,12 +43,14 @@ from plone.memoize.volatile import store_on_context
 
 
 def gen_key(brain_or_object):
-    uid = api.get_uid(brain_or_object)
-    modified = brain_or_object.modified().ISO8601()
+    obj = api.get_object(brain_or_object)
+    uid = api.get_uid(obj)
+    modified = obj.modified().ISO8601()
     return "{}-{}".format(uid, modified)
 
 
 def gen_ar_cache_key(ar):
+    ar = api.get_object(ar)
     keys = []
     keys.append(gen_key(ar))
     for att in ar.getAttachment():
@@ -921,7 +923,43 @@ class BikaListingView(BrowserView):
     @cache(cache_key, store_on_context)
     def get_object_info(self, obj):
         obj = api.get_object(obj)
-        return {
+        state_class = ''
+        states = {}
+        workflow = ploneapi.portal.get_tool('portal_workflow')
+        for w in workflow.getWorkflowsFor(obj):
+            state = w._getWorkflowStateOf(obj).id
+            states[w.state_var] = state
+            state_class += "state-%s " % state
+
+        # we don't know yet if it's a brain or an object
+        path = hasattr(obj, 'getPath') and obj.getPath() or \
+             "/".join(obj.getPhysicalPath())
+
+        description = obj.Description()
+        plone_layout = getMultiAdapter(
+                        (obj, self.request), name=u'plone_layout')
+        icon = plone_layout.getIcon(obj)
+        relative_url = obj.absolute_url(relative=True)
+        portal_types = ploneapi.portal.get_tool('portal_types')
+        fti = portal_types.get(obj.portal_type)
+        if fti is not None:
+            type_title_msgid = fti.Title()
+        else:
+            type_title_msgid = obj.portal_type
+
+        url_href_title = '%s at %s: %s' % (
+            t(type_title_msgid),
+            path,
+            to_utf8(description))
+
+        modified = self.ulocalized_time(obj.modified()),
+
+        # element css classes
+        plone_utils = ploneapi.portal.get_tool('plone_utils')
+        type_class = 'contenttype-' + \
+            plone_utils.normalizeString(obj.portal_type)
+
+        results_dict = {
             "obj": obj,
             "id": api.get_id(obj),
             "uid": api.get_uid(obj),
@@ -929,21 +967,92 @@ class BikaListingView(BrowserView):
             "title": api.get_title(obj),
             "portal_type": api.get_portal_type(obj),
             "path": api.get_path(obj),
-            "icon": api.get_icon(obj),
+            "icon": icon,
             "created": obj.created().ISO8601(),
             "review_state": api.get_workflow_status_of(obj),
             "state_title": api.get_workflow_status_of(obj),
-            "state_class": self.get_state_class(obj),
-            "states": {},
+            "state_class": state_class,
+            "states": states,
             "class": {},
             "choices": {},
             "replace": {},
             "before": {},
             "after": {},
+            "field": {},
+            "allow_edit": [],
+            "required": [],
+            "item_data": json.dumps([]),
+            "table_row_class": "",
+            "category": 'None',
+            "path": path,
+            "fti": fti,
+            "url_href_title": url_href_title,
+            "obj_type": obj.Type,
+            "size": obj.getObjSize,
+            "type_class": type_class,
+            "relative_url": relative_url,
+            "view_url": api.get_url(obj),
+            "modified": modified,
         }
 
-    def get_state_class(self, obj):
-        return ""
+        try:
+            rs = workflow.getInfoFor(obj, 'review_state')
+            st_title = workflow.getTitleForStateOnType(rs, obj.portal_type)
+            st_title = _(st_title)
+        except:
+            rs = 'active'
+            st_title = None
+
+        if rs:
+            results_dict['review_state'] = rs
+
+        for state_var, state in states.items():
+            if not st_title:
+                st_title = workflow.getTitleForStateOnType(
+                    state, obj.portal_type)
+            results_dict[state_var] = state
+        results_dict['state_title'] = st_title
+
+        # extra classes for individual fields on this item { field_id : "css classes" }
+        results_dict['class'] = {}
+        for name, adapter in getAdapters((obj, ), IFieldIcons):
+            auid = obj.UID() if hasattr(obj, 'UID') and callable(obj.UID) else None
+            if not auid:
+                continue
+            alerts = adapter()
+            # logger.info(str(alerts))
+            if alerts and auid in alerts:
+                if auid in self.field_icons:
+                    self.field_icons[auid].extend(alerts[auid])
+                else:
+                    self.field_icons[auid] = alerts[auid]
+
+        # Search for values for all columns in obj
+        for key in self.columns.keys():
+            # if the key is already in the results dict
+            # then we don't replace it's value
+            value = results_dict.get(key, '')
+            if key not in results_dict:
+                attrobj = getFromString(obj, key)
+                value = attrobj if attrobj else value
+
+                # Custom attribute? Inspect to set the value
+                # for the current column dinamically
+                vattr = self.columns[key].get('attr', None)
+                if vattr:
+                    attrobj = getFromString(obj, vattr)
+                    value = attrobj if attrobj else value
+                results_dict[key] = value
+
+            # Replace with an url?
+            replace_url = self.columns[key].get('replace_url', None)
+            if replace_url:
+                attrobj = getFromString(obj, replace_url)
+                if attrobj:
+                    results_dict['replace'][key] = \
+                        '<a href="%s">%s</a>' % (attrobj, value)
+        return results_dict
+
 
     def folderitems(self, full_objects=False):
         """
@@ -967,9 +1076,6 @@ class BikaListingView(BrowserView):
             self.contentsMethod = getToolByName(self.context, self.catalog)
 
         context = aq_inner(self.context)
-        plone_layout = getMultiAdapter((context, self.request), name=u'plone_layout')
-        plone_utils = getToolByName(context, 'plone_utils')
-        portal_types = getToolByName(context, 'portal_types')
         workflow = getToolByName(context, 'portal_workflow')
 
         if self.request.get('show_all', '').lower() == 'true' \
@@ -1005,7 +1111,8 @@ class BikaListingView(BrowserView):
                 # otherwise, self.contentsMethod must handle contentFilter
                 brains = self.contentsMethod(contentFilterTemp)
         else:
-            logger.debug("Bika Listing Table Query={}".format(contentFilterTemp))
+            logger.debug(
+                    "Bika Listing Table Query={}".format(contentFilterTemp))
             brains = self.contentsMethod(contentFilterTemp)
 
         # idx increases one unit each time an object is added to the 'items'
@@ -1014,10 +1121,6 @@ class BikaListingView(BrowserView):
         idx = 0
         results = []
         self.show_more = False
-
-
-####################
-
 
         brains = brains[self.limit_from:]
         for i, obj in enumerate(brains):
@@ -1030,173 +1133,35 @@ class BikaListingView(BrowserView):
                 self.show_more = True
                 break
 
-            results.append(self.get_object_info(obj))
+            # This item must be rendered, we need the object instead of a brain
+            obj = obj.getObject() if hasattr(obj, 'getObject') else obj
+
+            # check if the item must be rendered or not (prevents from
+            # doing it later in folderitems) and dealing with paging
+            if not obj or not self.isItemAllowed(obj):
+                continue
+
+            results_dict = self.get_object_info(obj)
+
+            # The item basics filled. Delegate additional actions to folderitem
+            # service. folderitem service is frequently overriden by child objects
+            item = self.folderitem(obj, results_dict, idx)
+            if item:
+                results.append(item)
+                idx += 1
+
+
+        # Need manual_sort?
+        # Note that the order has already been set in contentFilter, so
+        # there is no need to reverse
+        if self.manual_sort_on:
+            results.sort(lambda x, y: cmp(x.get(self.manual_sort_on, ''),
+                                          y.get(self.manual_sort_on, '')))
+
 
         return results
 
 
-######################
-
-
-#            # we don't know yet if it's a brain or an object
-#            path = hasattr(obj, 'getPath') and obj.getPath() or \
-#                 "/".join(obj.getPhysicalPath())
-#
-#            # This item must be rendered, we need the object instead of a brain
-#            obj = obj.getObject() if hasattr(obj, 'getObject') else obj
-#
-#            # check if the item must be rendered or not (prevents from
-#            # doing it later in folderitems) and dealing with paging
-#            if not obj or not self.isItemAllowed(obj):
-#                continue
-#
-#            uid = obj.UID()
-#            title = obj.Title()
-#            description = obj.Description()
-#            icon = plone_layout.getIcon(obj)
-#            url = obj.absolute_url()
-#            relative_url = obj.absolute_url(relative=True)
-#
-#            fti = portal_types.get(obj.portal_type)
-#            if fti is not None:
-#                type_title_msgid = fti.Title()
-#            else:
-#                type_title_msgid = obj.portal_type
-#
-#            url_href_title = '%s at %s: %s' % (
-#                t(type_title_msgid),
-#                path,
-#                to_utf8(description))
-#
-#            modified = self.ulocalized_time(obj.modified()),
-#
-#            # element css classes
-#            type_class = 'contenttype-' + \
-#                plone_utils.normalizeString(obj.portal_type)
-#
-#            state_class = ''
-#            states = {}
-#            for w in workflow.getWorkflowsFor(obj):
-#                state = w._getWorkflowStateOf(obj).id
-#                states[w.state_var] = state
-#                state_class += "state-%s " % state
-#
-#            results_dict = dict(
-#                obj=obj,
-#                id=obj.getId(),
-#                title=title,
-#                uid=uid,
-#                path=path,
-#                url=url,
-#                fti=fti,
-#                item_data=json.dumps([]),
-#                url_href_title=url_href_title,
-#                obj_type=obj.Type,
-#                size=obj.getObjSize,
-#                modified=modified,
-#                icon=icon.html_tag(),
-#                type_class=type_class,
-#                # a list of lookups for single-value-select fields
-#                choices={},
-#                state_class=state_class,
-#                relative_url=relative_url,
-#                view_url=url,
-#                table_row_class="",
-#                category='None',
-#
-#                # a list of names of fields that may be edited on this item
-#                allow_edit=[],
-#
-#                # a list of names of fields that are compulsory (if editable)
-#                required=[],
-#                # a dict where the column name works as a key and the value is
-#                # the name of the field related with the column. It is used
-#                # when the name given to the column and the content field it
-#                # represents diverges. bika_listing_table_items.pt defines an
-#                # attribute for each item, this attribute is named 'field' and
-#                # the system fills it taking advantage of this dictionary or
-#                # the name of the column if it isn't defined in the dict.
-#                field={},
-#                # "before", "after" and replace: dictionary (key is column ID)
-#                # A snippet of HTML which will be rendered
-#                # before/after/instead of the table cell content.
-#                before={},  # { before : "<a href=..>" }
-#                after={},
-#                replace={},
-#            )
-#
-#            try:
-#                rs = workflow.getInfoFor(obj, 'review_state')
-#                st_title = workflow.getTitleForStateOnType(rs, obj.portal_type)
-#                st_title = _(st_title)
-#            except:
-#                rs = 'active'
-#                st_title = None
-#
-#            if rs:
-#                results_dict['review_state'] = rs
-#
-#            for state_var, state in states.items():
-#                if not st_title:
-#                    st_title = workflow.getTitleForStateOnType(
-#                        state, obj.portal_type)
-#                results_dict[state_var] = state
-#            results_dict['state_title'] = st_title
-#
-#            # extra classes for individual fields on this item { field_id : "css classes" }
-#            results_dict['class'] = {}
-#            for name, adapter in getAdapters((obj, ), IFieldIcons):
-#                auid = obj.UID() if hasattr(obj, 'UID') and callable(obj.UID) else None
-#                if not auid:
-#                    continue
-#                alerts = adapter()
-#                # logger.info(str(alerts))
-#                if alerts and auid in alerts:
-#                    if auid in self.field_icons:
-#                        self.field_icons[auid].extend(alerts[auid])
-#                    else:
-#                        self.field_icons[auid] = alerts[auid]
-#
-#            # Search for values for all columns in obj
-#            for key in self.columns.keys():
-#                # if the key is already in the results dict
-#                # then we don't replace it's value
-#                value = results_dict.get(key, '')
-#                if key not in results_dict:
-#                    attrobj = getFromString(obj, key)
-#                    value = attrobj if attrobj else value
-#
-#                    # Custom attribute? Inspect to set the value
-#                    # for the current column dinamically
-#                    vattr = self.columns[key].get('attr', None)
-#                    if vattr:
-#                        attrobj = getFromString(obj, vattr)
-#                        value = attrobj if attrobj else value
-#                    results_dict[key] = value
-#
-#                # Replace with an url?
-#                replace_url = self.columns[key].get('replace_url', None)
-#                if replace_url:
-#                    attrobj = getFromString(obj, replace_url)
-#                    if attrobj:
-#                        results_dict['replace'][key] = \
-#                            '<a href="%s">%s</a>' % (attrobj, value)
-#
-#            # The item basics filled. Delegate additional actions to folderitem
-#            # service. folderitem service is frequently overriden by child objects
-#            item = self.folderitem(obj, results_dict, idx)
-#            if item:
-#                results.append(item)
-#                idx += 1
-#
-#        # Need manual_sort?
-#        # Note that the order has already been set in contentFilter, so
-#        # there is no need to reverse
-#        if self.manual_sort_on:
-#            results.sort(lambda x, y: cmp(x.get(self.manual_sort_on, ''),
-#                                          y.get(self.manual_sort_on, '')))
-#
-#        return results
 
     def contents_table(self, table_only=False):
         """ If you set table_only to true, then nothing outside of the
