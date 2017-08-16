@@ -2,6 +2,7 @@
 ------------------
 
 - Saving '-----' and negetive values as 0(Only for Shimadzu instruments)
+- Sampler and Sampling Date Columns are not validated when they are not displayed
 - Issue-2162: Added renameAfterCreation to partition creation in ARImport
 - Laboratory Supervisor field on the Laboratory(Bika Setup - Laboratory Information)
 - Laboratory License ID field on the Laboratory(Bika Setup - Laboratory Information)
@@ -21,10 +22,26 @@
 3.3.0 (unreleased)
 ------------------
 
+- Issue-2173: Publishing multiple ARs fails
 - Issue-2132: Reorderable Attachments for Reports
 - Issue-2129: Migrate Attachments to blobs
 - Issue-2098: Inline rendered Attachments not in final PDF
 - LIMS-2596:  AR and Sample view fields that need to stay editable
+
+**Other Changes**
+
+- Bika LIMS JSON API v2
+
+
+3.2.1rc1 (unreleased)
+---------------------
+
+- Issue-1977: AR can be transitioned to verified while all AS's remain to be verified
+
+
+3.2.1b3 (2017-08-07)
+--------------------
+
 - Issue-1995 : CC contacts not saving during AR creation
 - Issue-1969: Copy AR functionality from the "analysisrequests" view raises an error
 - Issue-1968: Copy AR functionality not working
