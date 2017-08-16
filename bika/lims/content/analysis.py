@@ -71,9 +71,13 @@ from bika.lims.workflow import skip
 
 from bika.lims import api
 from plone.memoize.volatile import cache
+from plone.memoize.volatile import DontCache
 
 
 def cache_key(method, self):
+    creation_flag = self.checkCreationFlag()
+    if creation_flag:
+        raise DontCache
     uid = api.get_uid(self)
     modified = self.modified().ISO8601()
     return "{}-{}".format(uid, modified)
@@ -677,10 +681,6 @@ class Analysis(BaseContent):
                 or self.portal_type == 'RejectAnalysis':
             return self.getAnalysis().aq_parent.getSample()
         return self.aq_parent.getSample()
-
-    @cache(cache_key)
-    def getService(self):
-        return self.Schema().getField("Service").get(self)
 
     @cache(cache_key)
     def getKeyword(self):
