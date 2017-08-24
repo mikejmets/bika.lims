@@ -800,6 +800,7 @@ class AnalysisResultsImporter(Logger):
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
+                import pdb; pdb.set_trace()
                 doActionFor(analysis, self.advance_to_state)
             resultsaved = True
 

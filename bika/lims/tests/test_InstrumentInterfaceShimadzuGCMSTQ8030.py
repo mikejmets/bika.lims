@@ -6,13 +6,14 @@
 
 from DateTime import DateTime
 from Products.CMFPlone.utils import _createObjectByType
+from bika.lims import api
 from bika.lims import logger
 from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
 from bika.lims.testing import BIKA_SIMPLE_FIXTURE
 from bika.lims.tests.base import BikaSimpleTestCase
 from bika.lims.utils import tmpID
 from bika.lims.workflow import doActionFor
-from plone import api
+from plone import api as ploneapi
 from plone.app.testing import login, logout
 from plone.app.testing import TEST_USER_NAME
 from zope.publisher.browser import TestRequest
@@ -48,6 +49,8 @@ class TestInstrumentImport(BikaSimpleTestCase):
     def setUp(self):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
+        api.get_bika_setup().setTransitionSuccessState('submit')
+        import pdb; pdb.set_trace()
         self.client = self.addthing(self.portal.clients, 'Client',
                                     title='Happy Hills', ClientID='HH')
         self.addthing(self.client, 'Contact', Firstname='Rita Mohale',
@@ -131,7 +134,9 @@ Total price excl Tax,,,,,,,,,,,,,,
         ars = bc(portal_type='AnalysisRequest')
         ar = ars[0]
         for ar in ars:
-            api.content.transition(obj=ar.getObject(), transition='receive')
+            analyses = ar.getObject().getAnalyses(full_objects=True)
+            import pdb; pdb.set_trace()
+            ploneapi.content.transition(obj=ar.getObject(), transition='receive')
             transaction.commit()
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
@@ -147,7 +152,8 @@ Total price excl Tax,,,,,,,,,,,,,,
                                     override='nooverride',
                                     file=file,
                                     sample='requestid',
-                                    instrument=''))
+                                    instrument='',
+                                    advancetostate='yes'))
         context = self.portal
         results = Import(context, request)
         transaction.commit()
@@ -157,6 +163,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         for ar in ars:
             analyses = ar.getObject().getAnalyses(full_objects=True)
             if ar.getObject().getId() == '1-0001-R01':
+                import pdb; pdb.set_trace()
                 for an in analyses:
                     if an.getKeyword() == 'Captan':
                         if an.getResult() != '456.0':

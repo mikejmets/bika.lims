@@ -45,6 +45,7 @@ def isAdvanceToState(context):
 def getAdvanceToStateToApply(context):
     tr_success_state = api.get_bika_setup().getTransitionSuccessState()
     return tr_success_state
+
 def Import(context, request):
     """ Read Shimadzu GCMS-TQ8030 GC/MS/MS analysis results
     """
@@ -106,7 +107,6 @@ def Import(context, request):
                                            instrument_uid=instrument,
                                            advance_to_state=advancetostate)
         tbex = ''
-        import pdb; pdb.set_trace()
         try:
             importer.process()
         except:
