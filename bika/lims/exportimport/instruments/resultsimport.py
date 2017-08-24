@@ -253,7 +253,8 @@ class AnalysisResultsImporter(Logger):
                  override=[False, False],
                  allowed_ar_states=None,
                  allowed_analysis_states=None,
-                 instrument_uid=None):
+                 instrument_uid=None,
+                 advance_to_state=None,):
         Logger.__init__(self)
         self._parser = parser
         self.context = context
@@ -262,6 +263,7 @@ class AnalysisResultsImporter(Logger):
         self._override = override
         self._idsearch = idsearchcriteria
         self._priorizedsearchcriteria = ''
+        self.advance_to_state = advance_to_state
         self.bsc = getToolByName(self.context, 'bika_setup_catalog')
         self.bac = getToolByName(self.context, 'bika_analysis_catalog')
         self.pc = getToolByName(self.context, 'portal_catalog')
@@ -454,6 +456,7 @@ class AnalysisResultsImporter(Logger):
                     analysis = ans[0]
                     if capturedate:
                         values['DateTime'] = capturedate
+                    #Call here
                     processed = self._process_analysis(objid, analysis, values)
                     if processed:
                         ancount += 1
@@ -795,6 +798,9 @@ class AnalysisResultsImporter(Logger):
             analysis.setResult(res)
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
+            if self.advance_to_state:
+                import pdb; pdb.set_trace()
+                doActionFor(analysis, self.advance_to_state)
             resultsaved = True
 
         elif resultsaved == False:

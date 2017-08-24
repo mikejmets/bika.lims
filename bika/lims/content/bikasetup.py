@@ -53,6 +53,7 @@ from bika.lims.config import ATTACHMENT_OPTIONS
 from bika.lims.config import CURRENCIES
 from bika.lims.config import DECIMAL_MARKS
 from bika.lims.config import DEFAULT_AR_SPECS
+from bika.lims.config import INSTRUMENT_IMPORT_AUTO_OPTIONS
 from bika.lims.config import MULTI_VERIFICATION_TYPE
 from bika.lims.config import PROJECTNAME
 from bika.lims.config import SCINOTATION_OPTIONS
@@ -248,6 +249,16 @@ schema = BikaFolderSchema.copy() + Schema((
             description=_(
                 "Enter percentage value eg. 14.0. This percentage is applied system wide "
                 "but can be overwrittem on individual items"),
+        )
+    ),
+    StringField(
+        'TransitionSuccessState',
+        schemata="Results Reports",
+        vocabulary=INSTRUMENT_IMPORT_AUTO_OPTIONS,
+        widget=SelectionWidget(
+            label=_("AR Instrument Import state as"),
+            description=_("The transition/state to advance to, when doing AR instrument import"),
+            format='select',
         )
     ),
     StringField(

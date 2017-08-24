@@ -6,6 +6,7 @@
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import t
 from bika.lims.browser import BrowserView
@@ -68,6 +69,7 @@ class ImportView(BrowserView):
             import os.path
             instrpath = os.path.join("exportimport", "instruments")
             templates_dir = resource_filename("bika.lims", instrpath)
+            #TODO Serve exim template and  if it does not exits get the default template
             fname = "%s/%s_import.pt" % (templates_dir, exim)
             return ViewPageTemplateFile("instruments/%s_import.pt" % exim)(self)
         else:
@@ -130,6 +132,19 @@ class ImportView(BrowserView):
                 return exim.Import(self.context, self.request)
         else:
             return self.template()
+
+    def getAdvanceToState(self):
+        """Get States to advance to on an AR Instrument Import
+        """
+        tr_success_state = api.get_bika_setup().getTransitionSuccessState()
+        import pdb; pdb.set_trace()
+        bsc = getToolByName(self, 'bika_setup_catalog')
+        items = [('', '')] + [(o.UID, o.Title) for o in
+                               bsc(portal_type = 'Instrument',
+                                   inactive_state = 'active')]
+        items.sort(lambda x, y: cmp(x[1].lower(), y[1].lower()))
+        return DisplayList(list(items))
+
 
 
 class ajaxGetImportTemplate(BrowserView):
