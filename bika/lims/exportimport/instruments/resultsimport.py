@@ -12,6 +12,7 @@ from bika.lims.utils import t
 from bika.lims.exportimport.instruments.logger import Logger
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.utils import tmpID
+from bika.lims.workflow import doActionFor
 from Products.Archetypes.config import REFERENCE_CATALOG
 from datetime import datetime
 from DateTime import DateTime
@@ -799,7 +800,6 @@ class AnalysisResultsImporter(Logger):
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
-                import pdb; pdb.set_trace()
                 doActionFor(analysis, self.advance_to_state)
             resultsaved = True
 
