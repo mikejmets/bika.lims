@@ -88,6 +88,7 @@ Analysis price,,,,,,,,,,,,,,
 "Total Analyses or Profiles",,,,,,,,,,,,,9,,,
 Total price excl Tax,,,,,,,,,,,,,,
 "Sample 1", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
+"Sample 2", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
         """)
 
         # check that values are saved without errors
@@ -126,11 +127,12 @@ Total price excl Tax,,,,,,,,,,,,,,
         bc = getToolByName(self.portal, 'bika_catalog')
         ars = bc(portal_type='AnalysisRequest')
         ar = ars[0]
-        api.content.transition(obj=ar.getObject(), transition='receive')
-        transaction.commit()
+        for ar in ars:
+            api.content.transition(obj=ar.getObject(), transition='receive')
+            transaction.commit()
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
-        filename = '%s/files/icp output.txt' % path
+        filename = '%s/files/ICPE-9000-Multitype.txt' % path
         if not os.path.isfile(filename):
             self.fail("File %s not found" % filename)
         data = open(filename, 'r').read()
@@ -146,14 +148,19 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 1 ARs and 1 results updated'
+        text = 'Import finished successfully: 2 ARs and 2 results updated'
         if text not in results:
             self.fail("AR Import failed")
-        browser = self.getBrowser(loggedIn=True)
-        browser.open(ar.getObject().absolute_url() + "/manage_results")
-        content = browser.contents
-        if '193.759' not in content:
-            self.fail("AR Result did not get updated")
+        for ar in ars:
+            if ar.id == '1-0001-R01':
+                analysis = ar.getObject().getAnalyses(full_objects=True)[0]
+                if analysis.getResult() != '20.0':
+                    self.fail("AR: %s  Result did not get updated" % ar.id)
+
+            if ar.id == '1-0002-R01':
+                analysis = ar.getObject().getAnalyses(full_objects=True)[0]
+                if analysis.getResult() != '0.0':
+                    self.fail("AR: %s  Result did not get updated" % ar.id)
 
 def test_suite():
     suite = unittest.TestSuite()

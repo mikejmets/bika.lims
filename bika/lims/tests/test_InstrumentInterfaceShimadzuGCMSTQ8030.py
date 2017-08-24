@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This file is part of Bika LIMS
 #
 # Copyright 2011-2016 by it's authors.
@@ -62,9 +63,10 @@ class TestInstrumentImport(BikaSimpleTestCase):
         self.addthing(self.portal.bika_setup.bika_arpriorities, 'ARPriority',
                       title='Normal', sortKey=1)
         a = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='alpha-Pinene', Keyword="alphaPinene")
+                          'AnalysisService', title='Pentachloronitrobenzene',
+                          Keyword="Pentachloronitrobenzene")
         b = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='Calcium', Keyword="Ca")
+                          'AnalysisService', title='Captan', Keyword="Captan")
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
                       Service=[a.UID(), b.UID()])
@@ -73,7 +75,7 @@ class TestInstrumentImport(BikaSimpleTestCase):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
 
-    def test_BC4_Shimadzu_TQ8030Import(self):
+    def test_BC5_Shimadzu_QP2010Import(self):
         pc = getToolByName(self.portal, 'portal_catalog')
         workflow = getToolByName(self.portal, 'portal_workflow')
         arimport = self.addthing(self.client, 'ARImport')
@@ -84,11 +86,12 @@ Header,      File name,  Client name,  Client ID, Contact,     CC Names - Report
 Header Data, test1.csv,  Happy Hills,  HH,        Rita Mohale,                  ,                   ,                    ,                    , 10,            HHPO-001,                            ,,
 Batch Header, id,       title,     description,    ClientBatchID, ClientBatchComment, BatchLabels, ReturnSampleToClient,,,
 Batch Data,   B15-0123, New Batch, Optional descr, CC 201506,     Just a batch,                  , TRUE                ,,,
-Samples,    ClientSampleID,    SamplingDate,DateSampled,Sampler,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,,,,,MicroBio,,
+Samples,    ClientSampleID,    SamplingDate,DateSampled,Sampler,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,Diazinone,,,,MicroBio,,
 Analysis price,,,,,,,,,,,,,,
 "Total Analyses or Profiles",,,,,,,,,,,,,9,,,
 Total price excl Tax,,,,,,,,,,,,,,
 "Sample 1", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
+"Sample 2", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
         """)
 
         # check that values are saved without errors
@@ -127,11 +130,12 @@ Total price excl Tax,,,,,,,,,,,,,,
         bc = getToolByName(self.portal, 'bika_catalog')
         ars = bc(portal_type='AnalysisRequest')
         ar = ars[0]
-        api.content.transition(obj=ar.getObject(), transition='receive')
-        transaction.commit()
+        for ar in ars:
+            api.content.transition(obj=ar.getObject(), transition='receive')
+            transaction.commit()
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
-        filename = '%s/files/GC-MS output.txt' % path
+        filename = '%s/files/TQ-8030.txt' % path
         if not os.path.isfile(filename):
             self.fail("File %s not found" % filename)
         data = open(filename, 'r').read()
@@ -147,17 +151,36 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 1 ARs and 2 results updated'
+        text = 'Import finished successfully: 2 ARs and 4 results updated'
         if text not in results:
             self.fail("AR Import failed")
-        browser = self.getBrowser(loggedIn=True)
-        browser.open(ar.getObject().absolute_url() + "/manage_results")
-        content = browser.contents
-        if '0.02604' not in content:
-            self.fail("AR:alphaPinene Result did not get updated")
+        for ar in ars:
+            analyses = ar.getObject().getAnalyses(full_objects=True)
+            if ar.getObject().getId() == '1-0001-R01':
+                for an in analyses:
+                    if an.getKeyword() == 'Captan':
+                        if an.getResult() != '456.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+                    if an.getKeyword() == 'Pentachloronitrobenzene':
+                        if an.getResult() != '0.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
 
-        if '0.02603' not in content:
-            self.fail("AR: Ca  Result did not get updated")
+            if ar.getObject().getId() == '1-0002-R01':
+                for an in analyses:
+                    if an.getKeyword() == 'Captan':
+                        if an.getResult() != '789.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+                    if an.getKeyword() == 'Pentachloronitrobenzene':
+                        if an.getResult() != '123.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
 
 def test_suite():
     suite = unittest.TestSuite()
