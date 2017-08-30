@@ -46,7 +46,8 @@ def gen_key(brain_or_object):
     obj = api.get_object(brain_or_object)
     uid = api.get_uid(obj)
     modified = obj.modified().ISO8601()
-    return "{}-{}".format(uid, modified)
+    state = api.get_workflow_status_of(obj)
+    return "{}-{}-{}".format(uid, state, modified)
 
 
 def gen_ar_cache_key(ar):
