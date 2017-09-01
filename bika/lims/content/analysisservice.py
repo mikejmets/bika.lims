@@ -26,7 +26,7 @@ from Products.Archetypes.public import DisplayList, ReferenceField, \
     Schema, registerType, MultiSelectionWidget, \
     FloatField
 from Products.DataGridField import Column, DataGridField, DataGridWidget, \
-        SelectColumn
+        SelectColumn, CheckboxColumn
 from Products.Archetypes.utils import IntDisplayList
 from Products.Archetypes.references import HoldingReference
 from Products.CMFCore.utils import getToolByName
@@ -1131,9 +1131,10 @@ schema = BikaSchema.copy() + Schema((
         allow_reorder=True,
         allow_empty_rows=False,
         columns=('SampleType',
-                 'Unit'),
+                 'HideOriginalUnit',
+                 'Unit',),
         default=[{'SampleType': [],
-                  'Unit': ''
+                  'Unit': '',
                   }],
         widget=DataGridWidget(
             label=_("Reporting Units per Sample Type"),
@@ -1142,6 +1143,8 @@ schema = BikaSchema.copy() + Schema((
                 'SampleType': SelectColumn(
                     'Sample Type',
                     vocabulary='Vocabulary_SampleTypes'),
+                'HideOriginalUnit': CheckboxColumn(
+                    'Hide Original Unit',),
                 'Unit': SelectColumn(
                     'Unit',
                     vocabulary='Vocabulary_UnitConversions'),
