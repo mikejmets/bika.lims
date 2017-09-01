@@ -25,6 +25,8 @@ from Products.Archetypes.public import DisplayList, ReferenceField, \
     IntegerWidget, StringWidget, BaseContent, \
     Schema, registerType, MultiSelectionWidget, \
     FloatField
+from Products.DataGridField import Column, DataGridField, DataGridWidget, \
+        SelectColumn, CheckboxColumn
 from Products.Archetypes.utils import IntDisplayList
 from Products.Archetypes.references import HoldingReference
 from Products.CMFCore.utils import getToolByName
@@ -1120,6 +1122,33 @@ schema = BikaSchema.copy() + Schema((
             label=_("Protocol ID"),
             description=_("The service's analytical protocol ID")
         ),
+    ),
+    DataGridField('UnitConversions',
+        schemata="Result Options",
+        allow_insert=True,
+        allow_delete=True,
+        allow_reorder=True,
+        allow_empty_rows=False,
+        columns=('SampleType',
+                 'HideOriginalUnit',
+                 'Unit',),
+        default=[{'SampleType': [],
+                  'Unit': '',
+                  }],
+        widget=DataGridWidget(
+            label=_("Reporting Units per Sample Type"),
+            description=_("Analyses can be reported with more that one unit. Here is the list of additional reporting units per Sample Type."),
+            columns={
+                'SampleType': SelectColumn(
+                    'Sample Type',
+                    vocabulary='Vocabulary_SampleTypes'),
+                'HideOriginalUnit': CheckboxColumn(
+                    'Hide Original Unit',),
+                'Unit': SelectColumn(
+                    'Unit',
+                    vocabulary='Vocabulary_UnitConversions'),
+            }
+        )
     ),
 ))
 

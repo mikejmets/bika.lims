@@ -630,3 +630,17 @@ def getFromString(obj, string):
             attrobj = None
             break
     return attrobj if attrobj else None
+
+""" Convert Analysis result using a give formula with "Value" """
+def convert_unit(result, formula, dmk):
+    try:
+        formula = formula.replace('Value', '%f')
+        dec = len(result.split(dmk)[-1])
+        new =  eval(formula % float(result))
+        fmt = '{{:.{}f}}'.format(dec)
+        formatted = fmt.format(new)
+    except ValueError, e:
+        logger.info('convert unit failed to eval %s - %s: %s' % (
+            formula, result, str(e)))
+        return '-'
+    return formatted
