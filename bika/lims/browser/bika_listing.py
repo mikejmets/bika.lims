@@ -157,8 +157,9 @@ class WorkflowAction:
         the source ARs as request parameters.
         """
         objects = WorkflowAction._get_selected_items(self)
+        context = self.context
         if not objects:
-            message = self.context.translate(
+            message = context.translate(
                 _("No analyses have been selected"))
             self.context.plone_utils.addPortalMessage(message, 'info')
             self.destination_url = self.context.absolute_url() + \
@@ -167,7 +168,25 @@ class WorkflowAction:
             return
 
         #Validate client
-        if not self.context.getLicenses():
+        if context.portal_type == 'AnalysisRequestsFolder':
+            clients = [objects[cln].aq_parent.Title() for cln in objects.keys()]
+            for c in clients:
+                if clients[0] != c:
+                    message = context.translate(
+                        _("Multiple Clients selected"))
+                    self.context.plone_utils.addPortalMessage(message, 'error')
+                    self.destination_url = self.context.absolute_url()
+                    self.request.response.redirect(self.destination_url)
+                    return
+            client = objects[objects.keys()[0]]
+
+        elif context.portal_type == 'Batch':
+            client = context.getClient()
+
+        elif context.portal_type == 'Client':
+            client = context
+
+        if not client.getLicenses():
             message = 'Licenses not set for current client'
             self.context.plone_utils.addPortalMessage(message, 'error')
             self.request.response.redirect(self.destination_url)
