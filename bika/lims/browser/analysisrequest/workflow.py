@@ -293,7 +293,10 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
         hasInterims = {}
         # check that the form values match the database
         # save them if not.
-        for uid, result in self.request.form.get('Result', [{}])[0].items():
+        from itertools import chain
+        items = self.request.form.get("Result", [{}])
+        result_items = list(chain.from_iterable([d.items() for d in items]))
+        for uid, result in result_items:
             # Do not save data for analyses that are not selected.
             if uid not in selected_analyses:
                 continue
