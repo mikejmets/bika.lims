@@ -15,6 +15,7 @@
                 </select>
             </td>
         </tr>
+        <tal:comment replace="nothing">
         <tr>
             <td class="instrument-import">
                 <label i18n:translate="" for="advancetostate">
@@ -25,9 +26,9 @@
                 No <input type="radio" name="advancetostate" value="no"> 
             </td>
         </tr>
-        <tal:comment replace="nothing">
+        </tal:comment>
         <tr>
-            <td class="instrument-import"><label i18n:translate="" for="advancetostate">Advance transition to</label>&nbsp;</td>
+            <td class="instrument-import"><label i18n:translate="" for="advancetostate">Apply Auto Transition</label>&nbsp;</td>
             <td class="instrument-import">
                 <select name="advancetostate" id="advancetostate"
                         tal:define="statelist view/getAdvanceToState">
@@ -38,7 +39,6 @@
                 </select>
             </td>
         </tr>
-        </tal:comment>
         <tr>
             <td class="instrument-import"><label i18n:translate="" for="override">Results override</label></td>
             <td class="instrument-import">

@@ -131,7 +131,7 @@ MULTI_VERIFICATION_TYPE = DisplayList((
     ('self_multi_disabled', _('Disable multi-verification for the same user')),
 ))
 INSTRUMENT_IMPORT_AUTO_OPTIONS = DisplayList((
-    ('None', _('')),
+    ('', _("Don't transition ")),
     #(Transition, _(state to transition to))
-    ('submit', _('To Be Verified')),
+    ('submit', _('Submit')),
 ))

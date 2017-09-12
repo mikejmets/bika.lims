@@ -264,12 +264,12 @@ schema = BikaFolderSchema.copy() + Schema((
         )
     ),
     StringField(
-        'TransitionSuccessState',
+        'AutoTransition',
         schemata="Results Reports",
         vocabulary=INSTRUMENT_IMPORT_AUTO_OPTIONS,
         widget=SelectionWidget(
-            label=_("AR Instrument Import state as"),
-            description=_("The transition/state to advance to, when doing AR instrument import"),
+            label=_("Auto Transition analysis"),
+            description=_("The transition to be attempted on each analysis when doing AR instrument import"),
             format='select',
         )
     ),

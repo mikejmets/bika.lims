@@ -8,6 +8,7 @@
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from bika.lims import api
 from bika.lims import bikaMessageFactory as _
+from bika.lims.config import INSTRUMENT_IMPORT_AUTO_OPTIONS
 from bika.lims.utils import t
 from bika.lims.browser import BrowserView
 from bika.lims.content.instrument import getDataInterfaces
@@ -133,19 +134,6 @@ class ImportView(BrowserView):
         else:
             return self.template()
 
-    def getAdvanceToState(self):
-        """Get States to advance to on an AR Instrument Import
-        """
-        tr_success_state = api.get_bika_setup().getTransitionSuccessState()
-        import pdb; pdb.set_trace()
-        bsc = getToolByName(self, 'bika_setup_catalog')
-        items = [('', '')] + [(o.UID, o.Title) for o in
-                               bsc(portal_type = 'Instrument',
-                                   inactive_state = 'active')]
-        items.sort(lambda x, y: cmp(x[1].lower(), y[1].lower()))
-        return DisplayList(list(items))
-
-
 
 class ajaxGetImportTemplate(BrowserView):
 
@@ -183,3 +171,11 @@ class ajaxGetImportTemplate(BrowserView):
                                    inactive_state = 'active')]
         items.sort(lambda x, y: cmp(x[1].lower(), y[1].lower()))
         return DisplayList(list(items))
+
+    def getAdvanceToState(self):
+        """Get States to advance to on an AR Instrument Import
+        """
+        tr_success_state = api.get_bika_setup().getAutoTransition()
+        if len(tr_success_state) ==  0:
+            return DisplayList([('', "Don't transition")])
+        return INSTRUMENT_IMPORT_AUTO_OPTIONS

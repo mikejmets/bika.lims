@@ -7,6 +7,7 @@
 
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import _createObjectByType, safe_unicode
+from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import t
 from bika.lims.exportimport.instruments.logger import Logger
@@ -255,7 +256,7 @@ class AnalysisResultsImporter(Logger):
                  allowed_ar_states=None,
                  allowed_analysis_states=None,
                  instrument_uid=None,
-                 advance_to_state=None,):
+                 form=None,):
         Logger.__init__(self)
         self._parser = parser
         self.context = context
@@ -264,7 +265,7 @@ class AnalysisResultsImporter(Logger):
         self._override = override
         self._idsearch = idsearchcriteria
         self._priorizedsearchcriteria = ''
-        self.advance_to_state = advance_to_state
+        self.advance_to_state = None
         self.bsc = getToolByName(self.context, 'bika_setup_catalog')
         self.bac = getToolByName(self.context, 'bika_analysis_catalog')
         self.pc = getToolByName(self.context, 'portal_catalog')
@@ -283,10 +284,21 @@ class AnalysisResultsImporter(Logger):
             self._idsearch=['getRequestID']
         self.instrument_uid=instrument_uid
 
+        if self.mustTransitionAnalysis():
+            self.advance_to_state = form.get('advancetostate', None)
+            if len(self.advance_to_state) == 0:
+                self.advance_to_state = None
+
     def getParser(self):
         """ Returns the parser that will be used for the importer
         """
         return self._parser
+
+    def mustTransitionAnalysis(self):
+        tr_success_state = api.get_bika_setup().getAutoTransition()
+        if len(tr_success_state) == 0:
+            return False
+        return True
 
     def getAllowedARStates(self):
         """ The allowed Analysis Request states
@@ -800,7 +812,7 @@ class AnalysisResultsImporter(Logger):
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
-                doActionFor(analysis, self.advance_to_state)
+                api.do_transition_for(analysis, self.advance_to_state)
             resultsaved = True
 
         elif resultsaved == False:

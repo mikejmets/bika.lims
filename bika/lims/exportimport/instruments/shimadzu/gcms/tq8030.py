@@ -34,18 +34,6 @@ import traceback
 
 title = "Shimadzu GCMS-TQ8030 GC/MS/MS"
 
-def isAdvanceToState(context):
-    """Get States to advance to on an AR Instrument Import
-    """
-    tr_success_state = api.get_bika_setup().getTransitionSuccessState()
-    if tr_success_state is None:
-        return False
-    return True
-
-def getAdvanceToStateToApply(context):
-    tr_success_state = api.get_bika_setup().getTransitionSuccessState()
-    return tr_success_state
-
 def Import(context, request):
     """ Read Shimadzu GCMS-TQ8030 GC/MS/MS analysis results
     """
@@ -56,7 +44,6 @@ def Import(context, request):
     override = form['override']
     sample = form.get('sample', 'requestid')
     instrument = form.get('instrument', None)
-    advancetostate = None if form.get('advancetostate', 'no') == 'no' else 'yes' 
     errors = []
     logs = []
 
@@ -92,11 +79,6 @@ def Import(context, request):
         elif sample == 'sample_clientsid':
             sam = ['getSampleID', 'getClientSampleID']
 
-        if advancetostate == 'yes':
-            if isAdvanceToState(context):
-                advancetostate = getAdvanceToStateToApply(context)
-            else:
-                advancetostate = None
 
         importer = GCMSTQ8030GCMSMSImporter(parser=parser,
                                            context=context,
@@ -105,7 +87,7 @@ def Import(context, request):
                                            allowed_analysis_states=None,
                                            override=over,
                                            instrument_uid=instrument,
-                                           advance_to_state=advancetostate)
+                                           form=form)
         tbex = ''
         try:
             importer.process()
@@ -194,8 +176,8 @@ class GCMSTQ8030GCMSMSImporter(AnalysisResultsImporter):
 
     def __init__(self, parser, context, idsearchcriteria, override,
                  allowed_ar_states=None, allowed_analysis_states=None,
-                 instrument_uid='', advance_to_state=None):
+                 instrument_uid='', form=None):
         AnalysisResultsImporter.__init__(self, parser, context, idsearchcriteria,
                                          override, allowed_ar_states,
                                          allowed_analysis_states,
-                                         instrument_uid,advance_to_state)
+                                         instrument_uid,form)
