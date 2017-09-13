@@ -23,6 +23,7 @@
 3.3.0 (unreleased)
 ------------------
 
+- Issue-2204: Notification Emails on AR retract
 - Issue-2173: Publishing multiple ARs fails
 - Issue-2132: Reorderable Attachments for Reports
 - Issue-2129: Migrate Attachments to blobs
@@ -34,9 +35,17 @@
 - Bika LIMS JSON API v2
 
 
-3.2.1rc1 (unreleased)
+3.2.1rc2 (unreleased)
 ---------------------
 
+- No changes yet
+
+
+3.2.1rc1 (2017-09-12)
+---------------------
+
+- Issue-2211: Allow to change the Number of ARs in the AR Add form
+- Issue-2207: Invalid jQuery selector in Referencewidget
 - Issue-2200: Bika Listing Cachekey ignores different virtual host configurations
 - Issue-2198: Bika listing cache key does not invalidate after WF transitions
 - Issue-2004: Traceback for AR when an Analysis is used w/o 'Exponential format precision' set
