@@ -436,7 +436,7 @@ class FolderView(BikaListingView):
         toggle_cols = self.request.cookies.get('toggle_cols')
         display_columns = None
         if toggle_cols:
-            display_columns = eval(toggle_cols)
+            display_columns = json.loads(toggle_cols)
             if 'WorksheetFolderlist' in display_columns.keys():
                 self.display_columns = display_columns['WorksheetFolderlist']
 
