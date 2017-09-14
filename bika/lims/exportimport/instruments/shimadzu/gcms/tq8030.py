@@ -9,6 +9,7 @@ from DateTime import DateTime
 from Products.Archetypes.event import ObjectInitializedEvent
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import t
 from bika.lims import logger
@@ -32,7 +33,6 @@ from bika.lims.exportimport.instruments.resultsimport import InstrumentCSVResult
 import traceback
 
 title = "Shimadzu GCMS-TQ8030 GC/MS/MS"
-
 
 def Import(context, request):
     """ Read Shimadzu GCMS-TQ8030 GC/MS/MS analysis results
@@ -79,13 +79,15 @@ def Import(context, request):
         elif sample == 'sample_clientsid':
             sam = ['getSampleID', 'getClientSampleID']
 
-        importer = GCMSQP2010SEImporter(parser=parser,
+
+        importer = GCMSTQ8030GCMSMSImporter(parser=parser,
                                            context=context,
                                            idsearchcriteria=sam,
                                            allowed_ar_states=status,
                                            allowed_analysis_states=None,
                                            override=over,
-                                           instrument_uid=instrument)
+                                           instrument_uid=instrument,
+                                           form=form)
         tbex = ''
         try:
             importer.process()
@@ -170,12 +172,12 @@ class GCMSQP2010SECSVParser(InstrumentCSVResultsFileParser):
             return
         return result
 
-class GCMSQP2010SEImporter(AnalysisResultsImporter):
+class GCMSTQ8030GCMSMSImporter(AnalysisResultsImporter):
 
     def __init__(self, parser, context, idsearchcriteria, override,
                  allowed_ar_states=None, allowed_analysis_states=None,
-                 instrument_uid=''):
+                 instrument_uid='', form=None):
         AnalysisResultsImporter.__init__(self, parser, context, idsearchcriteria,
                                          override, allowed_ar_states,
                                          allowed_analysis_states,
-                                         instrument_uid)
+                                         instrument_uid,form)

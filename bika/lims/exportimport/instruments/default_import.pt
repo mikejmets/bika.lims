@@ -15,6 +15,30 @@
                 </select>
             </td>
         </tr>
+        <tal:comment replace="nothing">
+        <tr>
+            <td class="instrument-import">
+                <label i18n:translate="" for="advancetostate">
+                    Advance Analysis Requests to "To be Verified" state
+                </label>&nbsp;</td>
+            <td class="instrument-import">
+                Yes <input type="radio" name="advancetostate" value="yes">
+                No <input type="radio" name="advancetostate" value="no"> 
+            </td>
+        </tr>
+        </tal:comment>
+        <tr>
+            <td class="instrument-import"><label i18n:translate="" for="advancetostate">Apply Auto Transition</label>&nbsp;</td>
+            <td class="instrument-import">
+                <select name="advancetostate" id="advancetostate"
+                        tal:define="statelist view/getAdvanceToState">
+                    <tal:options repeat="option statelist">
+                    <option tal:attributes="value python:option;"
+                            tal:content="python:statelist.getValue(option)"/>
+                    </tal:options>
+                </select>
+            </td>
+        </tr>
         <tr>
             <td class="instrument-import"><label i18n:translate="" for="override">Results override</label></td>
             <td class="instrument-import">

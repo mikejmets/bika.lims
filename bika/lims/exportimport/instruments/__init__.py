@@ -29,8 +29,6 @@ from rochecobas.taqman import model96
 from scilvet.abc import plus
 from eltra.cs import cs2000
 from rigaku.supermini import wxrf
-from myself import myinstrument
-from nuclisens import easyq
 from shimadzu.icpe import multitype
 from shimadzu.gcms import qp2010se
 from shimadzu.nexera import LC2040C, LCMS8050
@@ -73,8 +71,6 @@ __all__ = ['abaxis.vetscan.vs2',
            'thermoscientific.gallery.Ts9861x',
            'thermoscientific.multiskan.go',
            'thermoscientific.qtegra.qtegra',
-           'myself.myinstrument',
-           'nuclisens.easyq',
            'shimadzu.icpe.multitype',
            'shimadzu.gcms.qp2010se',
            'shimadzu.nexera.LC2040C',
