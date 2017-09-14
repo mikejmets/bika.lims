@@ -11,7 +11,7 @@ from bika.lims.testing import BIKA_SIMPLE_FIXTURE
 from bika.lims.tests.base import BikaSimpleTestCase
 from bika.lims.utils import tmpID
 from bika.lims.workflow import doActionFor
-from plone import api
+from bika.lims import api
 from plone.app.testing import login, logout
 from plone.app.testing import TEST_USER_NAME
 from zope.publisher.browser import TestRequest
@@ -74,7 +74,12 @@ class TestInstrumentImport(BikaSimpleTestCase):
         login(self.portal, TEST_USER_NAME)
 
     def test_BC4_Shimadzu_TQ8030Import(self):
+        '''SamplingWorkflowEnabled = True
+        '''
         pc = getToolByName(self.portal, 'portal_catalog')
+        api.get_bika_setup().setSamplingWorkflowEnabled(True)
+        api.get_bika_setup().setAutoTransition('submit')
+        transaction.commit()
         workflow = getToolByName(self.portal, 'portal_workflow')
         arimport = self.addthing(self.client, 'ARImport')
         arimport.unmarkCreationFlag()
@@ -124,11 +129,24 @@ Total price excl Tax,,,,,,,,,,,,,,
             self.fail(
                 'Importation failed!  %s.Errors: %s' % (arimport.id, errors))
 
+        # Transition AR and its AS
         bc = getToolByName(self.portal, 'bika_catalog')
         ars = bc(portal_type='AnalysisRequest')
         ar = ars[0]
-        api.content.transition(obj=ar.getObject(), transition='receive')
-        transaction.commit()
+        for ar in ars:
+            analyses = ar.getObject().getAnalyses(full_objects=True)
+            for a in analyses:
+                state = workflow.getInfoFor(a, 'review_state')
+                if state == 'to_be_sampled':
+                    workflow.doActionFor(a, 'sample')
+                    transaction.commit()
+                state = workflow.getInfoFor(a, 'review_state')
+                if state == 'sample_due':
+                    workflow.doActionFor(a, 'receive')
+                    transaction.commit()
+            workflow.doActionFor(ar.getObject(), 'receive')
+            transaction.commit()
+
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
         filename = '%s/files/QP-2010.txt' % path
@@ -143,7 +161,8 @@ Total price excl Tax,,,,,,,,,,,,,,
                                     override='nooverride',
                                     file=file,
                                     sample='requestid',
-                                    instrument=''))
+                                    instrument='',
+                                    advancetostate='submit'))
         context = self.portal
         results = Import(context, request)
         transaction.commit()
@@ -155,8 +174,43 @@ Total price excl Tax,,,,,,,,,,,,,,
             if an.getKeyword() == 'Ca':
                 if an.getResult() != '0.0':
                     self.fail("%s:Result did not get updated" % an.getKeyword())
+                state = workflow.getInfoFor(an, 'review_state')
+                if state != 'to_be_verified':
+                    self.fail('Auto Transition failed for:{}'.format(an))
             if an.getKeyword() == 'alphaPinene':
                 if an.getResult() != '0.02604':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+
+        filename = '%s/files/QP-2010-ToBeVerified.txt' % path
+        if not os.path.isfile(filename):
+            self.fail("File %s not found" % filename)
+        data = open(filename, 'r').read()
+        file = FileUpload(TestFile(cStringIO.StringIO(data)))
+        request = TestRequest()
+        request = TestRequest(form=dict(
+                                    submitted=True,
+                                    artoapply='received_tobeverified',
+                                    override='nooverride',
+                                    file=file,
+                                    sample='requestid',
+                                    instrument='',
+                                    advancetostate='submit'))
+        context = self.portal
+        results = Import(context, request)
+        transaction.commit()
+        text = 'Import finished successfully: 1 ARs and 2 results updated'
+        if text not in results:
+            self.fail("AR Import failed")
+        analyses = ar.getObject().getAnalyses(full_objects=True)
+        for an in analyses:
+            if an.getKeyword() == 'Ca':
+                if an.getResult() != '0.0':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+                state = workflow.getInfoFor(an, 'review_state')
+                if state != 'to_be_verified':
+                    self.fail('Auto Transition failed for:{}'.format(an))
+            if an.getKeyword() == 'alphaPinene':
+                if an.getResult() != '0.02705':
                     self.fail("%s:Result did not get updated" % an.getKeyword())
 
 def test_suite():

@@ -18,6 +18,7 @@ from Products.Archetypes.config import REFERENCE_CATALOG
 from datetime import datetime
 from DateTime import DateTime
 import os
+from plone import api as ploneapi
 
 class InstrumentResultsFileParser(Logger):
 
@@ -266,6 +267,7 @@ class AnalysisResultsImporter(Logger):
         self._idsearch = idsearchcriteria
         self._priorizedsearchcriteria = ''
         self.advance_to_state = None
+        self.form = form
         self.bsc = getToolByName(self.context, 'bika_setup_catalog')
         self.bac = getToolByName(self.context, 'bika_analysis_catalog')
         self.pc = getToolByName(self.context, 'portal_catalog')
@@ -812,7 +814,15 @@ class AnalysisResultsImporter(Logger):
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
-                api.do_transition_for(analysis, self.advance_to_state)
+                if self.form['artoapply'] == 'received_tobeverified':
+                    try:
+                        api.do_transition_for(analysis, self.advance_to_state)
+                    except:
+                        self.log("Failed to perform transition '{}' on {}: {}"\
+                                .format(self.advance_to_state, objid, acode))
+                else:
+                    api.do_transition_for(analysis, self.advance_to_state)
+
             resultsaved = True
 
         elif resultsaved == False:
