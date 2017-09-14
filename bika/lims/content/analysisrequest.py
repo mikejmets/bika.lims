@@ -2569,7 +2569,7 @@ class AnalysisRequest(BaseFolder):
         """Return a list of sample preparation workflows.  These are identified
         by scanning all workflow IDs for those beginning with "sampleprep".
         """
-        bsc = getToolByName(self, 'portal_catalog')
+        bsc = getToolByName(self, 'bika_setup_catalog')
         licenses = [['', ''], ]
         client = self.getClient()
         for license in client.getLicenses():
