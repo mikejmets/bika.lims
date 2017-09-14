@@ -286,8 +286,8 @@ class AnalysisResultsImporter(Logger):
             self._idsearch=['getRequestID']
         self.instrument_uid=instrument_uid
 
-        if self.mustTransitionAnalysis():
-            self.advance_to_state = form.get('advancetostate', None)
+        if self.mustTransitionAnalysis() and self.form:
+            self.advance_to_state = self.form.get('advancetostate', None)
             if len(self.advance_to_state) == 0:
                 self.advance_to_state = None
 
@@ -814,7 +814,7 @@ class AnalysisResultsImporter(Logger):
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
-                if self.form['artoapply'] == 'received_tobeverified':
+                if self.form and self.form['artoapply'] == 'received_tobeverified':
                     try:
                         api.do_transition_for(analysis, self.advance_to_state)
                     except:
