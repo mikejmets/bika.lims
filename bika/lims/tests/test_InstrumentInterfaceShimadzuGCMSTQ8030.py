@@ -209,6 +209,7 @@ Total price excl Tax,,,,,,,,,,,,,,
 
     def test_Shimadzu_TQ8030Import_AutoTransition_SamplingcwEnabled(self):
         '''SamplingWorkflowEnabled = False
+           AutoTransition = submit
         '''
         pc = getToolByName(self.portal, 'portal_catalog')
         api.get_bika_setup().setSamplingWorkflowEnabled(False)
@@ -336,6 +337,61 @@ Total price excl Tax,,,,,,,,,,,,,,
                             self.fail(msg)
                     if an.getKeyword() == 'Pentachloronitrobenzene':
                         if an.getResult() != '123.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+
+        # To be verified AR/AS
+        filename = '%s/files/TQ-8030-ToBeVerified.txt' % path
+        if not os.path.isfile(filename):
+            self.fail("File %s not found" % filename)
+        data = open(filename, 'r').read()
+        file = FileUpload(TestFile(cStringIO.StringIO(data)))
+        request = TestRequest()
+        request = TestRequest(form=dict(
+                                    submitted=True,
+                                    artoapply='received_tobeverified',
+                                    override='nooverride',
+                                    file=file,
+                                    sample='requestid',
+                                    instrument='',
+                                    advancetostate='submit'))
+        context = self.portal
+        results = Import(context, request)
+        transaction.commit()
+        text = 'Import finished successfully: 2 ARs and 4 results updated'
+        if text not in results:
+            self.fail("AR Import failed")
+        for ar in ars:
+            analyses = ar.getObject().getAnalyses(full_objects=True)
+            if ar.getObject().getId() == '1-0001-R01':
+                for an in analyses:
+                    state = workflow.getInfoFor(an, 'review_state')
+                    if state != 'to_be_verified':
+                        self.fail('Auto Transition failed for:{}'.format(an))
+                    if an.getKeyword() == 'Captan':
+                        if an.getResult() != '333.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+                    if an.getKeyword() == 'Pentachloronitrobenzene':
+                        if an.getResult() != '111.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+
+            if ar.getObject().getId() == '1-0002-R01':
+                for an in analyses:
+                    state = workflow.getInfoFor(an, 'review_state')
+                    if state != 'to_be_verified':
+                        self.fail('Auto Transition failed for:{}'.format(an))
+                    if an.getKeyword() == 'Captan':
+                        if an.getResult() != '444.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+                    if an.getKeyword() == 'Pentachloronitrobenzene':
+                        if an.getResult() != '222.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
