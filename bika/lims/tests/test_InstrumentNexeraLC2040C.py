@@ -319,7 +319,6 @@ Total price excl Tax,,,,,,,,,,,,,,
             if state == 'to_be_verified':
                 self.fail('Auto Transition occured for:{}'.format(an))
             if an.getKeyword() == 'Ca':
-                import pdb; pdb.set_trace()
                 if an.getResult() != '0.0':
                     self.fail("%s:Result did not get updated" % an.getKeyword())
             if an.getKeyword() == 'Ecoli':
