@@ -73,7 +73,7 @@ class TestInstrumentImport(BikaSimpleTestCase):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
 
-    def test_Shimadzu_NexeraLC2040CImport(self):
+    def test_Shimadzu_NexeraLC2040CImport_AutoTransition_SamplingEnabled(self):
         pc = getToolByName(self.portal, 'portal_catalog')
         api.get_bika_setup().setSamplingWorkflowEnabled(True)
         api.get_bika_setup().setAutoTransition('submit')
@@ -207,6 +207,125 @@ Total price excl Tax,,,,,,,,,,,,,,
             if an.getKeyword() == 'Ecoli':
                 if an.getResult() != '0.9':
                     self.fail("%s:Result did not get updated" % an.getKeyword())
+
+    def test_Shimadzu_NexeraLC2040CImport_NoAutoTransition_SamplingDisabled(self):
+        '''SamplingWorkflowEnabled = False
+           AutoTransition = ''
+        '''
+        pc = getToolByName(self.portal, 'portal_catalog')
+        #NOTE: SamplingWorkflowEnabled has to set before ARs are added
+        api.get_bika_setup().setSamplingWorkflowEnabled(False)
+        api.get_bika_setup().setAutoTransition('')
+        transaction.commit()
+        workflow = getToolByName(self.portal, 'portal_workflow')
+        pc = getToolByName(self.portal, 'portal_catalog')
+        workflow = getToolByName(self.portal, 'portal_workflow')
+        arimport = self.addthing(self.client, 'ARImport')
+        arimport.unmarkCreationFlag()
+        arimport.setFilename("test1.csv")
+        arimport.setOriginalFile("""
+Header,      File name,  Client name,  Client ID, Contact,     CC Names - Report, CC Emails - Report, CC Names - Invoice, CC Emails - Invoice, No of Samples, Client Order Number, Client Reference,,
+Header Data, test1.csv,  Happy Hills,  HH,        Rita Mohale,                  ,                   ,                    ,                    , 10,            HHPO-001,                            ,,
+Batch Header, id,       title,     description,    ClientBatchID, ClientBatchComment, BatchLabels, ReturnSampleToClient,,,
+Batch Data,   B15-0123, New Batch, Optional descr, CC 201506,     Just a batch,                  , TRUE                ,,,
+Samples,    ClientSampleID,    SamplingDate,DateSampled,Sampler,SamplePoint,SampleMatrix,SampleType,ContainerType,ReportDryMatter,Priority,Total number of Analyses or Profiles,Price excl Tax,CAL1,,,,MicroBio,,
+Analysis price,,,,,,,,,,,,,,
+"Total Analyses or Profiles",,,,,,,,,,,,,9,,,
+Total price excl Tax,,,,,,,,,,,,,,
+"Sample 1", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
+        """)
+
+        # check that values are saved without errors
+        arimport.setErrors([])
+        arimport.save_header_data()
+        arimport.save_sample_data()
+        arimport.create_or_reference_batch()
+        errors = arimport.getErrors()
+        transaction.commit()
+        if errors:
+            self.fail("Unexpected errors while saving data: " + str(errors))
+        # check that batch was created and linked to arimport without errors
+        if not pc(portal_type='Batch'):
+            self.fail("Batch was not created!")
+        if not arimport.schema['Batch'].get(arimport):
+            self.fail("Batch was created, but not linked to ARImport.")
+
+        # the workflow scripts use response.write(); silence them
+        arimport.REQUEST.response.write = lambda x: x
+
+        # check that validation succeeds without any errors
+        workflow.doActionFor(arimport, 'validate')
+        transaction.commit()
+        state = workflow.getInfoFor(arimport, 'review_state')
+        if state != 'valid':
+            errors = arimport.getErrors()
+            self.fail(
+                'Validation failed!  %s.Errors: %s' % (arimport.id, errors))
+
+        # Import objects and verify that they exist
+        workflow.doActionFor(arimport, 'import')
+        state = workflow.getInfoFor(arimport, 'review_state')
+        if state != 'imported':
+            errors = arimport.getErrors()
+            self.fail(
+                'Importation failed!  %s.Errors: %s' % (arimport.id, errors))
+        transaction.commit()
+
+
+        bc = getToolByName(self.portal, 'bika_catalog')
+        ars = bc(portal_type='AnalysisRequest')
+        ar = ars[0]
+        analyses = ar.getObject().getAnalyses(full_objects=True)
+        for a in analyses:
+            state = workflow.getInfoFor(a, 'review_state')
+            if state == 'to_be_sampled':
+                workflow.doActionFor(a, 'sample')
+                transaction.commit()
+            state = workflow.getInfoFor(a, 'review_state')
+            if state == 'sampled':
+                workflow.doActionFor(a, 'sample_due')
+            state = workflow.getInfoFor(a, 'review_state')
+            if state == 'sample_due':
+                workflow.doActionFor(a, 'receive')
+                transaction.commit()
+        workflow.doActionFor(ar.getObject(), 'receive')
+        transaction.commit()
+
+        #Testing Import for Instrument
+        path = os.path.dirname(__file__)
+        filename = '%s/files/nexera' % path
+        if not os.path.isfile(filename):
+            self.fail("File %s not found" % filename)
+        data = open(filename, 'r').read()
+        file = FileUpload(TestFile(cStringIO.StringIO(data)))
+        request = TestRequest()
+        request = TestRequest(form=dict(
+                                    submitted=True,
+                                    artoapply='received',
+                                    override='nooverride',
+                                    file=file,
+                                    sample='requestid',
+                                    instrument='',
+                                    advancetostate='submit'))
+        context = self.portal
+        results = Import(context, request)
+        transaction.commit()
+        text = 'Import finished successfully: 1 ARs and 2 results updated'
+        if text not in results:
+            self.fail("AR Import failed")
+        analyses = ar.getObject().getAnalyses(full_objects=True)
+        for an in analyses:
+            state = workflow.getInfoFor(an, 'review_state')
+            if state == 'to_be_verified':
+                self.fail('Auto Transition occured for:{}'.format(an))
+            if an.getKeyword() == 'Ca':
+                import pdb; pdb.set_trace()
+                if an.getResult() != '0.0':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+            if an.getKeyword() == 'Ecoli':
+                if an.getResult() != '0.8':
+                    self.fail("%s:Result did not get updated" % an.getKeyword())
+
 
 
 def test_suite():
