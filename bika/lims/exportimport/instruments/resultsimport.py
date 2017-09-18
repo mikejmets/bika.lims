@@ -814,14 +814,11 @@ class AnalysisResultsImporter(Logger):
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
-                if self.form and self.form['artoapply'] == 'received_tobeverified':
-                    try:
-                        api.do_transition_for(analysis, self.advance_to_state)
-                    except:
-                        self.log("Failed to perform transition '{}' on {}: {}"\
-                                .format(self.advance_to_state, objid, acode))
-                else:
+                try:
                     api.do_transition_for(analysis, self.advance_to_state)
+                except:
+                    self.log("Failed to perform transition '{}' on {}: {}"\
+                            .format(self.advance_to_state, objid, acode))
 
             resultsaved = True
 
