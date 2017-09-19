@@ -77,7 +77,8 @@ class IDFormattingField(RecordsField):
             'counter_type',
             'counter_reference',
             'prefix',
-            'split_length'
+            'split_length',
+            'seed',
         ),
         'subfield_labels': {
             'portal_type': 'Portal Type',
@@ -88,6 +89,7 @@ class IDFormattingField(RecordsField):
             'counter_reference': 'Counter Ref',
             'prefix': 'Prefix',
             'split_length': 'Split Length',
+            'seed': 'Seed Value',
         },
         'subfield_readonly': {
             'portal_type': False,
@@ -98,6 +100,7 @@ class IDFormattingField(RecordsField):
             'counter_reference': False,
             'prefix': False,
             'split_length': False,
+            'seed': False,
         },
         'subfield_sizes': {
             'portal_type': 20,
@@ -108,11 +111,13 @@ class IDFormattingField(RecordsField):
             'counter_reference': 12,
             'prefix': 12,
             'split_length': 5,
+            'seed': 5,
         },
         'subfield_types': {
             'sequence_type': 'selection',
             'counter_type': 'selection',
             'split_length': 'int',
+            'seed': 'int',
         },
         'subfield_vocabularies': {
             'sequence_type': 'getSequenceTypes',
@@ -723,63 +728,73 @@ schema = BikaFolderSchema.copy() + Schema((
                 'form': 'AI-{seq:03d}',
                 'portal_type': 'ARImport',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'form': 'B-{seq:03d}',
                 'portal_type': 'Batch',
                 'prefix': 'batch',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'form': 'D-{seq:03d}',
                 'portal_type': 'DuplicateAnalysis',
                 'prefix': 'duplicate',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'form': 'I-{seq:03d}',
                 'portal_type': 'Invoice',
                 'prefix': 'invoice',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'form': 'QC-{seq:03d}',
                 'portal_type': 'ReferenceSample',
                 'prefix': 'refsample',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'form': 'SA-{seq:03d}',
                 'portal_type': 'ReferenceAnalysis',
                 'prefix': 'refanalysis',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'form': 'WS-{seq:03d}',
                 'portal_type': 'Worksheet',
                 'prefix': 'worksheet',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'form': '{sampleType}-{seq:04d}',
                 'portal_type': 'Sample',
                 'prefix': 'sample',
                 'sequence_type': 'generated',
-                'split_length': 1
+                'split_length': 1,
+                'seed': 0, 
             }, {
                 'context': 'sample',
                 'counter_reference': 'AnalysisRequestSample',
                 'counter_type': 'backreference',
                 'form': '{sampleId}-R{seq:02d}',
                 'portal_type': 'AnalysisRequest',
-                'sequence_type': 'counter'
+                'sequence_type': 'counter',
+                'seed': 0, 
             }, {
                 'context': 'sample',
                 'counter_reference': 'SamplePartition',
                 'counter_type': 'contained',
                 'form': '{sampleId}-P{seq:d}',
                 'portal_type': 'SamplePartition',
-                'sequence_type': 'counter'
+                'sequence_type': 'counter',
+                'seed': 0, 
             }
         ],
         widget=RecordsWidget(
