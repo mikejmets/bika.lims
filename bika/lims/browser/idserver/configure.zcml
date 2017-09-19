@@ -8,7 +8,7 @@
       name="seed"
       class="bika.lims.browser.idserver.view.IDServerView"
       attribute="seed"
-      permission="zope.Public"
+      permission="cmf.ManagePortal"
       layer="bika.lims.interfaces.IBikaLIMS"
     />
 
