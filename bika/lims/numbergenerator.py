@@ -74,6 +74,7 @@ class NumberGenerator(object):
         """
         storage = self.storage
 
+        logger.debug("In get_number Old = %d" % storage[key])
         try:
             logger.debug("*** consecutive number lock acquire ***")
             lock.acquire()
@@ -87,7 +88,7 @@ class NumberGenerator(object):
             self.storage._p_changed = True
             lock.release()
 
-        logger.debug("NUMBER => %d" % storage[key])
+        logger.debug("In get_number New = %d" % storage[key])
         return storage[key]
 
     def set_seed(self, key, seed=None):
@@ -104,13 +105,14 @@ class NumberGenerator(object):
                     #storage[key] = counter + 1
                     storage[key] = seed
                 except KeyError:
-                    storage[key] = 0
+                    storage[key] = seed
+                    logger.info("NUMBER => %d" % storage[key])
             finally:
                 logger.debug("*** consecutive number lock release ***")
                 self.storage._p_changed = True
                 lock.release()
 
-            logger.debug("NUMBER => %d" % storage[key])
+            logger.info("In set_seed NUMBER => %d" % storage[key])
         return storage[key]
 
 
