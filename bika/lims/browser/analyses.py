@@ -815,9 +815,10 @@ class AnalysesView(BikaListingView):
                 new['Unit'] = unit_conversion.converted_unit
                 if item.get('Result'):
                     new['formatted_result'] = new['Result'] = convert_unit(
-                                                    item['formatted_result'],
+                                                    item['Result'],
                                                     unit_conversion.formula,
-                                                    dmk)
+                                                    dmk,
+                                                    obj.getPrecision())
                 new_results.append(new)
         items = new_results
 
