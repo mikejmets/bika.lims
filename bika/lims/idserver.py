@@ -5,9 +5,10 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
-import zLOG
+import logging
 import urllib
 import transaction
+import zLOG
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -22,6 +23,7 @@ from bika.lims import bikaMessageFactory as _
 from bika.lims.numbergenerator import INumberGenerator
 
 
+logger = logging.getLogger("bika.lims.idserver")
 class IDServerUnavailable(Exception):
     pass
 
@@ -129,20 +131,27 @@ def generateUniqueId(context, parent=False, portal_type=''):
     # Actual id construction starts here
     form = config['form']
     if config['sequence_type'] == 'counter':
-        new_seq = getLastCounter(
+        old_seq = getLastCounter(
             context=variables_map[config['context']],
             config=config)
     elif config['sequence_type'] == 'generated':
         if config.get('split_length', None) == 0:
-            prefix_config = '-'.join(form.split('-')[:-1])
+            prefix_config = '{}-{}'.format(portal_type.lower(),
+                                           '-'.join(form.split('-')[:-1]),
+                                           )
             prefix = prefix_config.format(**variables_map)
         elif config.get('split_length', None) > 0:
-            prefix_config = '-'.join(form.split('-')[:config['split_length']])
+            prefix_config = '{}-{}'.format(
+                            portal_type.lower(),
+                            '-'.join(form.split('-')[:config['split_length']]))
             prefix = prefix_config.format(**variables_map)
         else:
             prefix = config['prefix']
-        new_seq = number_generator(key=prefix)
-    variables_map['seq'] = new_seq + 1
+        logger.debug('In generateUniqueId, prefix is %s' % prefix)
+        old_seq = number_generator(key=prefix)
+        logger.debug('In generateUniqueId, old_seq is %s' % old_seq)
+    variables_map['seq'] = old_seq + 1
+    logger.debug('In generateUniqueId, result is %s' % variables_map['seq'])
     result = form.format(**variables_map)
     return result
 

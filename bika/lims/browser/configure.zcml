@@ -51,6 +51,7 @@
   <include package=".fields"/>
   <include package=".widgets"/>
   <include package=".reports"/>
+  <include package=".idserver"/>
 
   <browser:page
       for="*"

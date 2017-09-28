@@ -85,7 +85,8 @@ def Import(context, request):
                                            allowed_ar_states=status,
                                            allowed_analysis_states=None,
                                            override=over,
-                                           instrument_uid=instrument)
+                                           instrument_uid=instrument,
+                                           form=form)
         tbex = ''
         try:
             importer.process()
@@ -183,8 +184,8 @@ class ICPEMultitypeImporter(AnalysisResultsImporter):
 
     def __init__(self, parser, context, idsearchcriteria, override,
                  allowed_ar_states=None, allowed_analysis_states=None,
-                 instrument_uid=''):
+                 instrument_uid='', form=None):
         AnalysisResultsImporter.__init__(self, parser, context, idsearchcriteria,
                                          override, allowed_ar_states,
                                          allowed_analysis_states,
-                                         instrument_uid)
+                                         instrument_uid, form)
