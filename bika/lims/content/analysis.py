@@ -1606,9 +1606,9 @@ class Analysis(BaseContent):
             return
         workflow = getToolByName(self, "portal_workflow")
         self.reindexObject(idxs=["worksheetanalysis_review_state", ])
-        # If it is assigned to a worksheet, unassign it.
-        if workflow.getInfoFor(self, 'worksheetanalysis_review_state') == 'assigned':
-            ws = self.getBackReferences("WorksheetAnalysis")[0]
+        ws = self.getBackReferences("WorksheetAnalysis")
+        if ws:
+            ws = ws[0]
             skip(self, "cancel", unskip=True)
             ws.removeAnalysis(self)
 
