@@ -9,6 +9,7 @@ import sys
 import inspect
 
 #from generic import xml
+from generic import genericthreecols
 from abaxis.vetscan import vs2
 from agilent.masshunter import quantitative, masshunter
 from alere.pima import beads, cd4
@@ -53,6 +54,7 @@ __all__ = ['abaxis.vetscan.vs2',
            'foss.winescan.auto',
            'foss.winescan.ft120',
            #'generic.xml',
+           'genericthreecols',
            'horiba.jobinyvon.icp',
            'lifetechnologies.qubit.qubit',
            'myself.myinstrument',
