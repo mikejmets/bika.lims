@@ -383,7 +383,7 @@ class AgilentMasshunterParser(InstrumentCSVResultsFileParser):
 
     def zeroValueDefaultInstrumentResults(self, column_name, result, line):
         result = str(result)
-        if result.startswith('--'):
+        if result.startswith('--') or result == '' or result == 'ND':
             return 0.0
 
         try:
