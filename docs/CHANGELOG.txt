@@ -1,7 +1,7 @@
 3.4.0 (unreleased)
 ------------------
 
-- Add Generic Three Cols Instrument also save blank values and ND as 0
+- Add 2-Dimensional-CSV Instrument also save blank values and ND as 0 to all BC Instruments
 - Saving '-----' and negetive values as 0 and not saving none float values including empty string(Only for Shimadzu instruments)
 - Issue-2103: WS Templates not offered for selection
 - Instrument selection for creating WSs does not work

@@ -3,7 +3,7 @@
 # Copyright 2011-2016 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
-""" Generic Three Columns
+""" 2-Dimensional-CSV
 """
 from DateTime import DateTime
 from Products.Archetypes.event import ObjectInitializedEvent
@@ -31,11 +31,11 @@ from bika.lims.exportimport.instruments.resultsimport import InstrumentCSVResult
     AnalysisResultsImporter
 import traceback
 
-title = "Generic Three Columns"
+title = "2-Dimensional-CSV"
 
 
 def Import(context, request):
-    """ Read Generic Three Columns analysis results
+    """ Read Dimensional-CSV analysis results
     """
     form = request.form
     #TODO form['file'] sometimes returns a list
