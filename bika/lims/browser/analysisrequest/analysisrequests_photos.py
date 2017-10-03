@@ -44,7 +44,7 @@ class IARPhotos(BrowserView):
             ar = bc(portal_type='AnalysisRequest', id=ar_photo)
             if len(ar) == 0:
                 # Move to errors folder 
-                destination = '{}/{}'.format(errors_dir, ar_photo)
+                destination = '{}/{}'.format(errors_dir, photo)
                 os.rename(filepath, destination)
                 continue
 
@@ -71,7 +71,7 @@ class IARPhotos(BrowserView):
                 # Attach to AR
                 ar.setAttachment(attachment.UID())
                 # Move to archives folder 
-                destination = '{}/{}'.format(archives_dir, ar_photo)
+                destination = '{}/{}'.format(archives_dir, photo)
                 os.rename(filepath, destination)
             else:
                 logger.error('Found more than one AR: {}'.format(ar))
