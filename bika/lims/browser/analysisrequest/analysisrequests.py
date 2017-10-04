@@ -719,7 +719,6 @@ class AnalysisRequestsView(BikaListingView):
             and 'LabManager' not in roles \
             and 'LabClerk' not in roles
 
-        sample = obj.getSample()
         url = obj.absolute_url()
         if getSecurityManager().checkPermission(EditResults, obj):
             url += "/manage_results"
@@ -781,6 +780,7 @@ class AnalysisRequestsView(BikaListingView):
             self.ulocalized_time(getTransitionDate(obj, 'verify'))
 
     def column_SamplingDeviation(self, item, obj):
+        sample = obj.getSample()
         deviation = sample.getSamplingDeviation()
         item['SamplingDeviation'] = deviation and deviation.Title() or ''
 
@@ -789,9 +789,11 @@ class AnalysisRequestsView(BikaListingView):
         item['Priority'] = '' # priority.Title()
 
     def column_getStorageLocation(self, item, obj):
+        sample = obj.getSample()
         item['getStorageLocation'] = sample.getStorageLocation() and sample.getStorageLocation().Title() or ''
 
     def column_Adhoc(self, item, obj):
+        sample = obj.getSample()
         item['AdHoc'] = sample.getAdHoc() and True or ''
 
     def column_Created(self, item, obj):
@@ -807,6 +809,9 @@ class AnalysisRequestsView(BikaListingView):
             item['ClientContact'] = ""
 
     def column_getDateSampled(self, item, obj):
+        sd = obj.getSample().getSamplingDate()
+        sample = obj.getSample()
+        member = self.mtool.getAuthenticatedMember()
         SamplingWorkflowEnabled = sample.getSamplingWorkflowEnabled()
         if SamplingWorkflowEnabled and (not sd or not sd > DateTime()):
             datesampled = self.ulocalized_time(
@@ -845,6 +850,8 @@ class AnalysisRequestsView(BikaListingView):
             item['getSampler'] = Sampler
 
     def column_Sampler(self, item, obj):
+        sd = obj.getSample().getSamplingDate()
+        sample = obj.getSample()
         SamplingWorkflowEnabled = sample.getSamplingWorkflowEnabled()
         if SamplingWorkflowEnabled and (not sd or not sd > DateTime()):
             datesampled = self.ulocalized_time(
@@ -883,6 +890,7 @@ class AnalysisRequestsView(BikaListingView):
             item['getSampler'] = Sampler
 
     def column_getDatePreserved(self, item, obj):
+        member = self.mtool.getAuthenticatedMember()
         # These don't exist on ARs
         # XXX This should be a list of preservers...
         item['getPreserver'] = ''
@@ -907,6 +915,7 @@ class AnalysisRequestsView(BikaListingView):
             item['class']['getDatePreserved'] = 'provisional'
 
     def column_getDatePreserved(self, item, obj):
+        member = self.mtool.getAuthenticatedMember()
         # These don't exist on ARs
         # XXX This should be a list of preservers...
         item['getPreserver'] = ''
@@ -945,6 +954,7 @@ class AnalysisRequestsView(BikaListingView):
             [p.Title() for p in obj.getProfiles()])
 
         sd = obj.getSample().getSamplingDate()
+        sample = obj.getSample()
 
         after_icons = ""
         state = self.workflow.getInfoFor(obj, 'worksheetanalysis_review_state')
