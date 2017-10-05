@@ -1119,7 +1119,7 @@ class BikaListingView(BrowserView):
         # columns to display combines defaults and cookie value
         cookie_cols = self.get_toggle_cols()
         for col_title, col in self.columns.items():
-            if not (col_title in cookie_cols or col.get('toggle',[]):
+            if not (col_title in cookie_cols or col.get('toggle',[])):
                 continue
             if not hasattr(self, "column_%s" % col_title):
                 continue
