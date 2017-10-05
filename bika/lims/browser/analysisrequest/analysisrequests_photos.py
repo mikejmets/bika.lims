@@ -10,18 +10,21 @@ from zope.component import getUtility
 
 logger = logging.getLogger("bika.lims.browser.analysisrequest.analysisrequest_photos")
 
-class IARPhotos(BrowserView):
+class ARPhotosImporter(BrowserView):
 
-    def folderphotos(self):
+    def import_ar_photos(self):
         """ You seed at 100, object added will start at 101
         """
+        logger.info('Inside import_ar_photos')
         bc = getToolByName(self.context, 'bika_catalog')
         bsc = api.get_tool("bika_setup_catalog")
-        folder = self.context.bika_setup.getPhotosFolder()
+        #folder = self.context.bika_setup.getPhotosFolder()
+        folder = os.environ.get('AR_PHOTOS_IMPORTER', '')
         errors = []
         archive = []
         if not os.path.isdir(folder):
-            logger.error('Photos Folder not found: {}'.format(folder))
+            logger.info('Photos Folder not found: {}'.format(folder))
+            return 'Folder: {} not found'.format(folder)
 
         errors_dir = '%s/errors' % folder
         archives_dir = '%s/archives' % folder
@@ -76,3 +79,4 @@ class IARPhotos(BrowserView):
             else:
                 logger.error('Found more than one AR: {}'.format(ar))
         logger.info('Done')
+        return 'Done'

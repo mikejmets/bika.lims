@@ -242,10 +242,10 @@
 
     <browser:page
       for="*"
-      name="folderphotos"
-      class="bika.lims.browser.analysisrequest.analysisrequests_photos.IARPhotos"
-      attribute="folderphotos"
-      permission="cmf.ManagePortal"
+      name="import_ar_photos"
+      class="bika.lims.browser.analysisrequest.analysisrequests_photos.ARPhotosImporter"
+      attribute="import_ar_photos"
+      permission="zope2.View"
       layer="bika.lims.interfaces.IBikaLIMS"
     />
 
