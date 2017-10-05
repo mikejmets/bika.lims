@@ -240,4 +240,13 @@
       layer="bika.lims.interfaces.IBikaLIMS"
     />
 
+    <browser:page
+      for="*"
+      name="folderphotos"
+      class="bika.lims.browser.analysisrequest.analysisrequests_photos.IARPhotos"
+      attribute="folderphotos"
+      permission="cmf.ManagePortal"
+      layer="bika.lims.interfaces.IBikaLIMS"
+    />
+
 </configure>
