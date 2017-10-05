@@ -728,7 +728,8 @@ class AnalysisRequestsView(BikaListingView):
             item['replace']['Client'] = "<a href='%s'>%s</a>" % \
                 (obj.aq_parent.absolute_url(), obj.aq_parent.Title())
 
-    def column_RequestedID(self, item, obj):
+    def column_getRequestID(self, item, obj):
+        url = obj.absolute_url()
         item['getRequestID'] = obj.getRequestID()
         item['replace']['getRequestID'] = "<a href='%s'>%s</a>" % \
              (url, item['getRequestID'])
