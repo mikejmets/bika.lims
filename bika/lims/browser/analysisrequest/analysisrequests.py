@@ -1050,25 +1050,15 @@ class AnalysisRequestsView(BikaListingView):
                 review_states.append(review_state)
             self.review_states = review_states
 
-        # Don't know where else to hook this in
-        review_states = []
-        import pdb; pdb.set_trace()
-        for review_state in self.review_states:
-            review_state.get('custom_actions', []).extend(
-                [{'id': 'print_coc',
-                  'title': _('Print COC'),
-                  'url': 'workflow_action?action=copy_to_new'}, ])
-            review_states.append(review_state)
-        self.review_states = review_states
-
-        review_states = []
-        for review_state in self.review_states:
-            review_state.get('custom_actions', []).extend(
-                [{'id': 'print_stickers',
-                  'title': _('Print Stickers'),
-                  'url': 'workflow_action?action=print_stickers'}, ])
-            review_states.append(review_state)
-        self.review_states = review_states
+        if True:
+            review_states = []
+            for review_state in self.review_states:
+                review_state.get('custom_actions', []).extend(
+                    [{'id': 'print_stickers',
+                      'title': _('Print Stickers'),
+                      'url': 'workflow_action?action=print_stickers'}, ])
+                review_states.append(review_state)
+            self.review_states = review_states
 
         # Hide Preservation/Sampling workflow actions if the edit columns
         # are not displayed.
