@@ -42,7 +42,6 @@ class AnalysisRequestsView(BikaListingView):
                               'sort_order': 'reverse',
                               'path': {"query": "/", "level": 0},
                               'cancellation_state': 'active',
-                              'review_state': '',
                               }
 
         self.context_actions = {}
