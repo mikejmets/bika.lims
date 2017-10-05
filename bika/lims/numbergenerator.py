@@ -74,7 +74,7 @@ class NumberGenerator(object):
         """
         storage = self.storage
 
-        logger.debug("In get_number Old = %d" % storage[key])
+        logger.debug("In get_number Old = %d" % storage.get(key, 'blank'))
         try:
             logger.debug("*** consecutive number lock acquire ***")
             lock.acquire()
