@@ -240,4 +240,12 @@
       layer="bika.lims.interfaces.IBikaLIMS"
     />
 
+    <browser:page
+      for="*"
+      name="ajax_ar_manage_expand_category"
+      class="bika.lims.browser.analysisrequest.manage_results.AJAXARManageCategoryExpand"
+      permission="zope.Public"
+      layer="bika.lims.interfaces.IBikaLIMS"
+    />
+
 </configure>
