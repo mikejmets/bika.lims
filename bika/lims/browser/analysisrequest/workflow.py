@@ -470,6 +470,13 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
 
             # Need to save the analyst?
             if uid in analysts and analysis_active:
+                if len(analysts[uid]) == 0:
+                    title = safe_unicode(analysis.getService().Title())
+                    msgid = _('Analyst for ${analysis} is required.',
+                              mapping={'analysis': title})
+                    message = safe_unicode(t(msgid))
+                    self.context.plone_utils.addPortalMessage(message, 'error')
+                    continue
                 analysis.setAnalyst(analysts[uid])
 
             # Need to save the uncertainty?
