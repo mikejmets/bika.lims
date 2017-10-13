@@ -1044,6 +1044,7 @@ def get_cache_key(brain_or_object):
         get_url(brain_or_object),
         # Return the microsecond since the epoch in GMT
         get_modification_date(brain_or_object).micros(),
+        get_review_status(brain_or_object),
     ]
     return "-".join(map(lambda x: str(x), key))
 
