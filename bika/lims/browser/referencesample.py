@@ -168,14 +168,6 @@ class ReferenceAnalysesView(AnalysesView):
         brefs = obj.getBackReferences("WorksheetAnalysis")
         item['Worksheet'] = brefs and brefs[0].Title() or ''
 
-    def column_Keyword(self, item, obj):
-        service = obj.getService()
-        item['Keyword'] = service.getKeyword()
-
-    def column_Unit(self, item, obj):
-        service = obj.getService()
-        item['Unit'] = service.getUnit()
-
     def folderitem(self, obj, item, index):
         item = super(ReferenceAnalysesView, self).folderitem(obj, item, index)
         if not item:
@@ -184,6 +176,8 @@ class ReferenceAnalysesView(AnalysesView):
         # The following item keywords are required for the
         # JSON return value below, which is used to render graphs.
         # they are not actually used in the table rendering.
+        item['Keyword'] = service.getKeyword()
+        item['Unit'] = service.getUnit()
 
         self.addToJSON(obj, service, item)
         return item
