@@ -98,6 +98,11 @@ class AnalysesView(BikaListingView):
                 'input_width': '6',
                 'input_class': 'ajax_calculate numeric',
                 'sortable': False},
+            'ConvertedResult': {
+                'title': _('Converted Result'),
+                'input_width': '10',
+                'input_class': 'ajax_calculate numeric',
+                'sortable': False},
             'Specification': {
                 'title': _('Specification'),
                 'sortable': False},
@@ -135,6 +140,7 @@ class AnalysesView(BikaListingView):
                     'Partition',
                     'DetectionLimit',
                     'Result',
+                    'ConvertedResult',
                     'Specification',
                     'Method',
                     'Instrument',
@@ -362,6 +368,7 @@ class AnalysesView(BikaListingView):
             item['Keyword'] = keyword
             item['Unit'] = format_supsub(unit) if unit else ''
             item['Result'] = ''
+            item['ConvertedResult'] = ''
             item['formatted_result'] = ''
             item['interim_fields'] = interim_fields
             item['Remarks'] = obj.getRemarks()
@@ -459,6 +466,7 @@ class AnalysesView(BikaListingView):
             if can_edit_analysis:
                 item['allow_edit'].extend(['Analyst',
                                            'Result',
+                                           'ConvertedResult',
                                            'Remarks'])
                 # if the Result field is editable, our interim fields are too
                 for f in self.interim_fields[obj.UID()]:
@@ -601,6 +609,7 @@ class AnalysesView(BikaListingView):
             # permission, otherwise just put an icon in Result column.
             if can_view_result:
                 item['Result'] = result
+                item['ConvertedResult'] = ''
                 scinot = self.context.bika_setup.getScientificNotationResults()
                 item['formatted_result'] = obj.getFormattedResult(sciformat=int(scinot),
                                                                   decimalmark=dmk)
@@ -924,6 +933,7 @@ class QCAnalysesView(AnalysesView):
                                             'Method',
                                             'Instrument',
                                             'Result',
+                                            'ConvertedResult',
                                             'Uncertainty',
                                             'CaptureDate',
                                             'DueDate',

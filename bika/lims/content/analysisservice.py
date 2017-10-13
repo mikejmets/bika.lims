@@ -1132,8 +1132,10 @@ schema = BikaSchema.copy() + Schema((
         allow_empty_rows=False,
         columns=('SampleType',
                  'HideOriginalUnit',
+                 'ShowOnListing',
                  'Unit',),
         default=[{'SampleType': [],
+                  'ShowOnListing': False,
                   'Unit': '',
                   }],
         widget=DataGridWidget(
@@ -1145,6 +1147,8 @@ schema = BikaSchema.copy() + Schema((
                     vocabulary='Vocabulary_SampleTypes'),
                 'HideOriginalUnit': CheckboxColumn(
                     'Hide Original Unit',),
+                'ShowOnListing': CheckboxColumn(
+                    'Show On Listing',),
                 'Unit': SelectColumn(
                     'Unit',
                     vocabulary='Vocabulary_UnitConversions'),

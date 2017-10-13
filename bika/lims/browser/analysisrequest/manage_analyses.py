@@ -67,6 +67,10 @@ class AnalysisRequestAnalysesView(BikaListingView):
                 'title': _('Unit'),
                 'sortable': False,
             },
+            'Converted Unit': {
+                'title': _('Converted Unit'),
+                'sortable': False,
+            },
             'Hidden': {
                 'title': _('Hidden'),
                 'sortable': False,
@@ -97,7 +101,7 @@ class AnalysisRequestAnalysesView(BikaListingView):
             },
         }
 
-        columns = ['Title', 'Unit', 'Hidden', ]
+        columns = ['Title', 'Unit', 'Converted Unit', 'Hidden', ]
         ShowPrices = self.context.bika_setup.getShowPrices()
         if ShowPrices:
             columns.append('Price')

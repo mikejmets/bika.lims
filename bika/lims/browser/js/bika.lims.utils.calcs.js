@@ -178,6 +178,8 @@
             while (i < $(data['results']).length) {
               result = $(data['results'])[i];
               $('input[uid=\'' + result.uid + '\']').filter('input[field=\'Result\']').val(result.result);
+              $('input[uid=\'' + result.uid + '\']').filter('input[field=\'ConvertedResult\']').val(result.converted_result);
+              $('input[uid=\'' + result.uid + '\']').filter('input[field=\'ConvertedResult\']').prop('readonly', true);
               $('[type="hidden"]').filter('[field=\'ResultDM\']').filter('[uid=\'' + result.uid + '\']').val(result.dry_result);
               $($('[type="hidden"]').filter('[field=\'ResultDM\']').filter('[uid=\'' + result.uid + '\']').siblings()[0]).empty().append(result.dry_result);
               if (result.dry_result !== '') {
