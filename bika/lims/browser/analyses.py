@@ -804,7 +804,17 @@ class AnalysesView(BikaListingView):
                     if unit_conversion.get('SampleType') and \
                        unit_conversion.get('Unit') and \
                        unit_conversion.get('SampleType') == item['st_uid']:
-                        item['unit_conversions'].append(unit_conversion['Unit'])
+                        if unit_conversion.get('ShowOnListing', False):
+                            converted_unit = ploneapi.content.get(UID=unit_conversion['Unit'])
+                            item['ConvertedResult'] = '%s %s' % (
+                                    convert_unit(
+                                            item['Result'],
+                                            converted_unit.formula,
+                                            dmk,
+                                            obj.getPrecision()),
+                                    converted_unit.converted_unit)
+                        else:
+                            item['unit_conversions'].append(unit_conversion['Unit'])
 
         # the TAL requires values for all interim fields on all
         # items, so we set blank values in unused cells
@@ -815,20 +825,20 @@ class AnalysesView(BikaListingView):
                     item[field] = ''
             # piggy back on this loop to add converted result fields
             new_results.append(item)
-            for uc_uid in item['unit_conversions']:
-                new = dict(item)
-                #zero identification fields
-                new['id'] = ''
-                new['uid'] = ''
-                unit_conversion = ploneapi.content.get(UID=uc_uid)
-                new['Unit'] = unit_conversion.converted_unit
-                if item.get('Result'):
+            if item.get('Result'):
+                for uc_uid in item['unit_conversions']:
+                    new = dict(item)
+                    #zero identification fields
+                    new['id'] = ''
+                    new['uid'] = ''
+                    unit_conversion = ploneapi.content.get(UID=uc_uid)
+                    new['Unit'] = unit_conversion.converted_unit
                     new['formatted_result'] = new['Result'] = convert_unit(
                                                     item['Result'],
                                                     unit_conversion.formula,
                                                     dmk,
                                                     obj.getPrecision())
-                new_results.append(new)
+                    new_results.append(new)
         items = new_results
 
         # XXX order the list of interim columns
