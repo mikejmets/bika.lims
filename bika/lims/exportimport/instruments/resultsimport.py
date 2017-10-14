@@ -347,6 +347,15 @@ class AnalysisResultsImporter(Logger):
         self._warns = self._parser.warns
         self._logs = self._parser.logs
         self._priorizedsearchcriteria = ''
+        current_user = api.get_current_user()
+        analysts = api.get_users_by_roles('Analyst')
+        self.user = None
+        for analyst in analysts:
+            if current_user.getUserName() == analyst.getUserName():
+                self.user =  analyst
+        if not self.user:
+            self._errors = ['Current User must be an Analyst']
+            return False
 
         if parsed == False:
             return False
@@ -553,6 +562,13 @@ class AnalysisResultsImporter(Logger):
                 initial_result = analysis.getResult()
                 calc_passed = analysis.calculateResult(override=True,
                                                        cascade=True)
+                analysis.Analyst = self.user._id
+                if self.advance_to_state:
+                    try:
+                        api.do_transition_for(analysis, self.advance_to_state)
+                    except:
+                        self.log("Failed to perform transition '{}' on {}: {}"\
+                                .format(self.advance_to_state, objid, acode))
                 if calc_passed and initial_result != analysis.getResult():
                     self.log(
                         "${request_id}: calculated result for "
@@ -811,6 +827,7 @@ class AnalysisResultsImporter(Logger):
             #                   "result": str(res)})
             #TODO incorporar per veure detall d'importacio
             analysis.setResult(res)
+            analysis.Analyst = self.user._id
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
