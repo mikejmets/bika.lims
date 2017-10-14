@@ -1,9 +1,9 @@
 # This file is part of Bika LIMS
 #
-# Copyright 2011-2017 by it's authors.
+# Copyright 2011-2016 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
-""" Shimadzu HPLC-PDA Nexera-I LC2040C
+""" 2-Dimensional-CSV
 """
 from DateTime import DateTime
 from Products.Archetypes.event import ObjectInitializedEvent
@@ -16,8 +16,6 @@ from bika.lims.browser import BrowserView
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.utils import changeWorkflowState
 from bika.lims.utils import tmpID
-from bika.lims.exportimport.instruments.resultsimport import InstrumentCSVResultsFileParser,\
-    AnalysisResultsImporter
 from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
@@ -29,15 +27,18 @@ import plone
 import re
 import zope
 import zope.event
+from bika.lims.exportimport.instruments.resultsimport import InstrumentCSVResultsFileParser,\
+    AnalysisResultsImporter
 import traceback
 
-title = "Shimadzu HPLC-PDA Nexera-I LC2040C"
+title = "2-Dimensional-CSV"
 
 
 def Import(context, request):
-    """ Read Shimadzu HPLC-PDA Nexera-I LC2040C analysis results
+    """ Read Dimensional-CSV analysis results
     """
     form = request.form
+    #TODO form['file'] sometimes returns a list
     infile = form['file'][0] if isinstance(form['file'],list) else form['file']
     artoapply = form['artoapply']
     override = form['override']
@@ -50,7 +51,7 @@ def Import(context, request):
     parser = None
     if not hasattr(infile, 'filename'):
         errors.append(_("No file selected"))
-    parser = TSVParser(infile)
+    parser = ICPEMultitypeCSVParser(infile)
 
     if parser:
         # Load the importer
@@ -78,7 +79,7 @@ def Import(context, request):
         elif sample == 'sample_clientsid':
             sam = ['getSampleID', 'getClientSampleID']
 
-        importer = LC2040C_Importer(parser=parser,
+        importer = GenericThreeColumnsImporter(parser=parser,
                                            context=context,
                                            idsearchcriteria=sam,
                                            allowed_ar_states=status,
@@ -102,63 +103,73 @@ def Import(context, request):
     return json.dumps(results)
 
 
-class TSVParser(InstrumentCSVResultsFileParser):
+class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
 
+    QUANTITATIONRESULTS_NUMERICHEADERS = ('Title8', 'Title9','Title31',
+            'Title32','Title41', 'Title42','Title43', 
+            )
     def __init__(self, csv):
         InstrumentCSVResultsFileParser.__init__(self, csv)
-        self._currentresultsheader = []
-        self._currentanalysiskw = ''
+        self._end_header = False
+        self._keywords = []
+        self._quantitationresultsheader = []
         self._numline = 0
 
     def _parseline(self, line):
-        return self.parse_TSVline(line)
+        if self._end_header == False:
+            return self.parse_headerline(line)
+        else:
+            return self.parse_resultsline(line)
 
-    def parse_TSVline(self, line):
+    def parse_headerline(self, line):
+        """ Parses header lines
+
+            Keywords example:
+            Keyword1, Keyword2, Keyword3, ..., end
+        """
+        if self._end_header == True:
+            # Header already processed
+            return 0
+
+        splitted = [token.strip() for token in line.split(',')] 
+        if splitted[-1] == 'end':
+            self._keywords = splitted[1:-1] # exclude the word end
+            self._end_header = True
+        return 0
+
+    def parse_resultsline(self, line):
         """ Parses result lines
         """
+        splitted = [token.strip() for token in line.split(',')]
 
-        split_row = [token.strip() for token in line.split('\t')]
-        _results = {'DefaultResult': 'Conc.',}
-
-        # ID# 1
-        if split_row[0] == 'ID#':
+        if splitted[0] == 'end':
             return 0
-        # Name	CBDV - cannabidivarin
-        elif split_row[0] == 'Name':
-            if split_row[1]:
-                self._currentanalysiskw = split_row[1]
-                return 0
-            else:
-                self.warn("Analysis Keyword not found or empty",
-                          numline=self._numline, line=line)
-        #	Data Filename	Sample Name	Sample ID	Sample Type	Level#
-        elif 'Sample ID' in split_row:
-            split_row.insert(0,'#')
-            self._currentresultsheader = split_row
-            return 0
-        #1	QC PREP A_QC PREP A_009.lcd	QC PREP
-        elif split_row[0].isdigit():
-            _results.update(dict(zip(self._currentresultsheader, split_row)))
 
-            # 10/17/2016 7:55:06 PM
-            try:
-                da = datetime.strptime(
-                _results['Date Acquired'], "%m/%d/%Y %I:%M:%S %p")
-                self._header['Output Date'] = da
-                self._header['Output Time'] = da
-            except ValueError:
-                self.err("Invalid Output Time format",
+        quantitation = {}
+        clean_splitted = splitted[1:-1]#First value on the line is AR
+        for i in range(len(clean_splitted)):
+            token = clean_splitted[i]
+            if i < len(self._keywords):
+                quantitation['AR'] = splitted[0]
+                #quantitation['AN'] = self._keywords[i]
+                quantitation['DefaultResult'] = 'resultValue'
+                quantitation['resultValue'] = token
+            elif token:
+                self.err("Orphan value in column ${index} (${token})",
+                         mapping={"index": str(i+1),
+                                  "token": token},
                          numline=self._numline, line=line)
 
-            result = _results[_results['DefaultResult']]
-            column_name = _results['DefaultResult']
-            result = self.zeroValueDefaultInstrumentResults(
-                                                    column_name, result, line)
-            _results[_results['DefaultResult']] = result
+            result = quantitation[quantitation['DefaultResult']]
+            column_name = quantitation['DefaultResult']
+            result = self.zeroValueDefaultInstrumentResults(column_name, result, line)
+            quantitation[quantitation['DefaultResult']] = result
 
-            self._addRawResult(_results['Sample ID'],
-                               values={self._currentanalysiskw:_results},
+            val = re.sub(r"\W", "", self._keywords[i])
+            self._addRawResult(quantitation['AR'],
+                               values={val:quantitation},
                                override=False)
+            quantitation = {}
 
     def zeroValueDefaultInstrumentResults(self, column_name, result, line):
         result = str(result)
@@ -178,7 +189,7 @@ class TSVParser(InstrumentCSVResultsFileParser):
             return
         return result
 
-class LC2040C_Importer(AnalysisResultsImporter):
+class GenericThreeColumnsImporter(AnalysisResultsImporter):
 
     def __init__(self, parser, context, idsearchcriteria, override,
                  allowed_ar_states=None, allowed_analysis_states=None,
