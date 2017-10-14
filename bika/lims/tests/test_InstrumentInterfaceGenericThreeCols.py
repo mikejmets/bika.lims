@@ -49,6 +49,9 @@ class TestInstrumentImport(BikaSimpleTestCase):
     def setUp(self):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
+        current_user = ploneapi.user.get_current()
+        ploneapi.user.grant_roles(user=current_user,roles = ['Analyst'])
+        transaction.commit()
         self.client = self.addthing(self.portal.clients, 'Client',
                                     title='Happy Hills', ClientID='HH')
         self.addthing(self.client, 'Contact', Firstname='Rita Mohale',
@@ -188,6 +191,10 @@ Total price excl Tax,,,,,,,,,,,,,,
             analyses = ar.getObject().getAnalyses(full_objects=True)
             if ar.getObject().getId() == '1-0001-R01':
                 for an in analyses:
+                    if an.getAnalyst() != 'test_user_1_':
+                        msg = "{}:Analyst did not get updated".format(
+                                                        an.getAnalyst())
+                        self.fail(msg)
                     state = workflow.getInfoFor(an, 'review_state')
                     if state != 'to_be_verified':
                         self.fail('Auto Transition failed for:{}'.format(an))
