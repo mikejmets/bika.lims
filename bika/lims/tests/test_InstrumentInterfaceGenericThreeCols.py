@@ -201,11 +201,13 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
+        import pdb; pdb.set_trace()
         text = 'Import finished successfully: 2 ARs and 6 results updated'
         if text not in results:
             self.fail("AR Import failed")
         for ar in ars:
             analyses = ar.getObject().getAnalyses(full_objects=True)
+            import pdb; pdb.set_trace()
             if ar.getObject().getId() == '1-0001-R01':
                 for an in analyses:
                     if an.getAnalyst() != 'test_user_1_':
