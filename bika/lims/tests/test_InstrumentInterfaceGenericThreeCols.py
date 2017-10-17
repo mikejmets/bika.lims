@@ -72,13 +72,13 @@ class TestInstrumentImport(BikaSimpleTestCase):
                           'AnalysisService', title='Pentachloronitrobenzene',
                           Keyword="Pentachloronitrobenzene")
         b = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='Mg', Keyword="Mg")
+                          'AnalysisService', title='mg', Keyword="mg")
         c = self.addthing(self.portal.bika_setup.bika_analysisservices,
                           'AnalysisService', title='Calcium', Keyword="Ca")
 
         calcs = self.portal.bika_setup.bika_calculations
         self.calculation = [calcs[k] for k in calcs if calcs[k].title=='Total Hardness'][0]
-        self.calculation.setFormula('[Ca] + [Mg]')
+        self.calculation.setFormula('[Ca] + [mg]')
         self.calculation.setInterimFields([{'hidden':False,'keyword': 'TT', 'title': 'TT', 'type': 'int', 'value': '', 'unit':''}])
 
         # Service with calculation: Tot. Hardness (THCaCO3)
@@ -201,15 +201,15 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        import pdb; pdb.set_trace()
         text = 'Import finished successfully: 2 ARs and 6 results updated'
         if text not in results:
             self.fail("AR Import failed")
         for ar in ars:
             analyses = ar.getObject().getAnalyses(full_objects=True)
-            import pdb; pdb.set_trace()
             if ar.getObject().getId() == '1-0001-R01':
                 for an in analyses:
+                    print '**********************************88'
+                    print an.getKeyword()
                     if an.getAnalyst() != 'test_user_1_':
                         msg = "{}:Analyst did not get updated".format(
                                                         an.getAnalyst())
@@ -223,7 +223,7 @@ Total price excl Tax,,,,,,,,,,,,,,
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
-                    if an.getKeyword() == 'Mg':
+                    if an.getKeyword() == 'mg':
                         if an.getResult() != '2.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
@@ -463,5 +463,5 @@ Total price excl Tax,,,,,,,,,,,,,,
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestInstrumentImport))
-    suite.layer = BIKA_SIMPLE_FIXTURE
+    suite.layer = BIKA_FUNCTIONAL_TESTING
     return suite
