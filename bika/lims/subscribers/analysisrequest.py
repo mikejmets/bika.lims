@@ -15,4 +15,24 @@ def ObjectInitializedEventHandler(instance, event):
         return
 
     instance.setDefaultPriority()
+    samplingDate = instance.getSamplingDate()
+    if samplingDate._tz != samplingDate.localZone():
+        samplingDate._tz = samplingDate.localZone()
+        instance.setSamplingDate(samplingDate)
+    return
+
+def ARModifiedEventHandler(instance, event):
+
+    if instance.portal_type != "AnalysisRequest":
+        return
+
+    samplingDate = instance.getSamplingDate()
+    if samplingDate._tz != samplingDate.localZone():
+        samplingDate._tz = samplingDate.localZone()
+        instance.setSamplingDate(samplingDate)
+
+    dateSampled = instance.getDateSampled()
+    if dateSampled._tz != dateSampled.localZone():
+        dateSampled._tz = dateSampled.localZone()
+        instance.setDateSampled(dateSampled)
     return

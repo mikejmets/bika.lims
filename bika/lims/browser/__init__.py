@@ -60,12 +60,16 @@ def ulocalized_time(time, long_format=None, time_only=None, context=None,
     if isinstance(time, basestring):
         time = strptime(context, time)
     if time:
-        # no printing times if they were not specified in inputs
-        if time.second() + time.minute() + time.hour() == 0:
-            long_format = False
-        time_str = _ut(time, long_format, time_only, context,
-                                   'bika', request)
+        time_str = str(time)
+        if len(time_str) > 16:
+            return time_str[:16]
         return time_str
+        ## no printing times if they were not specified in inputs
+        #if time.second() + time.minute() + time.hour() == 0:
+        #    long_format = False
+        #time_str = _ut(time, long_format, time_only, context,
+        #                           'bika', request)
+        #return time_str
 
 
 class updateFilerByDepartmentCookie(BrowserView):
