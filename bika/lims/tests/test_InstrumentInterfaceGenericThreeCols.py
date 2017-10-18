@@ -19,7 +19,7 @@ from plone.app.testing import TEST_USER_NAME
 from zope.publisher.browser import TestRequest
 from zope.publisher.browser import FileUpload
 from Products.CMFCore.utils import getToolByName
-from bika.lims.testing import BIKA_FUNCTIONAL_TESTING
+#from bika.lims.testing import BIKA_FUNCTIONAL_TESTING
 
 import cStringIO
 import os
@@ -39,7 +39,7 @@ class TestFile(object):
         self.filename = 'dummy.txt'
 
 class TestInstrumentImport(BikaSimpleTestCase):
-    layer = BIKA_FUNCTIONAL_TESTING
+    #layer = BIKA_FUNCTIONAL_TESTING
 
     def addthing(self, folder, portal_type, **kwargs):
         thing = _createObjectByType(portal_type, folder, tmpID())
@@ -72,25 +72,24 @@ class TestInstrumentImport(BikaSimpleTestCase):
                           'AnalysisService', title='Pentachloronitrobenzene',
                           Keyword="Pentachloronitrobenzene")
         b = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='mg', Keyword="mg")
+                          'AnalysisService', title='Magnesium', Keyword="Mg")
         c = self.addthing(self.portal.bika_setup.bika_analysisservices,
                           'AnalysisService', title='Calcium', Keyword="Ca")
 
-        calcs = self.portal.bika_setup.bika_calculations
-        self.calculation = [calcs[k] for k in calcs if calcs[k].title=='Total Hardness'][0]
-        self.calculation.setFormula('[Ca] + [mg]')
-        self.calculation.setInterimFields([{'hidden':False,'keyword': 'TT', 'title': 'TT', 'type': 'int', 'value': '', 'unit':''}])
+        self.calculation = self.addthing(self.portal.bika_setup.bika_calculations,
+                          'Calculation', title='TotalMagCal', Keyword="Mg")
+        self.calculation.setFormula('[Mg] + [Ca]')
+        transaction.commit()
 
-        # Service with calculation: Tot. Hardness (THCaCO3)
-        servs = self.portal.bika_setup.bika_analysisservices
-        self.calcservice = [servs[k] for k in servs if servs[k].title=='Tot. Hardness (THCaCO3)'][0]
-        self.calcservice.setUseDefaultCalculation(True)
-        self.calcservice.setDeferredCalculation(self.calculation)
+        d = self.addthing(self.portal.bika_setup.bika_analysisservices,
+                          'AnalysisService', title='THCaCO3', Keyword="THCaCO3")
 
-
+        d.setUseDefaultCalculation(False)
+        d.setDeferredCalculation(self.calculation)
+        transaction.commit()
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
-                      Service=[a.UID(), b.UID(), c.UID(), self.calcservice.UID()])
+                      Service=[a.UID(), b.UID(), c.UID(), d.UID()])
         transaction.commit()
 
 
@@ -208,8 +207,6 @@ Total price excl Tax,,,,,,,,,,,,,,
             analyses = ar.getObject().getAnalyses(full_objects=True)
             if ar.getObject().getId() == '1-0001-R01':
                 for an in analyses:
-                    print '**********************************88'
-                    print an.getKeyword()
                     if an.getAnalyst() != 'test_user_1_':
                         msg = "{}:Analyst did not get updated".format(
                                                         an.getAnalyst())
@@ -218,12 +215,11 @@ Total price excl Tax,,,,,,,,,,,,,,
                     if state != 'to_be_verified':
                         self.fail('Auto Transition failed for:{}'.format(an))
                     if an.getKeyword() == 'THCaCO3':
-                        import pdb; pdb.set_trace()
-                        if an.getResult() != '3.0':
+                        if an.getResult() != '2.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
-                    if an.getKeyword() == 'mg':
+                    if an.getKeyword() == 'Mg':
                         if an.getResult() != '2.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
@@ -463,5 +459,6 @@ Total price excl Tax,,,,,,,,,,,,,,
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestInstrumentImport))
-    suite.layer = BIKA_FUNCTIONAL_TESTING
+    #suite.layer = BIKA_FUNCTIONAL_TESTING
+    suite.layer = BIKA_SIMPLE_FIXTURE
     return suite
