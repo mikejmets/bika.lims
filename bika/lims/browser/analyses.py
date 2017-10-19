@@ -99,7 +99,7 @@ class AnalysesView(BikaListingView):
                 'input_class': 'ajax_calculate numeric',
                 'sortable': False},
             'ConvertedResult': {
-                'title': _('Converted Result'),
+                'title': _('Converted'),
                 'input_width': '10',
                 'input_class': 'ajax_calculate numeric',
                 'sortable': False},
@@ -813,8 +813,6 @@ class AnalysesView(BikaListingView):
                                             dmk,
                                             obj.getPrecision()),
                                     converted_unit.converted_unit)
-                        else:
-                            item['unit_conversions'].append(unit_conversion['Unit'])
 
         # the TAL requires values for all interim fields on all
         # items, so we set blank values in unused cells
@@ -823,23 +821,6 @@ class AnalysesView(BikaListingView):
             for field in self.interim_columns:
                 if field not in item:
                     item[field] = ''
-            # piggy back on this loop to add converted result fields
-            new_results.append(item)
-            if item.get('Result'):
-                for uc_uid in item['unit_conversions']:
-                    new = dict(item)
-                    #zero identification fields
-                    new['id'] = ''
-                    new['uid'] = ''
-                    unit_conversion = ploneapi.content.get(UID=uc_uid)
-                    new['Unit'] = unit_conversion.converted_unit
-                    new['formatted_result'] = new['Result'] = convert_unit(
-                                                    item['Result'],
-                                                    unit_conversion.formula,
-                                                    dmk,
-                                                    obj.getPrecision())
-                    new_results.append(new)
-        items = new_results
 
         # XXX order the list of interim columns
         interim_keys = self.interim_columns.keys()
