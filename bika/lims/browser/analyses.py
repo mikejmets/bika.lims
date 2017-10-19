@@ -38,7 +38,7 @@ from bika.lims.permissions import ViewResults
 from bika.lims.permissions import AddAttachment
 from bika.lims.permissions import Verify as VerifyPermission
 
-
+HIGH_PERFORMANCE = True
 class AnalysesView(BikaListingView):
     """ Displays a list of Analyses in a table.
         Visible InterimFields from all analyses are added to self.columns[].
@@ -74,14 +74,6 @@ class AnalysesView(BikaListingView):
             'Partition': {
                 'title': _("Partition"),
                 'sortable': False},
-            'Method': {
-                'title': _('Method'),
-                'sortable': False,
-                'toggle': True},
-            'Instrument': {
-                'title': _('Instrument'),
-                'sortable': False,
-                'toggle': True},
             'Analyst': {
                 'title': _('Analyst'),
                 'sortable': False,
@@ -129,7 +121,6 @@ class AnalysesView(BikaListingView):
                 'index': 'getDueDate',
                 'sortable': False},
         }
-
         self.review_states = [
             {
                 'id': 'default',
@@ -142,8 +133,6 @@ class AnalysesView(BikaListingView):
                     'Result',
                     'ConvertedResult',
                     'Specification',
-                    'Method',
-                    'Instrument',
                     'Analyst',
                     'Uncertainty',
                     'CaptureDate',
@@ -152,6 +141,37 @@ class AnalysesView(BikaListingView):
                 ]
             },
         ]
+        if not HIGH_PERFORMANCE:
+            self.columns['Method'] = {
+                    'title': _('Method'),
+                    'sortable': False,
+                    'toggle': True}
+            self.columns['Instrument'] = {
+                    'title': _('Instrument'),
+                    'sortable': False,
+                    'toggle': True}
+            self.review_states = [
+                {
+                    'id': 'default',
+                    'title': _('All'),
+                    'contentFilter': {},
+                    'columns': [
+                        'Service',
+                        'Partition',
+                        'DetectionLimit',
+                        'Result',
+                        'Specification',
+                        'Method',
+                        'Instrument',
+                        'Analyst',
+                        'Uncertainty',
+                        'CaptureDate',
+                        'DueDate',
+                        'state_title',
+                    ]
+                },
+            ]
+
         if not context.bika_setup.getShowPartitions():
             self.review_states[0]['columns'].remove('Partition')
 
@@ -478,100 +498,102 @@ class AnalysesView(BikaListingView):
                    (item['calculation'] and self.interim_fields[obj.UID()]):
                     item['allow_edit'].append('retested')
 
-            # TODO: Only the labmanager must be able to change the method
-            # can_set_method = getSecurityManager().checkPermission(SetAnalysisMethod, obj)
-            can_set_method = can_edit_analysis \
-                and item['review_state'] in allowed_method_states
-            method = obj.getMethod() \
-                if hasattr(obj, 'getMethod') and obj.getMethod() else service.getMethod()
+            if not HIGH_PERFORMANCE:
+                # TODO: Only the labmanager must be able to change the method
+                # can_set_method = getSecurityManager().checkPermission(SetAnalysisMethod, obj)
+                can_set_method = can_edit_analysis \
+                    and item['review_state'] in allowed_method_states
+                method = obj.getMethod() \
+                    if hasattr(obj, 'getMethod') and obj.getMethod() else service.getMethod()
 
-            # Display the methods selector if the AS has at least one
-            # method assigned
-            item['Method'] = ''
-            item['replace']['Method'] = ''
-            if can_set_method:
-                voc = self.get_methods_vocabulary(obj)
-                if voc:
-                    # The service has at least one method available
-                    item['Method'] = method.UID() if method else ''
-                    item['choices']['Method'] = voc
-                    item['allow_edit'].append('Method')
-                    show_methodinstr_columns = True
+                # Display the methods selector if the AS has at least one
+                # method assigned
+                item['Method'] = ''
+                item['replace']['Method'] = ''
+                if can_set_method:
+                    voc = self.get_methods_vocabulary(obj)
+                    if voc:
+                        # The service has at least one method available
+                        item['Method'] = method.UID() if method else ''
+                        item['choices']['Method'] = voc
+                        item['allow_edit'].append('Method')
+                        show_methodinstr_columns = True
+
+                    elif method:
+                        # This should never happen
+                        # The analysis has set a method, but its parent
+                        # service hasn't any method available O_o
+                        item['Method'] = method.Title()
+                        item['replace']['Method'] = "<a href='%s'>%s</a>" % \
+                            (method.absolute_url(), method.Title())
+                        show_methodinstr_columns = True
 
                 elif method:
-                    # This should never happen
-                    # The analysis has set a method, but its parent
-                    # service hasn't any method available O_o
+                    # Edition not allowed, but method set
                     item['Method'] = method.Title()
                     item['replace']['Method'] = "<a href='%s'>%s</a>" % \
                         (method.absolute_url(), method.Title())
                     show_methodinstr_columns = True
 
-            elif method:
-                # Edition not allowed, but method set
-                item['Method'] = method.Title()
-                item['replace']['Method'] = "<a href='%s'>%s</a>" % \
-                    (method.absolute_url(), method.Title())
-                show_methodinstr_columns = True
+            if not HIGH_PERFORMANCE:
+                # TODO: Instrument selector dynamic behavior in worksheet Results
+                # Only the labmanager must be able to change the instrument to be used. Also,
+                # the instrument selection should be done in accordance with the method selected
+                # can_set_instrument = service.getInstrumentEntryOfResults() and getSecurityManager().checkPermission(SetAnalysisInstrument, obj)
+                can_set_instrument = service.getInstrumentEntryOfResults() \
+                    and can_edit_analysis \
+                    and item['review_state'] in allowed_method_states
 
-            # TODO: Instrument selector dynamic behavior in worksheet Results
-            # Only the labmanager must be able to change the instrument to be used. Also,
-            # the instrument selection should be done in accordance with the method selected
-            # can_set_instrument = service.getInstrumentEntryOfResults() and getSecurityManager().checkPermission(SetAnalysisInstrument, obj)
-            can_set_instrument = service.getInstrumentEntryOfResults() \
-                and can_edit_analysis \
-                and item['review_state'] in allowed_method_states
+                item['Instrument'] = ''
+                item['replace']['Instrument'] = ''
+                if service.getInstrumentEntryOfResults():
+                    instrument = None
 
-            item['Instrument'] = ''
-            item['replace']['Instrument'] = ''
-            if service.getInstrumentEntryOfResults():
-                instrument = None
+                    # If the analysis has an instrument already assigned, use it
+                    if service.getInstrumentEntryOfResults() \
+                        and hasattr(obj, 'getInstrument') \
+                            and obj.getInstrument():
+                            instrument = obj.getInstrument()
 
-                # If the analysis has an instrument already assigned, use it
-                if service.getInstrumentEntryOfResults() \
-                    and hasattr(obj, 'getInstrument') \
-                        and obj.getInstrument():
-                        instrument = obj.getInstrument()
+                    # Otherwise, use the Service's default instrument
+                    elif service.getInstrumentEntryOfResults():
+                            instrument = service.getInstrument()
 
-                # Otherwise, use the Service's default instrument
-                elif service.getInstrumentEntryOfResults():
-                        instrument = service.getInstrument()
+                    if can_set_instrument:
+                        # Edition allowed
+                        voc = self.get_instruments_vocabulary(obj)
+                        if voc:
+                            # The service has at least one instrument available
+                            item['Instrument'] = instrument.UID() if instrument else ''
+                            item['choices']['Instrument'] = voc
+                            item['allow_edit'].append('Instrument')
+                            show_methodinstr_columns = True
 
-                if can_set_instrument:
-                    # Edition allowed
-                    voc = self.get_instruments_vocabulary(obj)
-                    if voc:
-                        # The service has at least one instrument available
-                        item['Instrument'] = instrument.UID() if instrument else ''
-                        item['choices']['Instrument'] = voc
-                        item['allow_edit'].append('Instrument')
-                        show_methodinstr_columns = True
+                        elif instrument:
+                            # This should never happen
+                            # The analysis has an instrument set, but the
+                            # service hasn't any available instrument
+                            item['Instrument'] = instrument.Title()
+                            item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
+                                (instrument.absolute_url(), instrument.Title())
+                            show_methodinstr_columns = True
 
                     elif instrument:
-                        # This should never happen
-                        # The analysis has an instrument set, but the
-                        # service hasn't any available instrument
+                        # Edition not allowed, but instrument set
                         item['Instrument'] = instrument.Title()
                         item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
                             (instrument.absolute_url(), instrument.Title())
                         show_methodinstr_columns = True
 
-                elif instrument:
-                    # Edition not allowed, but instrument set
-                    item['Instrument'] = instrument.Title()
-                    item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
-                        (instrument.absolute_url(), instrument.Title())
-                    show_methodinstr_columns = True
-
-            else:
-                # Manual entry of results, instrument not allowed
-                item['Instrument'] = _('Manual')
-                msgtitle = t(_(
-                    "Instrument entry of results not allowed for ${service}",
-                    mapping={"service": safe_unicode(service.Title())},
-                ))
-                item['replace']['Instrument'] = \
-                    '<a href="#" title="%s">%s</a>' % (msgtitle, t(_('Manual')))
+                else:
+                    # Manual entry of results, instrument not allowed
+                    item['Instrument'] = _('Manual')
+                    msgtitle = t(_(
+                        "Instrument entry of results not allowed for ${service}",
+                        mapping={"service": safe_unicode(service.Title())},
+                    ))
+                    item['replace']['Instrument'] = \
+                        '<a href="#" title="%s">%s</a>' % (msgtitle, t(_('Manual')))
 
             # Sets the analyst assigned to this analysis
             if can_edit_analysis:
@@ -892,12 +914,13 @@ class AnalysesView(BikaListingView):
         self.json_interim_fields = json.dumps(self.interim_fields)
         self.items = items
 
-        # Method and Instrument columns must be shown or hidden at the
-        # same time, because the value assigned to one causes
-        # a value reassignment to the other (one method can be performed
-        # by different instruments)
-        self.columns['Method']['toggle'] = show_methodinstr_columns
-        self.columns['Instrument']['toggle'] = show_methodinstr_columns
+        if not HIGH_PERFORMANCE:
+            # Method and Instrument columns must be shown or hidden at the
+            # same time, because the value assigned to one causes
+            # a value reassignment to the other (one method can be performed
+            # by different instruments)
+            self.columns['Method']['toggle'] = show_methodinstr_columns
+            self.columns['Instrument']['toggle'] = show_methodinstr_columns
 
         return items
 
@@ -918,6 +941,16 @@ class QCAnalysesView(AnalysesView):
         self.columns['Worksheet'] = {'title': _('Worksheet'),
                                      'sortable': False}
         self.review_states[0]['columns'] = ['Service',
+                                            'Worksheet',
+                                            'getReferenceAnalysesGroupID',
+                                            'Partition',
+                                            'Result',
+                                            'Uncertainty',
+                                            'CaptureDate',
+                                            'DueDate',
+                                            'state_title']
+        if not HIGH_PERFORMANCE:
+            self.review_states[0]['columns'] = ['Service',
                                             'Worksheet',
                                             'getReferenceAnalysesGroupID',
                                             'Partition',
