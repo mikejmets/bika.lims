@@ -1135,7 +1135,6 @@ schema = BikaSchema.copy() + Schema((
                  'ShowOnListing',
                  'Unit',),
         default=[{'SampleType': [],
-                  'ShowOnListing': False,
                   'Unit': '',
                   }],
         widget=DataGridWidget(
