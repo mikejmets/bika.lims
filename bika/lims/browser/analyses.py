@@ -37,7 +37,6 @@ from bika.lims.permissions import ViewResults
 from bika.lims.permissions import AddAttachment
 from bika.lims.permissions import Verify as VerifyPermission
 
-HIGH_PERFORMANCE = True
 class AnalysesView(BikaListingView):
     """ Displays a list of Analyses in a table.
         Visible InterimFields from all analyses are added to self.columns[].
@@ -59,6 +58,8 @@ class AnalysesView(BikaListingView):
 
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.portal_url = self.portal.absolute_url()
+        bika_setup = self.portal.bika_setup
+        HIGH_PERFORMANCE = bika_setup.getHideARColumns()
 
         request.set('disable_plone.rightcolumn', 1)
 
@@ -906,6 +907,9 @@ class QCAnalysesView(AnalysesView):
     """
 
     def __init__(self, context, request, **kwargs):
+        self.portal = api.get_portal()
+        bika_setup = self.portal.bika_setup
+        HIGH_PERFORMANCE = bika_setup.getHideARColumns()
         AnalysesView.__init__(self, context, request, **kwargs)
         self.columns['getReferenceAnalysesGroupID'] = {'title': _('QC Sample ID'),
                                                        'sortable': False}

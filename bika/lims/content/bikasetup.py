@@ -561,6 +561,15 @@ schema = BikaFolderSchema.copy() + Schema((
         ),
     ),
     BooleanField(
+        'HideARColumns',
+        schemata="Appearance",
+        default=False,
+        widget=BooleanWidget(
+            label=_("Hide Instrument and Method columns on the AR View"),
+            description=_("This makes ARView table rendering faster")
+        ),
+    ),
+    BooleanField(
         'SamplingWorkflowEnabled',
         schemata="Sampling and COC",
         default=False,
