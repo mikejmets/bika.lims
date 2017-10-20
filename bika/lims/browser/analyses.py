@@ -59,7 +59,7 @@ class AnalysesView(BikaListingView):
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.portal_url = self.portal.absolute_url()
         bika_setup = self.portal.bika_setup
-        HIGH_PERFORMANCE = bika_setup.getHideARColumns()
+        hide_ar_columns = bika_setup.getHideARColumns()
 
         request.set('disable_plone.rightcolumn', 1)
 
@@ -135,7 +135,7 @@ class AnalysesView(BikaListingView):
                 ]
             },
         ]
-        if not HIGH_PERFORMANCE:
+        if not hide_ar_columns:
             self.columns['Method'] = {
                     'title': _('Method'),
                     'sortable': False,
@@ -490,7 +490,7 @@ class AnalysesView(BikaListingView):
                    (item['calculation'] and self.interim_fields[obj.UID()]):
                     item['allow_edit'].append('retested')
 
-            if not HIGH_PERFORMANCE:
+            if not hide_ar_columns:
                 # TODO: Only the labmanager must be able to change the method
                 # can_set_method = getSecurityManager().checkPermission(SetAnalysisMethod, obj)
                 can_set_method = can_edit_analysis \
@@ -527,7 +527,7 @@ class AnalysesView(BikaListingView):
                         (method.absolute_url(), method.Title())
                     show_methodinstr_columns = True
 
-            if not HIGH_PERFORMANCE:
+            if not hide_ar_columns:
                 # TODO: Instrument selector dynamic behavior in worksheet Results
                 # Only the labmanager must be able to change the instrument to be used. Also,
                 # the instrument selection should be done in accordance with the method selected
@@ -886,7 +886,7 @@ class AnalysesView(BikaListingView):
         self.json_interim_fields = json.dumps(self.interim_fields)
         self.items = items
 
-        if not HIGH_PERFORMANCE:
+        if not hide_ar_columns:
             # Method and Instrument columns must be shown or hidden at the
             # same time, because the value assigned to one causes
             # a value reassignment to the other (one method can be performed
@@ -909,7 +909,7 @@ class QCAnalysesView(AnalysesView):
     def __init__(self, context, request, **kwargs):
         self.portal = api.get_portal()
         bika_setup = self.portal.bika_setup
-        HIGH_PERFORMANCE = bika_setup.getHideARColumns()
+        hide_ar_columns = bika_setup.getHideARColumns()
         AnalysesView.__init__(self, context, request, **kwargs)
         self.columns['getReferenceAnalysesGroupID'] = {'title': _('QC Sample ID'),
                                                        'sortable': False}
@@ -924,7 +924,7 @@ class QCAnalysesView(AnalysesView):
                                             'CaptureDate',
                                             'DueDate',
                                             'state_title']
-        if not HIGH_PERFORMANCE:
+        if not hide_ar_columns:
             self.review_states[0]['columns'] = ['Service',
                                             'Worksheet',
                                             'getReferenceAnalysesGroupID',
