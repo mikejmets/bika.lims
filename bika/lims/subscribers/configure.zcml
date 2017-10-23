@@ -46,12 +46,6 @@
            Products.Archetypes.interfaces.IObjectInitializedEvent"
       handler="bika.lims.subscribers.analysisrequest.ObjectInitializedEventHandler"
       />
-  <!-- Edited AnalysisRequest -->
-  <subscriber
-      for="bika.lims.interfaces.IAnalysisRequest
-           zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-      handler="bika.lims.subscribers.analysisrequest.ARModifiedEventHandler"
-      />
 
   <subscriber
       for="bika.lims.interfaces.IBikaSetup
