@@ -322,6 +322,8 @@ class AnalysesView(BikaListingView):
         return result
 
     def folderitems(self):
+        bika_setup = self.portal.bika_setup
+        hide_ar_columns = bika_setup.getHideARColumns()
         bsc = getToolByName(self.context, 'bika_setup_catalog')
         analysis_categories = bsc(portal_type="AnalysisCategory", sort_on="sortable_title")
         analysis_categories_order = dict([(b.Title, "{:04}".format(a)) for a, b in enumerate(analysis_categories)])
