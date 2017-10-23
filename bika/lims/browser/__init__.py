@@ -60,7 +60,9 @@ def ulocalized_time(time, long_format=None, time_only=None, context=None,
     if isinstance(time, basestring):
         time = strptime(context, time)
     if time:
-        time_str = str(time)
+        time_str = str(time).replace('/', '-')
+        if not long_format:
+            return time_str[:10]
         if len(time_str) > 16:
             return time_str[:16]
         return time_str
