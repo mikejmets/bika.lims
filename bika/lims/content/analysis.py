@@ -803,7 +803,9 @@ class Analysis(BaseContent):
                 # Dependency without results found
                 if cascade:
                     # Try to calculate the dependency result
-                    dependency.calculateResult(override, cascade)
+                    calc_passed = dependency.calculateResult(override, cascade)
+                    if calc_passed == False:
+                        return False
                     result = dependency.getResult()
                 else:
                     return False
