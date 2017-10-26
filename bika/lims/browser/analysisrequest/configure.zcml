@@ -240,4 +240,22 @@
       layer="bika.lims.interfaces.IBikaLIMS"
     />
 
+  <browser:page
+      for="bika.lims.interfaces.IClient"
+      name="async_create_analysisrequest"
+      class="bika.lims.utils.analysisrequest.Async_AR_Utils"
+      attribute="async_create_analysisrequest"
+      permission="zope.Public"
+      layer="bika.lims.interfaces.IBikaLIMS"
+    />
+
+  <browser:page
+      for="*"
+      name="queue_count"
+      class="bika.lims.utils.analysisrequest.Async_AR_Utils"
+      attribute="queue_count"
+      permission="zope.Public"
+      layer="bika.lims.interfaces.IBikaLIMS"
+    />
+
 </configure>
