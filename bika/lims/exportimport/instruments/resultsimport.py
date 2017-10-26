@@ -562,6 +562,9 @@ class AnalysisResultsImporter(Logger):
                 initial_result = analysis.getResult()
                 calc_passed = analysis.calculateResult(override=True,
                                                        cascade=True)
+                if calc_passed == False:
+                    continue
+
                 if not analysis.Analyst:
                     analysis.Analyst = self.user._id
                 if self.advance_to_state:
