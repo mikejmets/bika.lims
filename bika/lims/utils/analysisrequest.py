@@ -371,7 +371,7 @@ class Async_AR_Utils(BrowserView):
             ARs.append(ar.getId())
 
         if len(ARs) == 1:
-            msgs.append('Created AR {}'.format(ARs[0])
+            msgs.append('Created AR {}'.format(ARs[0]))
         elif len(ARs) > 1:
             msgs.append('Created ARs {}'.format(', '.join(ARs)))
         else:

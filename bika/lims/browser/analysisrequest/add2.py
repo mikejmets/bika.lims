@@ -1786,6 +1786,16 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
                     _attachments.append(att)
                 if _attachments:
                     ar.setAttachment(_attachments)
+            level = "info"
+            if len(ARs) == 0:
+                message = _(
+                        'No Analysis Requests could be queued for creation.')
+                level = "error"
+            elif len(ARs) > 1:
+                message = _('${ARs} Analysis requests were queue for creation.',
+                            mapping={'ARs': len(ARs)})
+            else:
+                message = _('Analysis request was queued for creation.')
         else:
             path = self.request.PATH_INFO
             path = '/'.join(path.split('/')[:4])
@@ -1802,7 +1812,8 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
 
             level = "info"
             if len(valid_records) == 0:
-                message = _('No Analysis Requests could be queued for creation.')
+                message = _(
+                        'No Analysis Requests could be queued for creation.')
                 level = "error"
             elif len(valid_records) > 1:
                 message = _('${ARs} Analysis requests were queue for creation.',
