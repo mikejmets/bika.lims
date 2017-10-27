@@ -73,6 +73,8 @@ setup(name='bika.lims',
           'WeasyPrint==0.19.2',
           'z3c.jbot',
           'z3c.unconfigure==1.0.1',
+          'collective.taskqueue',
+
       ],
       extras_require={
           'test': [
