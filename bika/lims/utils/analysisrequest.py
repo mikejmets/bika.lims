@@ -350,6 +350,7 @@ class Async_AR_Utils(BrowserView):
         records = json.loads(form.get('records', '[]'))
         attachments = json.loads(form.get('attachments', '[]'))
         ARs = []
+        logger.info('Async create %s records' % len(records))
         for n, record in enumerate(records):
             client_uid = record.get("Client")
             client = api.get_object_by_uid(client_uid)
@@ -401,9 +402,12 @@ Bika LIMS
         email_charset = portal.getProperty('email_charset')
         member = ploneapi.user.get_current()
         mail_host = ploneapi.portal.get_tool(name='MailHost')
-        to_email = member.getProperty('email')
         from_email= mail_host.email_from_address
+        to_email = member.getProperty('email')
         subject = 'AR Creation Complete'
+        if len(to_email) == 0:
+            to_email = from_email
+            subject = 'AR Creation by admin user is complete'
         mail_text = mail_template.format(
                         name=member.getProperty('fullname'),
                         message=message)

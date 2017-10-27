@@ -1797,14 +1797,15 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             else:
                 message = _('Analysis request was queued for creation.')
         else:
-            path = self.request.PATH_INFO
-            path = '/'.join(path.split('/')[:4])
-            path += '/async_create_analysisrequest'
+            path = [i for i in self.context.getPhysicalPath()]
+            path.append('async_create_analysisrequest')
+            path = '/'.join(path)
             params = {
                     'records': json.dumps(valid_records),
                     'attachments': json.dumps(attachments),
                     }
-            logger.info('Que Task: path=%s, params=%s, attachments=%s' % (
+            logger.info('Queue Task: path=%s' % path)
+            logger.debug('Que Task: path=%s, params=%s, attachments=%s' % (
                             path, params, attachments))
             task_id = task_queue.add(path,
                     method='POST',
