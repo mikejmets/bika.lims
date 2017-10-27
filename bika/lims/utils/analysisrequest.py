@@ -5,9 +5,12 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
+import json
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import _createObjectByType
 from Products.CMFPlone.utils import safe_unicode
+from Products.Five.browser import BrowserView
+from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims import logger
 from bika.lims.idserver import renameAfterCreation, generateUniqueId
@@ -25,11 +28,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.Utils import formataddr
 from os.path import join
-from plone import api
+from plone import api as ploneapi
 from Products.CMFPlone.utils import _createObjectByType
-from smtplib import SMTPServerDisconnected, SMTPRecipientsRefused
+import smtplib
 import os
 import tempfile
+from zope.component import queryUtility
+from collective.taskqueue.interfaces import ITaskQueue
 
 
 def create_analysisrequest(context, request, values, analyses=None,
@@ -90,9 +95,13 @@ def create_analysisrequest(context, request, values, analyses=None,
     # Set some required fields manually before processForm is called
     ar.setSample(sample)
     values['Sample'] = sample
-    ar.processForm(REQUEST=request, values=values)
-    # Object has been renamed
-    ar.edit(RequestID=ar.getId())
+    try:
+        ar.processForm(REQUEST=request, values=values)
+        # Object has been renamed
+        ar.edit(RequestID=ar.getId())
+    except Exception, e:
+        print str(e)
+        import pdb; pdb.set_trace()
 
     # Set initial AR state
     action = '{0}sampling_workflow'.format('' if workflow_enabled else 'no_')
@@ -230,7 +239,7 @@ def _resolve_items_to_service_uids(items):
             continue
 
         # Maybe object UID.
-        portal = portal if portal else api.portal.get()
+        portal = portal if portal else ploneapi.portal.get()
         bsc = bsc if bsc else getToolByName(portal, 'bika_setup_catalog')
         brains = bsc(UID=item)
         if brains:
@@ -332,3 +341,75 @@ def notify_rejection(analysisrequest):
         pass
 
     return True
+
+class Async_AR_Utils(BrowserView):
+
+    def async_create_analysisrequest(self):
+        msgs = []
+        form = self.request.form
+        records = json.loads(form.get('records', '[]'))
+        attachments = json.loads(form.get('attachments', '[]'))
+        ARs = []
+        for n, record in enumerate(records):
+            client_uid = record.get("Client")
+            client = api.get_object_by_uid(client_uid)
+
+            if not client:
+                msgs.append("Error: Client {} found".format(client_uid))
+                continue
+
+            # get the specifications and pass them directly to the AR create function.
+            specifications = record.pop("Specifications", {})
+
+
+            ## Create the Analysis Request
+            ar = create_analysisrequest(
+                client, 
+                self.request,
+                values=record,
+                specifications=specifications)
+            ARs.append(ar.getId())
+
+        if len(ARs) == 1:
+            msgs.append('Created AR {}'.format(ARs[0])
+        elif len(ARs) > 1:
+            msgs.append('Created ARs {}'.format(', '.join(ARs)))
+        else:
+            msgs.append('No ARs created')
+        message = '; '.join(msgs)
+        logger.info('AR Creation complete: {}'.format(message))
+        self._email_analyst(message)
+        return
+
+    def queue_count(self):
+        task_queue = queryUtility(ITaskQueue, name='ar-create')
+        if task_queue is None:
+            return 0
+        return 'Len = %s' % len(task_queue)
+
+    def _email_analyst(self, message):
+        mail_template = """
+Dear {name},
+
+Analysis request creation completed with the following messages:
+{message}
+
+Cheers
+Bika LIMS
+"""
+        portal = ploneapi.portal.get()
+        email_charset = portal.getProperty('email_charset')
+        member = ploneapi.user.get_current()
+        mail_host = ploneapi.portal.get_tool(name='MailHost')
+        to_email = member.getProperty('email')
+        from_email= mail_host.email_from_address
+        subject = 'AR Creation Complete'
+        mail_text = mail_template.format(
+                        name=member.getProperty('fullname'),
+                        message=message)
+        try:
+            return mail_host.send(
+                        mail_text, to_email, from_email,
+                        subject=subject, charset="utf-8", immediate=False)
+        except smtplib.SMTPRecipientsRefused:
+            raise smtplib.SMTPRecipientsRefused('Recipient address rejected by server')

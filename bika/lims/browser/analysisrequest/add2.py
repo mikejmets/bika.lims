@@ -19,6 +19,7 @@ from plone.memoize.volatile import cache
 from plone.memoize.volatile import DontCache
 
 from zope.annotation.interfaces import IAnnotations
+from zope.component import queryUtility
 from zope.publisher.interfaces import IPublishTraverse
 from zope.interface import implements
 from zope.i18n.locales import locales
@@ -33,6 +34,7 @@ from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import tmpID
 from bika.lims.utils.analysisrequest import create_analysisrequest as crar
+from collective.taskqueue.interfaces import ITaskQueue
 
 AR_CONFIGURATION_STORAGE = "bika.lims.browser.analysisrequest.manage.add"
 SKIP_FIELD_ON_COPY = ["Sample"]
@@ -1750,47 +1752,63 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             return {'errors': errors}
 
         # Process Form
-        ARs = []
-        for n, record in enumerate(valid_records):
-            client_uid = record.get("Client")
-            client = self.get_object_by_uid(client_uid)
+        task_queue = queryUtility(ITaskQueue, name='ar-create')
+        if task_queue is None:
+            # ar-create queue not registered. Proceed synchronously
+            ARs = []
+            for n, record in enumerate(valid_records):
+                client_uid = record.get("Client")
+                client = self.get_object_by_uid(client_uid)
 
-            if not client:
-                raise RuntimeError("No client found")
+                if not client:
+                    raise RuntimeError("No client found")
 
-            # get the specifications and pass them directly to the AR create function.
-            specifications = record.pop("Specifications", {})
+                # get the specifications and pass them directly to the AR create function.
+                specifications = record.pop("Specifications", {})
 
-            # Create the Analysis Request
-            ar = crar(
-                client,
-                self.request,
-                record,
-                specifications=specifications,
-            )
-            ARs.append(ar.Title())
+                # Create the Analysis Request
+                ar = crar(
+                    client,
+                    self.request,
+                    record,
+                    specifications=specifications,
+                    )
+                ARs.append(ar.Title())
 
-            _attachments = []
-            for attachment in attachments.get(n, []):
-                if not attachment.filename:
-                    continue
-                att = _createObjectByType("Attachment", self.context, tmpID())
-                att.setAttachmentFile(attachment)
-                att.processForm()
-                _attachments.append(att)
-            if _attachments:
-                ar.setAttachment(_attachments)
-
-        level = "info"
-        if len(ARs) == 0:
-            message = _('No Analysis Requests could be created.')
-            level = "error"
-        elif len(ARs) > 1:
-            message = _('Analysis requests ${ARs} were successfully created.',
-                        mapping={'ARs': safe_unicode(', '.join(ARs))})
+                _attachments = []
+                for attachment in attachments.get(n, []):
+                    if not attachment.filename:
+                        continue
+                    att = _createObjectByType(
+                            "Attachment", self.context, tmpID())
+                    att.setAttachmentFile(attachment)
+                    att.processForm()
+                    _attachments.append(att)
+                if _attachments:
+                    ar.setAttachment(_attachments)
         else:
-            message = _('Analysis request ${AR} was successfully created.',
-                        mapping={'AR': safe_unicode(ARs[0])})
+            path = self.request.PATH_INFO
+            path = '/'.join(path.split('/')[:4])
+            path += '/async_create_analysisrequest'
+            params = {
+                    'records': json.dumps(valid_records),
+                    'attachments': json.dumps(attachments),
+                    }
+            logger.info('Que Task: path=%s, params=%s, attachments=%s' % (
+                            path, params, attachments))
+            task_id = task_queue.add(path,
+                    method='POST',
+                    params=params)
+
+            level = "info"
+            if len(valid_records) == 0:
+                message = _('No Analysis Requests could be queued for creation.')
+                level = "error"
+            elif len(valid_records) > 1:
+                message = _('${ARs} Analysis requests were queue for creation.',
+                            mapping={'ARs': len(valid_records)})
+            else:
+                message = _('Analysis request was queued for creation.')
 
         # Display a portal message
         self.context.plone_utils.addPortalMessage(message, level)
@@ -1800,7 +1818,7 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
         auto_print = bika_setup.getAutoPrintStickers()
 
         # https://github.com/bikalabs/bika.lims/pull/2153
-        new_ars = [a for a in ARs if a[-1] == '1']
+        new_ars = [] #[a for a in ARs if a[-1] == '1']
 
         if 'register' in auto_print and new_ars:
             return {
