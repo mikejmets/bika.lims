@@ -130,3 +130,8 @@ MULTI_VERIFICATION_TYPE = DisplayList((
     ('self_multi_not_cons', _('Allow same user to verify multiple times, but not consecutively')),
     ('self_multi_disabled', _('Disable multi-verification for the same user')),
 ))
+INSTRUMENT_IMPORT_AUTO_OPTIONS = DisplayList((
+    ('', _("Don't transition ")),
+    #(Transition, _(state to transition to))
+    ('submit', _('Submit')),
+))

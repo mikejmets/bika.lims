@@ -9,6 +9,7 @@ import sys
 import inspect
 
 #from generic import xml
+from generic import genericthreecols
 from abaxis.vetscan import vs2
 from agilent.masshunter import quantitative, masshunter
 from alere.pima import beads, cd4
@@ -29,8 +30,6 @@ from rochecobas.taqman import model96
 from scilvet.abc import plus
 from eltra.cs import cs2000
 from rigaku.supermini import wxrf
-from myself import myinstrument
-from nuclisens import easyq
 from shimadzu.icpe import multitype
 from shimadzu.gcms import qp2010se
 from shimadzu.nexera import LC2040C, LCMS8050
@@ -55,6 +54,7 @@ __all__ = ['abaxis.vetscan.vs2',
            'foss.winescan.auto',
            'foss.winescan.ft120',
            #'generic.xml',
+           'genericthreecols',
            'horiba.jobinyvon.icp',
            'lifetechnologies.qubit.qubit',
            'myself.myinstrument',
@@ -73,8 +73,6 @@ __all__ = ['abaxis.vetscan.vs2',
            'thermoscientific.gallery.Ts9861x',
            'thermoscientific.multiskan.go',
            'thermoscientific.qtegra.qtegra',
-           'myself.myinstrument',
-           'nuclisens.easyq',
            'shimadzu.icpe.multitype',
            'shimadzu.gcms.qp2010se',
            'shimadzu.nexera.LC2040C',

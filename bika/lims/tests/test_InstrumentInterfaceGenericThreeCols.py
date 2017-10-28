@@ -8,7 +8,7 @@ from DateTime import DateTime
 from Products.CMFPlone.utils import _createObjectByType
 from bika.lims import api
 from bika.lims import logger
-from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
+from bika.lims.exportimport.instruments.generic.genericthreecols import Import
 from bika.lims.testing import BIKA_SIMPLE_FIXTURE
 from bika.lims.tests.base import BikaSimpleTestCase
 from bika.lims.utils import tmpID
@@ -49,6 +49,9 @@ class TestInstrumentImport(BikaSimpleTestCase):
     def setUp(self):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
+        current_user = ploneapi.user.get_current()
+        ploneapi.user.grant_roles(user=current_user,roles = ['Analyst'])
+        transaction.commit()
         self.client = self.addthing(self.portal.clients, 'Client',
                                     title='Happy Hills', ClientID='HH')
         self.addthing(self.client, 'Contact', Firstname='Rita Mohale',
@@ -67,22 +70,38 @@ class TestInstrumentImport(BikaSimpleTestCase):
                           'AnalysisService', title='Pentachloronitrobenzene',
                           Keyword="Pentachloronitrobenzene")
         b = self.addthing(self.portal.bika_setup.bika_analysisservices,
-                          'AnalysisService', title='Captan', Keyword="Captan")
+                          'AnalysisService', title='Magnesium', Keyword="Mg")
+        c = self.addthing(self.portal.bika_setup.bika_analysisservices,
+                          'AnalysisService', title='Calcium', Keyword="Ca")
+
+        self.calculation = self.addthing(self.portal.bika_setup.bika_calculations,
+                          'Calculation', title='TotalMagCal', Keyword="Mg")
+        self.calculation.setFormula('[Mg] + [Ca]')
+        transaction.commit()
+
+        d = self.addthing(self.portal.bika_setup.bika_analysisservices,
+                          'AnalysisService', title='THCaCO3', Keyword="THCaCO3")
+
+        d.setUseDefaultCalculation(False)
+        d.setDeferredCalculation(self.calculation)
+        transaction.commit()
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
-                      Service=[a.UID(), b.UID()])
+                      Service=[a.UID(), b.UID(), c.UID(), d.UID()])
+        transaction.commit()
 
 
     def tearDown(self):
         super(TestInstrumentImport, self).setUp()
         login(self.portal, TEST_USER_NAME)
 
-    def test_Shimadzu_TQ8030Import_AutoTransition_SamplingEnabled(self):
+    def test_InstrumentImport_AutoTransition_SamplingEnabled(self):
         '''SamplingWorkflowEnabled = True
            AutoTransition = 'submit'
            artoapply='received'
            artoapply='received_tobeverified'
         '''
+
         workflow = getToolByName(self.portal, 'portal_workflow')
         #NOTE: SamplingWorkflowEnabled has to set before ARs are added
         api.get_bika_setup().setSamplingWorkflowEnabled(True)
@@ -162,7 +181,7 @@ Total price excl Tax,,,,,,,,,,,,,,
 
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
-        filename = '%s/files/TQ-8030.txt' % path
+        filename = '%s/files/genericthreecols.csv' % path
         if not os.path.isfile(filename):
             self.fail("File %s not found" % filename)
         data = open(filename, 'r').read()
@@ -179,44 +198,66 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 2 ARs and 4 results updated'
+        text = 'Import finished successfully: 2 ARs and 6 results updated'
         if text not in results:
             self.fail("AR Import failed")
         for ar in ars:
             analyses = ar.getObject().getAnalyses(full_objects=True)
             if ar.getObject().getId() == '1-0001-R01':
                 for an in analyses:
+                    if an.getAnalyst() != 'test_user_1_':
+                        msg = "{}:Analyst did not get updated".format(
+                                                        an.getAnalyst())
+                        msg = "Analyst did not get updated"
+                        self.fail('{}:{}'.format(msg, an.getAnalyst()))
+
                     state = workflow.getInfoFor(an, 'review_state')
                     if state != 'to_be_verified':
                         self.fail('Auto Transition failed for:{}'.format(an))
-                    if an.getKeyword() == 'Captan':
-                        if an.getResult() != '456.0':
-                            msg = "{}:Result did not get updated".format(
-                                                            an.getKeyword())
-                            self.fail(msg)
+                    if an.getKeyword() == 'THCaCO3':
+                        if an.getResult() != '2.0':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+                    if an.getKeyword() == 'Mg':
+                        if an.getResult() != '2.0':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
                     if an.getKeyword() == 'Pentachloronitrobenzene':
                         if an.getResult() != '0.0':
-                            msg = "{}:Result did not get updated".format(
-                                                            an.getKeyword())
-                            self.fail(msg)
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+
+                    if an.getKeyword() == 'Ca':
+                        if an.getResult() != '0.0':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+
 
             if ar.getObject().getId() == '1-0002-R01':
                 for an in analyses:
                     state = workflow.getInfoFor(an, 'review_state')
                     if state != 'to_be_verified':
                         self.fail('Auto Transition failed for:{}'.format(an))
-                    if an.getKeyword() == 'Captan':
-                        if an.getResult() != '789.0':
-                            msg = "{}:Result did not get updated".format(
-                                                            an.getKeyword())
-                            self.fail(msg)
+                    if an.getKeyword() == 'THCaCO3':
+                        if an.getResult() != '11.0':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+                    if an.getKeyword() == 'Mg':
+                        if an.getResult() != '5.0':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
                     if an.getKeyword() == 'Pentachloronitrobenzene':
-                        if an.getResult() != '123.0':
-                            msg = "{}:Result did not get updated".format(
-                                                            an.getKeyword())
-                            self.fail(msg)
+                        if an.getResult() != '0.0':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+
+                    if an.getKeyword() == 'Ca':
+                        if an.getResult() != '6.0':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+
         # To be verified AR/AS
-        filename = '%s/files/TQ-8030-ToBeVerified.txt' % path
+        filename = '%s/files/genericthreecols-ToBeVerified.csv' % path
         if not os.path.isfile(filename):
             self.fail("File %s not found" % filename)
         data = open(filename, 'r').read()
@@ -233,7 +274,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 2 ARs and 4 results updated'
+        text = 'Import finished successfully: 2 ARs and 6 results updated'
         if text not in results:
             self.fail("AR Import failed")
         for ar in ars:
@@ -243,32 +284,44 @@ Total price excl Tax,,,,,,,,,,,,,,
                     state = workflow.getInfoFor(an, 'review_state')
                     if state != 'to_be_verified':
                         self.fail('Auto Transition failed for:{}'.format(an))
-                    if an.getKeyword() == 'Captan':
-                        if an.getResult() != '333.0':
+                    if an.getKeyword() == 'Mg':
+                        if an.getResult() != '20.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
                     if an.getKeyword() == 'Pentachloronitrobenzene':
-                        if an.getResult() != '111.0':
+                        if an.getResult() != '10.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
+                    if an.getKeyword() == 'Ca':
+                        if an.getResult() != '30.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+
 
             if ar.getObject().getId() == '1-0002-R01':
                 for an in analyses:
                     state = workflow.getInfoFor(an, 'review_state')
                     if state != 'to_be_verified':
                         self.fail('Auto Transition failed for:{}'.format(an))
-                    if an.getKeyword() == 'Captan':
-                        if an.getResult() != '444.0':
+                    if an.getKeyword() == 'Mg':
+                        if an.getResult() != '0.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
                     if an.getKeyword() == 'Pentachloronitrobenzene':
-                        if an.getResult() != '222.0':
+                        if an.getResult() != '40.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
+                    if an.getKeyword() == 'Ca':
+                        if an.getResult() != '0.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
+
 
     def test_Shimadzu_TQ8030Import_NoAutoTransition_SamplingDisabled(self):
         '''SamplingWorkflowEnabled = False
@@ -295,7 +348,6 @@ Analysis price,,,,,,,,,,,,,,
 "Total Analyses or Profiles",,,,,,,,,,,,,9,,,
 Total price excl Tax,,,,,,,,,,,,,,
 "Sample 1", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
-"Sample 2", HHS14001,          3/9/2014,    3/9/2014,,Toilet,     Liquids,     Water,     Cup,          0,              Normal,  1,                                   0,             0,0,0,0,0,1
         """)
 
         # check that values are saved without errors
@@ -357,7 +409,7 @@ Total price excl Tax,,,,,,,,,,,,,,
 
         #Testing Import for Instrument
         path = os.path.dirname(__file__)
-        filename = '%s/files/TQ-8030.txt' % path
+        filename = '%s/files/genericthreecols.csv' % path
         if not os.path.isfile(filename):
             self.fail("File %s not found" % filename)
         data = open(filename, 'r').read()
@@ -374,7 +426,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 2 ARs and 4 results updated'
+        text = 'Import finished successfully: 1 ARs and 3 results updated'
         if text not in results:
             self.fail("AR Import failed")
         for ar in ars:
@@ -384,8 +436,8 @@ Total price excl Tax,,,,,,,,,,,,,,
                     state = workflow.getInfoFor(an, 'review_state')
                     if state == 'to_be_verified':
                         self.fail('Auto Transition occured for:{}'.format(an))
-                    if an.getKeyword() == 'Captan':
-                        if an.getResult() != '456.0':
+                    if an.getKeyword() == 'Mg':
+                        if an.getResult() != '2.0':
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
@@ -394,22 +446,12 @@ Total price excl Tax,,,,,,,,,,,,,,
                             msg = "{}:Result did not get updated".format(
                                                             an.getKeyword())
                             self.fail(msg)
+                    if an.getKeyword() == 'Ca':
+                        if an.getResult() != '0.0':
+                            msg = "{}:Result did not get updated".format(
+                                                            an.getKeyword())
+                            self.fail(msg)
 
-            if ar.getObject().getId() == '1-0002-R01':
-                for an in analyses:
-                    state = workflow.getInfoFor(an, 'review_state')
-                    if state == 'to_be_verified':
-                        self.fail('Auto Transition occured for:{}'.format(an))
-                    if an.getKeyword() == 'Captan':
-                        if an.getResult() != '789.0':
-                            msg = "{}:Result did not get updated".format(
-                                                            an.getKeyword())
-                            self.fail(msg)
-                    if an.getKeyword() == 'Pentachloronitrobenzene':
-                        if an.getResult() != '123.0':
-                            msg = "{}:Result did not get updated".format(
-                                                            an.getKeyword())
-                            self.fail(msg)
 
 def test_suite():
     suite = unittest.TestSuite()

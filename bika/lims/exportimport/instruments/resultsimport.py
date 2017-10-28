@@ -7,15 +7,18 @@
 
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import _createObjectByType, safe_unicode
+from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import t
 from bika.lims.exportimport.instruments.logger import Logger
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.utils import tmpID
+from bika.lims.workflow import doActionFor
 from Products.Archetypes.config import REFERENCE_CATALOG
 from datetime import datetime
 from DateTime import DateTime
 import os
+from plone import api as ploneapi
 
 class InstrumentResultsFileParser(Logger):
 
@@ -253,7 +256,8 @@ class AnalysisResultsImporter(Logger):
                  override=[False, False],
                  allowed_ar_states=None,
                  allowed_analysis_states=None,
-                 instrument_uid=None):
+                 instrument_uid=None,
+                 form=None,):
         Logger.__init__(self)
         self._parser = parser
         self.context = context
@@ -262,6 +266,8 @@ class AnalysisResultsImporter(Logger):
         self._override = override
         self._idsearch = idsearchcriteria
         self._priorizedsearchcriteria = ''
+        self.advance_to_state = None
+        self.form = form
         self.bsc = getToolByName(self.context, 'bika_setup_catalog')
         self.bac = getToolByName(self.context, 'bika_analysis_catalog')
         self.pc = getToolByName(self.context, 'portal_catalog')
@@ -280,10 +286,21 @@ class AnalysisResultsImporter(Logger):
             self._idsearch=['getRequestID']
         self.instrument_uid=instrument_uid
 
+        if self.mustTransitionAnalysis() and self.form:
+            self.advance_to_state = self.form.get('advancetostate', None)
+            if len(self.advance_to_state) == 0:
+                self.advance_to_state = None
+
     def getParser(self):
         """ Returns the parser that will be used for the importer
         """
         return self._parser
+
+    def mustTransitionAnalysis(self):
+        tr_success_state = api.get_bika_setup().getAutoTransition()
+        if len(tr_success_state) == 0:
+            return False
+        return True
 
     def getAllowedARStates(self):
         """ The allowed Analysis Request states
@@ -330,6 +347,15 @@ class AnalysisResultsImporter(Logger):
         self._warns = self._parser.warns
         self._logs = self._parser.logs
         self._priorizedsearchcriteria = ''
+        current_user = api.get_current_user()
+        analysts = api.get_users_by_roles('Analyst')
+        self.user = None
+        for analyst in analysts:
+            if current_user.getUserName() == analyst.getUserName():
+                self.user =  analyst
+        if not self.user:
+            self._errors = ['Current User must be an Analyst']
+            return False
 
         if parsed == False:
             return False
@@ -454,6 +480,7 @@ class AnalysisResultsImporter(Logger):
                     analysis = ans[0]
                     if capturedate:
                         values['DateTime'] = capturedate
+                    #Call here
                     processed = self._process_analysis(objid, analysis, values)
                     if processed:
                         ancount += 1
@@ -535,6 +562,17 @@ class AnalysisResultsImporter(Logger):
                 initial_result = analysis.getResult()
                 calc_passed = analysis.calculateResult(override=True,
                                                        cascade=True)
+                if calc_passed == False:
+                    continue
+
+                if not analysis.Analyst:
+                    analysis.Analyst = self.user._id
+                if self.advance_to_state:
+                    try:
+                        api.do_transition_for(analysis, self.advance_to_state)
+                    except:
+                        self.log("Failed to perform transition '{}' on {}: {}"\
+                                .format(self.advance_to_state, objid, acode))
                 if calc_passed and initial_result != analysis.getResult():
                     self.log(
                         "${request_id}: calculated result for "
@@ -793,8 +831,17 @@ class AnalysisResultsImporter(Logger):
             #                   "result": str(res)})
             #TODO incorporar per veure detall d'importacio
             analysis.setResult(res)
+            if not analysis.Analyst:
+                analysis.Analyst = self.user._id
             if capturedate:
                 analysis.setResultCaptureDate(capturedate)
+            if self.advance_to_state:
+                try:
+                    api.do_transition_for(analysis, self.advance_to_state)
+                except:
+                    self.log("Failed to perform transition '{}' on {}: {}"\
+                            .format(self.advance_to_state, objid, acode))
+
             resultsaved = True
 
         elif resultsaved == False:
