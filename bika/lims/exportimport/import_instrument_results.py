@@ -1,7 +1,8 @@
 import logging
-import imghdr
+import json
 import cStringIO
 import os
+from plone import api as ploneapi
 from bika.lims.browser import BrowserView
 from bika.lims.utils import tmpID
 from bika.lims import api
@@ -31,7 +32,6 @@ class ImportInstrumentResultsView(BrowserView):
         analysts_folder = os.environ.get('INSTRUMENT_RESULTS_IMPORTER', '')
         errors = []
         archive = []
-        result_to_return = []
         if not os.path.isdir(analysts_folder):
             logger.info('Instrument Result Folder not found: {}'.format(analysts_folder))
             return 'Folder: {} not found'.format(analysts_folder)
@@ -55,6 +55,7 @@ class ImportInstrumentResultsView(BrowserView):
             for analyst in analysts:
                 if analyst_folder == analyst.getUserName():
                     self.user =  analyst_folder
+                    email_analyst = analyst
             if not self.user:
                 msg = 'User {} found is not an Analyst'.format(analyst_filepath)
                 errors.append(msg)
@@ -98,16 +99,19 @@ class ImportInstrumentResultsView(BrowserView):
                     from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
                 instrument_path = os.path.join(analyst_filepath, instrument)
+                archives_dir = '%s/archives' % instrument_path
+                if not os.path.exists(archives_dir):
+                    os.makedirs(archives_dir)
                 for state_folder in  os.listdir(instrument_path):
                     if state_folder == 'Received and To Be Verified':
                         state_folder_path = os.path.join(
                                                         instrument_path,
                                                         state_folder)
                         for fname in  os.listdir(state_folder_path):
-                            path = os.path.dirname(__file__)
-                            filename = os.path.join(state_folder_path,fname)
-                            if os.path.isfile(filename):
-                                data = open(filename, 'r').read()
+                            result_to_return = []
+                            filepath = os.path.join(state_folder_path,fname)
+                            if os.path.isfile(filepath):
+                                data = open(filepath, 'r').read()
                                 file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
 
                                 #exec(import_importer)
@@ -122,17 +126,32 @@ class ImportInstrumentResultsView(BrowserView):
                                                     )
                                 context = self.portal
                                 results = Import(context, request)
-                                import pdb; pdb.set_trace()
-                                result_to_return.append(results)
+                                destination = '{}/{}'.format(archives_dir, fname)
+                                os.rename(filepath, destination)
+                                report = json.loads(results)
+                                if len(report['log']) > 0:
+                                    result_to_return.append('Log:')
+                                    for l in report['log']:
+                                        result_to_return.append(l)
+                                if len(report['errors']) > 0:
+                                    result_to_return.append('Errors:')
+                                    for e in report['errors']:
+                                        result_to_return.append(e)
+                                if len(report['warns']) > 0:
+                                    result_to_return.append('Warnings:')
+                                    for w in report['warns']:
+                                        result_to_return.append(w)
+                                message = '\n '.join(result_to_return)
+                                self._email_analyst(email_analyst, message)
+
                     if state_folder == 'Submit and transition to be verified':
                         state_folder_path = os.path.join(
                                                         instrument_path,
                                                         state_folder)
                         for fname in  os.listdir(state_folder_path):
-                            path = os.path.dirname(__file__)
-                            filename = os.path.join(state_folder_path,fname)
-                            if os.path.isfile(filename):
-                                data = open(filename, 'r').read()
+                            filepath = os.path.join(state_folder_path,fname)
+                            if os.path.isfile(filepath):
+                                data = open(filepath, 'r').read()
                                 file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
 
                                 #exec(import_importer)
@@ -147,10 +166,49 @@ class ImportInstrumentResultsView(BrowserView):
                                                     )
                                 context = self.portal
                                 results = Import(context, request)
+                                destination = '{}/{}'.format(archives_dir, fname)
+                                os.rename(filepath, destination)
                                 report = json.loads(results)
-                                if len(results[log]) > 0:
-                                import pdb; pdb.set_trace()
-                                result_to_return.append(results)
+                                if len(report['log']) > 0:
+                                    result_to_return.append('Log:')
+                                    for l in report['log']:
+                                        result_to_return.append(l)
+                                if len(report['errors']) > 0:
+                                    result_to_return.append('Errors:')
+                                    for e in report['errors']:
+                                        result_to_return.append(e)
+                                if len(report['warns']) > 0:
+                                    result_to_return.append('Warnings:')
+                                    for w in report['warns']:
+                                        result_to_return.append(w)
+                                message = '; '.join(result_to_return)
+                                self._email_analyst(email_analyst, message)
 
-        logger.info('Done')
-        return ('Done', result_to_return, errors)
+        logger.info('Instrument Results Importer Done')
+        #TODO: send errors to admin
+        return ('Done', errors)
+
+    def _email_analyst(self, member, message):
+        mail_template = """
+Dear {name},
+
+Instrument Results Importer has completed with the following messages:
+{message}
+
+Cheers
+Bika LIMS
+"""
+        portal = ploneapi.portal.get()
+        mail_host = ploneapi.portal.get_tool(name='MailHost')
+        from_email= mail_host.email_from_address
+        to_email = member.getProperty('email')
+        subject = 'Instrument Results Import'
+        mail_text = mail_template.format(
+                        name=member.getProperty('fullname'),
+                        message=message)
+        try:
+            return mail_host.send(
+                        mail_text, to_email, from_email,
+                        subject=subject, charset="utf-8", immediate=False)
+        except smtplib.SMTPRecipientsRefused:
+            raise smtplib.SMTPRecipientsRefused('Recipient address rejected by server')
