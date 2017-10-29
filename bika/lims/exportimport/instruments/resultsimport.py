@@ -348,13 +348,19 @@ class AnalysisResultsImporter(Logger):
         self._priorizedsearchcriteria = ''
         current_user = api.get_current_user()
         analysts = api.get_users_by_roles('Analyst')
+        self.analyst = None
         self.user = None
+        #TODO: Do a hasattr before getting the form
+        self.analyst = self.form.get('analyst', None)
+        if self.analyst == None:
+            self.analyst = current_user.getUserName()
         for analyst in analysts:
-            if current_user.getUserName() == analyst.getUserName():
+            if self.analyst == analyst.getUserName():
                 self.user =  analyst
         if not self.user:
             self._errors = ['Current User must be an Analyst']
             return False
+
 
         if parsed == False:
             return False
