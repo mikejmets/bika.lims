@@ -84,6 +84,7 @@ class ImportInstrumentResultsView(BrowserView):
                 else:
                     msg = 'Instrument Importer with {} model not found'.format(instrument_model)
                     errors.append(msg)
+		    continue
                 if import_importer == 'shimadzu.gcms.tq8030':
                     from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
                 if import_importer == 'shimadzu.gcms.qp2010se':
@@ -101,106 +102,55 @@ class ImportInstrumentResultsView(BrowserView):
                 archives_dir = '%s/archives' % instrument_path
                 if not os.path.exists(archives_dir):
                     os.makedirs(archives_dir)
-                for state_folder in  os.listdir(instrument_path):
-                    if state_folder == 'Received and To Be Verified':
-                        state_folder_path = os.path.join(
-                                                        instrument_path,
-                                                        state_folder)
-                        for fname in  os.listdir(state_folder_path):
-                            result_to_return = []
-                            filepath = os.path.join(state_folder_path,fname)
-                            if os.path.isfile(filepath):
-                                tempfile = '/tmp/{}'.format(fname)
-                                os.rename(filepath, tempfile)
-                                data = open(tempfile, 'r').read()
-                                file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
+                result_to_return = []
+                for fname in os.listdir(instrument_path):
+                    if fname == 'archives':
+                        continue
+                    filepath = os.path.join(instrument_path,fname)
+                    if os.path.isfile(filepath):
+                        tempfile = '{}/{}'.format(archives_dir, fname)
+                        try:
+                            os.rename(filepath, tempfile)
+                        except Exception, e:
+                            os.remove(tempfile)
+                            os.rename(filepath, tempfile)
+                        data = open(tempfile, 'r').read()
+                        file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
 
-                                #exec(import_importer)
-                                request.form = dict(submitted=True,
-                                                    artoapply='received',
-                                                    override='nooverride',
-                                                    file=file,
-                                                    sample='requestid',
-                                                    instrument='',
-                                                    advancetostate = '',
-                                                    analyst=self.user,
-                                                    )
-                                context = self.portal
-                                try:
-                                    if '2-dimen' in fname.lower():
-                                        from bika.lims.exportimport.instruments.generic.genericthreecols import Import as GenericImport
-                                        results = GenericImport(context, request)
-                                    else:
-                                        results = Import(context, request)
-                                except Exception, e:
-                                    errors.append(e)
-                                destination = '{}/{}'.format(archives_dir, fname)
-                                os.rename(tempfile, destination)
-                                report = json.loads(results)
-                                if len(report['log']) > 0:
-                                    result_to_return.append('Log:')
-                                    for l in report['log']:
-                                        result_to_return.append(l)
-                                if len(report['errors']) > 0:
-                                    result_to_return.append('Errors:')
-                                    for e in report['errors']:
-                                        result_to_return.append(e)
-                                if len(report['warns']) > 0:
-                                    result_to_return.append('Warnings:')
-                                    for w in report['warns']:
-                                        result_to_return.append(w)
-                                message = '\n '.join(result_to_return)
-                                self._email_analyst(email_analyst, message)
-
-                    if state_folder == 'Submit and transition to be verified':
-                        state_folder_path = os.path.join(
-                                                        instrument_path,
-                                                        state_folder)
-                        for fname in  os.listdir(state_folder_path):
-                            result_to_return = []
-                            filepath = os.path.join(state_folder_path,fname)
-                            if os.path.isfile(filepath):
-                                tempfile = '/tmp/{}'.format(fname)
-                                os.rename(filepath, tempfile)
-                                data = open(tempfile, 'r').read()
-                                file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
-
-                                #exec(import_importer)
-                                request.form = dict(submitted=True,
-                                                    artoapply='received',
-                                                    override='nooverride',
-                                                    file=file,
-                                                    sample='requestid',
-                                                    instrument='',
-                                                    advancetostate = 'submit',
-                                                    analyst=self.user,
-                                                    )
-                                context = self.portal
-                                try:
-                                    if '2-dimen' in fname.lower():
-                                        from bika.lims.exportimport.instruments.generic.genericthreecols import Import as GenericImport
-                                        results = GenericImport(context, request)
-                                    else:
-                                        results = Import(context, request)
-                                except Exception, e:
-                                    errors.append(e)
-                                destination = '{}/{}'.format(archives_dir, fname)
-                                os.rename(tempfile, destination)
-                                report = json.loads(results)
-                                if len(report['log']) > 0:
-                                    result_to_return.append('Log:')
-                                    for l in report['log']:
-                                        result_to_return.append(l)
-                                if len(report['errors']) > 0:
-                                    result_to_return.append('Errors:')
-                                    for e in report['errors']:
-                                        result_to_return.append(e)
-                                if len(report['warns']) > 0:
-                                    result_to_return.append('Warnings:')
-                                    for w in report['warns']:
-                                        result_to_return.append(w)
-                                message = '; '.join(result_to_return)
-                                self._email_analyst(email_analyst, message)
+                        request.form = dict(submitted=True,
+                                            artoapply='received_tobeverified',
+                                            override='nooverride',
+                                            file=file,
+                                            sample='requestid',
+                                            instrument='',
+                                            advancetostate = 'submit',
+                                            analyst=self.user,
+                                            )
+                        context = self.portal
+                        try:
+                            if '2-dimen' in fname.lower():
+                                from bika.lims.exportimport.instruments.generic.genericthreecols import Import as GenericImport
+                                results = GenericImport(context, request)
+                            else:
+                                results = Import(context, request)
+                        except Exception, e:
+                            errors.append(e)
+                        destination = '{}/{}'.format(archives_dir, fname)
+                        report = json.loads(results)
+                        if len(report['log']) > 0:
+                            result_to_return.append('Log:')
+                            for l in report['log']:
+                                result_to_return.append(l)
+                        if len(report['errors']) > 0:
+                            result_to_return.append('Errors:')
+                            for e in report['errors']:
+                                result_to_return.append(e)
+                        if len(report['warns']) > 0:
+                            result_to_return.append('Warnings:')
+                            for w in report['warns']:
+                                result_to_return.append(w)
+                        message = '\n '.join(result_to_return)
+                        self._email_analyst(email_analyst, message)
 
                 # Avoid having Import from multiple module at the same time
                 if 'Import' in globals():
@@ -229,8 +179,9 @@ Bika LIMS
                         name=member.getProperty('fullname'),
                         message=message)
         try:
+            logger.info('Email Analyst complete: %s' % to_email)
             return mail_host.send(
                         mail_text, to_email, from_email,
-                        subject=subject, charset="utf-8", immediate=False)
+                        subject=subject, charset="utf-8", immediate=True)
         except smtplib.SMTPRecipientsRefused:
             raise smtplib.SMTPRecipientsRefused('Recipient address rejected by server')
