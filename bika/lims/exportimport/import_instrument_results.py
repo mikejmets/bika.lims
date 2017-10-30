@@ -2,6 +2,7 @@ import logging
 import json
 import cStringIO
 import os
+import smtplib
 from plone import api as ploneapi
 from bika.lims.browser import BrowserView
 from bika.lims.utils import tmpID
@@ -93,8 +94,6 @@ class ImportInstrumentResultsView(BrowserView):
                     from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
                 if import_importer == 'shimadzu.nexera.LCMS8050':
                     from bika.lims.exportimport.instruments.shimadzu.nexera.CMS8050 import Import
-                if import_importer == 'genericthreecols':
-                    from bika.lims.exportimport.instruments.genericthreecols import Import
                 if import_importer == 'agilent.masshunter.masshunter':
                     from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
@@ -111,7 +110,9 @@ class ImportInstrumentResultsView(BrowserView):
                             result_to_return = []
                             filepath = os.path.join(state_folder_path,fname)
                             if os.path.isfile(filepath):
-                                data = open(filepath, 'r').read()
+                                tempfile = '/tmp/{}'.format(fname)
+                                os.rename(filepath, tempfile)
+                                data = open(tempfile, 'r').read()
                                 file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
 
                                 #exec(import_importer)
@@ -125,9 +126,16 @@ class ImportInstrumentResultsView(BrowserView):
                                                     analyst=self.user,
                                                     )
                                 context = self.portal
-                                results = Import(context, request)
+                                try:
+                                    if '2-dimen' in fname.lower():
+                                        from bika.lims.exportimport.instruments.generic.genericthreecols import Import as GenericImport
+                                        results = GenericImport(context, request)
+                                    else:
+                                        results = Import(context, request)
+                                except Exception, e:
+                                    errors.append(e)
                                 destination = '{}/{}'.format(archives_dir, fname)
-                                os.rename(filepath, destination)
+                                os.rename(tempfile, destination)
                                 report = json.loads(results)
                                 if len(report['log']) > 0:
                                     result_to_return.append('Log:')
@@ -149,9 +157,12 @@ class ImportInstrumentResultsView(BrowserView):
                                                         instrument_path,
                                                         state_folder)
                         for fname in  os.listdir(state_folder_path):
+                            result_to_return = []
                             filepath = os.path.join(state_folder_path,fname)
                             if os.path.isfile(filepath):
-                                data = open(filepath, 'r').read()
+                                tempfile = '/tmp/{}'.format(fname)
+                                os.rename(filepath, tempfile)
+                                data = open(tempfile, 'r').read()
                                 file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
 
                                 #exec(import_importer)
@@ -165,9 +176,16 @@ class ImportInstrumentResultsView(BrowserView):
                                                     analyst=self.user,
                                                     )
                                 context = self.portal
-                                results = Import(context, request)
+                                try:
+                                    if '2-dimen' in fname.lower():
+                                        from bika.lims.exportimport.instruments.generic.genericthreecols import Import as GenericImport
+                                        results = GenericImport(context, request)
+                                    else:
+                                        results = Import(context, request)
+                                except Exception, e:
+                                    errors.append(e)
                                 destination = '{}/{}'.format(archives_dir, fname)
-                                os.rename(filepath, destination)
+                                os.rename(tempfile, destination)
                                 report = json.loads(results)
                                 if len(report['log']) > 0:
                                     result_to_return.append('Log:')
@@ -183,6 +201,10 @@ class ImportInstrumentResultsView(BrowserView):
                                         result_to_return.append(w)
                                 message = '; '.join(result_to_return)
                                 self._email_analyst(email_analyst, message)
+
+                # Avoid having Import from multiple module at the same time
+                if 'Import' in globals():
+                    del Import
 
         logger.info('Instrument Results Importer Done')
         #TODO: send errors to admin
