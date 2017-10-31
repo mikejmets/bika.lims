@@ -199,28 +199,36 @@ class ImportInstrumentResultsView(BrowserView):
         form = self.request.form
         instrument_path = form.get('instrument_path', '')
         if len(instrument_path) == 0:
-            msgs.append('No folder provided')
+            msgs.append('No Instrument folder provided')
+            self._email_errors(msgs)
             return
         fname = form.get('fname', '')
         if len(fname) == 0:
-            msgs.append('No file name provided')
+            msgs.append(
+                    'No file name provided on path: {}'.format(
+                        instrument_path))
+            self._email_errors(msgs)
             return
         result_file = os.path.join(instrument_path, 'wip', fname)
         analyst_folder = form.get('analyst_folder', '')
         if len(analyst_folder) == 0:
-            msgs.append('No user provided')
+            msgs.append('No user/analyst provided')
+            self._email_errors(msgs)
             return
         analyst_email = form.get('analyst_email', '')
         if len(analyst_email) == 0:
-            msgs.append('No email provided')
+            msgs.append('No analyst email provided')
+            self._email_errors(msgs)
             return
         analyst_name = form.get('analyst_name', '')
         if len(analyst_name) == 0:
-            msgs.append('No name provided')
+            msgs.append('No analsyt name provided')
+            self._email_errors(msgs)
             return
         import_importer = form.get('import_importer', '')
         if len(import_importer) == 0:
             msgs.append('Import not provided')
+            self._email_errors(msgs)
             return
         if import_importer == 'shimadzu.gcms.tq8030':
             from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
