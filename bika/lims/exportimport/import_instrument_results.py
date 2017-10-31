@@ -89,7 +89,6 @@ class ImportInstrumentResultsView(BrowserView):
                     msg = 'Instrument Importer with {} model not found'.format(instrument_model)
                     errors.append(msg)
                     continue
->>>>>>> 60f4415a8e21e6c86781732d7e4b071cd350a890
                 if import_importer == 'shimadzu.gcms.tq8030':
                     from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
                 elif import_importer == 'shimadzu.gcms.qp2010se':
