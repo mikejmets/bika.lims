@@ -8,6 +8,7 @@ from bika.lims.browser import BrowserView
 from bika.lims.utils import tmpID
 from bika.lims import api
 from bika.lims.exportimport import instruments
+from collective.taskqueue.interfaces import ITaskQueue
 from Products.CMFPlone.utils import _createObjectByType
 from Products.CMFCore.utils import getToolByName
 from zope.component import getUtility
@@ -28,7 +29,6 @@ class ImportInstrumentResultsView(BrowserView):
         """
         logger.info('Inside import_instrument_results')
         request = self.request
-        bc = getToolByName(self.context, 'bika_catalog')
         bsc = api.get_tool("bika_setup_catalog")
         analysts_folder = os.environ.get('INSTRUMENT_RESULTS_IMPORTER', '')
         errors = []
@@ -76,7 +76,6 @@ class ImportInstrumentResultsView(BrowserView):
                     errors.append(msg)
                     continue
                 myimporter = []
-                #myimporter = [i for i in exims if i[1] == instrument_model][0]
                 exim = [i for i in exims if i[1] == instrument_model]
                 if len(exim) > 0:
                     myimporter = exim[0]
@@ -87,34 +86,36 @@ class ImportInstrumentResultsView(BrowserView):
                     continue
                 if import_importer == 'shimadzu.gcms.tq8030':
                     from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
-                if import_importer == 'shimadzu.gcms.qp2010se':
+                elif import_importer == 'shimadzu.gcms.qp2010se':
                     from bika.lims.exportimport.instruments.shimadzu.gcms.qp2010se import Import
-                if import_importer == 'shimadzu.icpe.multitype':
+                elif import_importer == 'shimadzu.icpe.multitype':
                     from bika.lims.exportimport.instruments.shimadzu.icpe.multitype import Import
-                if import_importer == 'shimadzu.nexera.LC2040C':
+                elif import_importer == 'shimadzu.nexera.LC2040C':
                     from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
-                if import_importer == 'shimadzu.nexera.LCMS8050':
+                elif import_importer == 'shimadzu.nexera.LCMS8050':
                     from bika.lims.exportimport.instruments.shimadzu.nexera.CMS8050 import Import
-                if import_importer == 'agilent.masshunter.masshunter':
+                elif import_importer == 'agilent.masshunter.masshunter':
                     from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
                 instrument_path = os.path.join(analyst_filepath, instrument)
                 archives_dir = '%s/archives' % instrument_path
                 if not os.path.exists(archives_dir):
                     os.makedirs(archives_dir)
-                result_to_return = []
+                wip_dir = '%s/wip' % instrument_path
+                if not os.path.exists(wip_dir):
+                    os.makedirs(wip_dir)
                 for fname in os.listdir(instrument_path):
                     if fname == 'archives':
                         continue
-                    filepath = os.path.join(instrument_path,fname)
-                    if os.path.isfile(filepath):
-                        tempfile = '{}/{}'.format(archives_dir, fname)
+                    current_file = os.path.join(instrument_path,fname)
+                    if os.path.isfile(current_file):
+                        temp_file = '{}/{}'.format(wip_dir, fname)
                         try:
-                            os.rename(filepath, tempfile)
+                            os.rename(current_file, temp_file)
                         except Exception, e:
-                            os.remove(tempfile)
-                            os.rename(filepath, tempfile)
-                        data = open(tempfile, 'r').read()
+                            os.remove(temp_file)
+                            os.rename(current_file, temp_file)
+                        data = open(temp_file, 'r').read()
                         file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
 
                         request.form = dict(submitted=True,
@@ -135,8 +136,15 @@ class ImportInstrumentResultsView(BrowserView):
                                 results = Import(context, request)
                         except Exception, e:
                             errors.append(e)
-                        destination = '{}/{}'.format(archives_dir, fname)
+                        archive_file = '{}/{}'.format(archives_dir, fname)
+                        try:
+                            os.rename(temp_file, archive_file)
+                        except Exception, e:
+                            os.remove(archive_file)
+                            os.rename(temp_file, archive_file)
+
                         report = json.loads(results)
+                        result_to_return = []
                         if len(report['log']) > 0:
                             result_to_return.append('Log:')
                             for l in report['log']:
@@ -157,8 +165,34 @@ class ImportInstrumentResultsView(BrowserView):
                     del Import
 
         logger.info('Instrument Results Importer Done')
-        #TODO: send errors to admin
+        if len(errors):
+            self._email_analyst(email_analyst, message)
         return ('Done', errors)
+
+    def _email_errors(self, errors):
+        message = '\n'.join(errors)
+        mail_template = """
+Dear Sys Admin,
+
+Instrument Results Importer has completed with the following errors:
+{message}
+
+Cheers
+Bika LIMS
+"""
+        portal = ploneapi.portal.get()
+        mail_host = ploneapi.portal.get_tool(name='MailHost')
+        from_email= mail_host.email_from_address
+        to_email = from_email
+        subject = 'Instrument Results Import Errors'
+        mail_text = mail_template.format(message=message)
+        try:
+            logger.info('Email Errors complete: %s' % to_email)
+            return mail_host.send(
+                        mail_text, to_email, from_email,
+                        subject=subject, charset="utf-8", immediate=True)
+        except smtplib.SMTPRecipientsRefused:
+            raise smtplib.SMTPRecipientsRefused('Recipient address rejected by server')
 
     def _email_analyst(self, member, message):
         mail_template = """
