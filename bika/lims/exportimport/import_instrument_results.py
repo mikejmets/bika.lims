@@ -8,10 +8,13 @@ from bika.lims.browser import BrowserView
 from bika.lims.utils import tmpID
 from bika.lims import api
 from bika.lims.exportimport import instruments
+from bika.lims.exportimport.instruments.generic.genericthreecols \
+        import Import as GenericImport
 from collective.taskqueue.interfaces import ITaskQueue
 from Products.CMFPlone.utils import _createObjectByType
 from Products.CMFCore.utils import getToolByName
 from zope.component import getUtility
+from zope.component import queryUtility
 from zope.publisher.browser import FileUpload
 
 logger = logging.getLogger("bika.lims.exportimport.import_instrument_results")
@@ -48,20 +51,22 @@ class ImportInstrumentResultsView(BrowserView):
                           inactive_state='active',
                           sort_on="sortable_title",
                           sort_order="ascending")
-        for analyst_folder in os.listdir(analysts_folder):
+        for folder in os.listdir(analysts_folder):
             # get analyst folder
-            analyst_filepath = os.path.join(analysts_folder, analyst_folder)
+            analyst_filepath = os.path.join(analysts_folder, folder)
             # Get the analyst user
-            self.user = None
+            analyst_folder = None
             for analyst in analysts:
-                if analyst_folder == analyst.getUserName():
-                    self.user =  analyst_folder
-                    email_analyst = analyst
-            if not self.user:
+                if folder == analyst.getUserName():
+                    analyst_folder =  folder
+                    analyst_email = analyst.getProperty('email')
+                    analyst_name = analyst.getProperty('fullname')
+            if not analyst_folder:
                 msg = 'User {} found is not an Analyst'.format(analyst_filepath)
                 errors.append(msg)
                 continue
 
+            task_queue = queryUtility(ITaskQueue, name='import-results')
             for instrument in  os.listdir(analyst_filepath):
                 # get instrument
                 instrument_model = None
@@ -98,10 +103,10 @@ class ImportInstrumentResultsView(BrowserView):
                     from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
                 instrument_path = os.path.join(analyst_filepath, instrument)
-                archives_dir = '%s/archives' % instrument_path
+                archives_dir = os.path.join(instrument_path, 'archives')
                 if not os.path.exists(archives_dir):
                     os.makedirs(archives_dir)
-                wip_dir = '%s/wip' % instrument_path
+                wip_dir = os.path.join(instrument_path, 'wip')
                 if not os.path.exists(wip_dir):
                     os.makedirs(wip_dir)
                 for fname in os.listdir(instrument_path):
@@ -109,56 +114,74 @@ class ImportInstrumentResultsView(BrowserView):
                         continue
                     current_file = os.path.join(instrument_path,fname)
                     if os.path.isfile(current_file):
-                        temp_file = '{}/{}'.format(wip_dir, fname)
+                        temp_file = os.path.join(wip_dir, fname)
                         try:
                             os.rename(current_file, temp_file)
                         except Exception, e:
                             os.remove(temp_file)
                             os.rename(current_file, temp_file)
-                        data = open(temp_file, 'r').read()
-                        file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
+                        if task_queue is not None:
+                            path = [i for i in self.context.getPhysicalPath()]
+                            path.append('async_import_instrument_result')
+                            path = '/'.join(path)
+                            params = {
+                                    'instrument_path': instrument_path,
+                                    'fname': fname,
+                                    'analyst_folder': analyst_folder,
+                                    'analyst_email': analyst_email,
+                                    'analyst_name': analyst_name,
+                                    'import_importer': import_importer,
+                                    }
+                            logger.info('Queue Task: path=%s' % path)
+                            task_id = task_queue.add(path,
+                                    method='POST',
+                                    params=params)
+                        else:
+                            data = open(temp_file, 'r').read()
+                            file = FileUpload(FileToUpload(
+                                        cStringIO.StringIO(data),fname))
 
-                        request.form = dict(submitted=True,
-                                            artoapply='received_tobeverified',
-                                            override='nooverride',
-                                            file=file,
-                                            sample='requestid',
-                                            instrument='',
-                                            advancetostate = 'submit',
-                                            analyst=self.user,
-                                            )
-                        context = self.portal
-                        try:
-                            if '2-dimen' in fname.lower():
-                                from bika.lims.exportimport.instruments.generic.genericthreecols import Import as GenericImport
-                                results = GenericImport(context, request)
-                            else:
-                                results = Import(context, request)
-                        except Exception, e:
-                            errors.append(e)
-                        archive_file = '{}/{}'.format(archives_dir, fname)
-                        try:
-                            os.rename(temp_file, archive_file)
-                        except Exception, e:
-                            os.remove(archive_file)
-                            os.rename(temp_file, archive_file)
+                            request.form = dict(submitted=True,
+                                                artoapply='received_tobeverified',
+                                                override='nooverride',
+                                                file=file,
+                                                sample='requestid',
+                                                instrument='',
+                                                advancetostate = 'submit',
+                                                analyst=analyst_folder,
+                                                )
+                            context = self.portal
+                            try:
+                                if '2-dimen' in fname.lower():
+                                    results = GenericImport(context, request)
+                                else:
+                                    results = Import(context, request)
+                            except Exception, e:
+                                errors.append(e)
+                            archive_file = os.path.join(archives_dir, fname)
+                            try:
+                                os.rename(temp_file, archive_file)
+                            except Exception, e:
+                                os.remove(archive_file)
+                                os.rename(temp_file, archive_file)
 
-                        report = json.loads(results)
-                        result_to_return = []
-                        if len(report['log']) > 0:
-                            result_to_return.append('Log:')
-                            for l in report['log']:
-                                result_to_return.append(l)
-                        if len(report['errors']) > 0:
-                            result_to_return.append('Errors:')
-                            for e in report['errors']:
-                                result_to_return.append(e)
-                        if len(report['warns']) > 0:
-                            result_to_return.append('Warnings:')
-                            for w in report['warns']:
-                                result_to_return.append(w)
-                        message = '\n '.join(result_to_return)
-                        self._email_analyst(email_analyst, message)
+                            report = json.loads(results)
+                            result_to_return = []
+                            if len(report['log']) > 0:
+                                result_to_return.append('Log:')
+                                for l in report['log']:
+                                    result_to_return.append(l)
+                            if len(report['errors']) > 0:
+                                result_to_return.append('Errors:')
+                                for e in report['errors']:
+                                    result_to_return.append(e)
+                            if len(report['warns']) > 0:
+                                result_to_return.append('Warnings:')
+                                for w in report['warns']:
+                                    result_to_return.append(w)
+                            message = '\n '.join(result_to_return)
+                            self._email_analyst(
+                                    analyst_email, analyst_name, message)
 
                 # Avoid having Import from multiple module at the same time
                 if 'Import' in globals():
@@ -166,8 +189,101 @@ class ImportInstrumentResultsView(BrowserView):
 
         logger.info('Instrument Results Importer Done')
         if len(errors):
-            self._email_analyst(email_analyst, message)
+            self._email_errors(errors)
         return ('Done', errors)
+
+    def async_import_instrument_result(self):
+        msgs = []
+        errors = []
+        request = self.request
+        form = self.request.form
+        instrument_path = form.get('instrument_path', '')
+        if len(instrument_path) == 0:
+            msgs.append('No folder provided')
+            return
+        fname = form.get('fname', '')
+        if len(fname) == 0:
+            msgs.append('No file name provided')
+            return
+        result_file = os.path.join(instrument_path, 'wip', fname)
+        analyst_folder = form.get('analyst_folder', '')
+        if len(analyst_folder) == 0:
+            msgs.append('No user provided')
+            return
+        analyst_email = form.get('analyst_email', '')
+        if len(analyst_email) == 0:
+            msgs.append('No email provided')
+            return
+        analyst_name = form.get('analyst_name', '')
+        if len(analyst_name) == 0:
+            msgs.append('No name provided')
+            return
+        import_importer = form.get('import_importer', '')
+        if len(import_importer) == 0:
+            msgs.append('Import not provided')
+            return
+        if import_importer == 'shimadzu.gcms.tq8030':
+            from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
+        elif import_importer == 'shimadzu.gcms.qp2010se':
+            from bika.lims.exportimport.instruments.shimadzu.gcms.qp2010se import Import
+        elif import_importer == 'shimadzu.icpe.multitype':
+            from bika.lims.exportimport.instruments.shimadzu.icpe.multitype import Import
+        elif import_importer == 'shimadzu.nexera.LC2040C':
+            from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
+        elif import_importer == 'shimadzu.nexera.LCMS8050':
+            from bika.lims.exportimport.instruments.shimadzu.nexera.CMS8050 import Import
+        elif import_importer == 'agilent.masshunter.masshunter':
+            from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
+
+        logger.info('Async import instrument result')
+
+        data = open(result_file, 'r').read()
+        file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
+
+        request.form = dict(submitted=True,
+                            artoapply='received_tobeverified',
+                            override='nooverride',
+                            file=file,
+                            sample='requestid',
+                            instrument='',
+                            advancetostate = 'submit',
+                            analyst=analyst_folder,
+                            )
+        context = self.portal
+        try:
+            if '2-dimen' in fname.lower():
+                results = GenericImport(context, request)
+            else:
+                results = Import(context, request)
+        except Exception, e:
+            errors.append(e)
+            results = '[]'
+
+        archive_file = os.path.join(instrument_path, 'archives', fname)
+        try:
+            os.rename(result_file, archive_file)
+        except Exception, e:
+            os.remove(archive_file)
+            os.rename(result_file, archive_file)
+
+        report = json.loads(results)
+        result_to_return = []
+        if len(report['log']) > 0:
+            result_to_return.append('Log:')
+            for l in report['log']:
+                result_to_return.append(l)
+        if len(report['errors']) > 0:
+            result_to_return.append('Errors:')
+            for e in report['errors']:
+                result_to_return.append(e)
+        if len(report['warns']) > 0:
+            result_to_return.append('Warnings:')
+            for w in report['warns']:
+                result_to_return.append(w)
+        message = '\n '.join(result_to_return)
+        self._email_analyst(analyst_email, analyst_name, message)
+        if 'Import' in globals():
+            del Import
 
     def _email_errors(self, errors):
         message = '\n'.join(errors)
@@ -194,7 +310,7 @@ Bika LIMS
         except smtplib.SMTPRecipientsRefused:
             raise smtplib.SMTPRecipientsRefused('Recipient address rejected by server')
 
-    def _email_analyst(self, member, message):
+    def _email_analyst(self, to_email, name, message):
         mail_template = """
 Dear {name},
 
@@ -207,10 +323,9 @@ Bika LIMS
         portal = ploneapi.portal.get()
         mail_host = ploneapi.portal.get_tool(name='MailHost')
         from_email= mail_host.email_from_address
-        to_email = member.getProperty('email')
         subject = 'Instrument Results Import'
         mail_text = mail_template.format(
-                        name=member.getProperty('fullname'),
+                        name=name,
                         message=message)
         try:
             logger.info('Email Analyst complete: %s' % to_email)
