@@ -2550,7 +2550,7 @@ class AnalysisRequest(BaseFolder):
         return getTransitionDate(self, 'publish')
 
     def getSamplers(self):
-        return getUsers(self, ['LabManager', 'Sampler'])
+        return getUsers(['LabManager', 'Sampler'])
 
     def getPreparationWorkflows(self):
         """Return a list of sample preparation workflows.  These are identified

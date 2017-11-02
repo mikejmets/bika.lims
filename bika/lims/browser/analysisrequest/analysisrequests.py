@@ -873,7 +873,7 @@ class AnalysisRequestsView(BikaListingView):
                 and (not sd or not sd > DateTime()):
             item['required'] = ['getSampler', 'getDateSampled']
             item['allow_edit'] = ['getSampler', 'getDateSampled']
-            samplers = getUsers(sample, ['Sampler', 'LabManager', 'Manager'])
+            samplers = getUsers(['Sampler', 'LabManager', 'Manager'])
             username = member.getUserName()
             users = [({'ResultValue': u, 'ResultText': samplers.getValue(u)})
                      for u in samplers]
@@ -959,7 +959,7 @@ class AnalysisRequestsView(BikaListingView):
         if checkPermission(PreserveSample, obj):
             item['required'] = ['getPreserver', 'getDatePreserved']
             item['allow_edit'] = ['getPreserver', 'getDatePreserved']
-            preservers = getUsers(obj, ['Preserver', 'LabManager', 'Manager'])
+            preservers = getUsers(['Preserver', 'LabManager', 'Manager'])
             username = member.getUserName()
             users = [({'ResultValue': u, 'ResultText': preservers.getValue(u)})
                      for u in preservers]

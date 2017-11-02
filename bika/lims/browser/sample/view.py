@@ -417,7 +417,7 @@ class SamplesView(BikaListingView):
             item['required'] = []
             item['allow_edit'] = []
             item['choices'] = {}
-            samplers = getUsers(obj, ['Sampler', 'LabManager', 'Manager'])
+            samplers = getUsers(['Sampler', 'LabManager', 'Manager'])
             users = [(
                 {'ResultValue': u, 'ResultText': samplers.getValue(u)})
                 for u in samplers]
@@ -460,7 +460,7 @@ class SamplesView(BikaListingView):
         if checkPermission(PreserveSample, obj):
             item['required'] = ['getPreserver', 'getDatePreserved']
             item['allow_edit'] = ['getPreserver', 'getDatePreserved']
-            preservers = getUsers(obj, ['Preserver', 'LabManager', 'Manager'])
+            preservers = getUsers(['Preserver', 'LabManager', 'Manager'])
             getAuthenticatedMember = self.context.portal_membership.getAuthenticatedMember
             username = getAuthenticatedMember().getUserName()
             users = [({'ResultValue': u, 'ResultText': preservers.getValue(u)})

@@ -31,7 +31,7 @@ class ManageResultsView(BrowserView):
     template = ViewPageTemplateFile("../templates/results.pt")
     def __init__(self, context, request):
         BrowserView.__init__(self, context, request)
-        self.getAnalysts = getUsers(context, ['Manager', 'LabManager', 'Analyst'])
+        self.getAnalysts = getUsers(['Manager', 'LabManager', 'Analyst'])
         self.layout_displaylist = WORKSHEET_LAYOUT_OPTIONS
 
     def __call__(self):

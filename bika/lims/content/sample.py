@@ -888,7 +888,7 @@ class Sample(BaseFolder, HistoryAwareMixin):
         return analyses
 
     def getSamplers(self):
-        return getUsers(self, ['LabManager', 'Sampler'])
+        return getUsers(['LabManager', 'Sampler'])
 
     def disposal_date(self):
         """ Calculate the disposal date by returning the latest
