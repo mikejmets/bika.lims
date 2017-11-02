@@ -112,4 +112,12 @@
       layer="bika.lims.interfaces.IBikaLIMS"
       />
 
+  <browser:page
+      for="*"
+      name="ar_import_async"
+      class="bika.lims.browser.arimports.ARImportAsyncView"
+      permission="zope2.View"
+      layer="bika.lims.interfaces.IBikaLIMS"
+    />
+
 </configure>
