@@ -1187,7 +1187,7 @@ def lookup_sampler_uid(import_user):
     found = False
     userid = None
     user_ids = []
-    users = getUsers(self, ['LabManager', 'Sampler']).items()
+    users = getUsers(['LabManager', 'Sampler']).items()
     for (samplerid, samplername) in users:
         if import_user == samplerid:
             found = True

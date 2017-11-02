@@ -263,7 +263,7 @@ class AnalysesView(BikaListingView):
         return ret
 
     def getAnalysts(self):
-        analysts = getUsers(self.context, ['Manager', 'LabManager', 'Analyst'])
+        analysts = getUsers(['Manager', 'LabManager', 'Analyst'])
         analysts = analysts.sortedByKey()
         ret = []
         for a in analysts:
