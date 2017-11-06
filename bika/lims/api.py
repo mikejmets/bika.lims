@@ -908,7 +908,7 @@ def async_sample_and_receive(brain_or_object, context):
     :returns: The object where the transtion was performed
     """
     obj = get_object(brain_or_object)
-    task_queue = queryUtility(ITaskQueue, name='transition-for')
+    task_queue = queryUtility(ITaskQueue, name='sample-receive')
     if task_queue is not None:
         logger.info('Queue sample and receive')
         path = [i for i in context.getPhysicalPath()]
