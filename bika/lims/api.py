@@ -7,11 +7,13 @@
 
 from Acquisition import aq_base
 from AccessControl.PermissionRole import rolesForPermissionOn
+from collective.taskqueue.interfaces import ITaskQueue
 
 from Products.CMFPlone.utils import base_hasattr
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.interfaces import IFolderish
 from Products.Archetypes.BaseObject import BaseObject
+from Products.Five.browser import BrowserView
 from Products.ZCatalog.interfaces import ICatalogBrain
 from Products.CMFPlone.utils import _createObjectByType
 from Products.CMFCore.WorkflowCore import WorkflowException
@@ -21,6 +23,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.component import getUtility
 from zope.component import getMultiAdapter
+from zope.component import queryUtility
 from zope.component.interfaces import IFactory
 from zope.component.interfaces import ObjectEvent
 from zope.component.interfaces import IObjectEvent
@@ -871,7 +874,6 @@ def get_transitions_for(brain_or_object):
         transitions.extend([t for t in tlist if t not in transitions])
     return transitions
 
-
 def do_transition_for(brain_or_object, transition):
     """Performs a workflow transition for the passed in object.
 
@@ -882,6 +884,10 @@ def do_transition_for(brain_or_object, transition):
     if not isinstance(transition, basestring):
         fail("Transition type needs to be string, got '%s'" % type(transition))
     obj = get_object(brain_or_object)
+    available = [t['id'] for t in get_transitions_for(brain_or_object)]
+    if transition not in available:
+        fail("Transition %s not available in %s" % (
+            transition, ', '.join(available)))
     # notify the BeforeTransitionEvent
     notify(BikaBeforeTransitionEvent(obj, transition))
     try:
@@ -894,6 +900,32 @@ def do_transition_for(brain_or_object, transition):
     # notify the AfterTransitionEvent
     notify(BikaAfterTransitionEvent(obj, transition))
     return obj
+
+def async_sample_and_receive(brain_or_object, context):
+    """Performs a workflow transition sample and receive for provided object.
+
+    :param brain_or_object: A single catalog brain or content object
+    :returns: The object where the transtion was performed
+    """
+    obj = get_object(brain_or_object)
+    task_queue = queryUtility(ITaskQueue, name='transition-for')
+    if task_queue is not None:
+        logger.info('Queue sample and receive')
+        path = [i for i in context.getPhysicalPath()]
+        path.append('async_sample_and_receive')
+        path = '/'.join(path)
+
+        params = {
+                'obj_uid': obj.UID(),
+                }
+        logger.info('Queue Task: path=%s' % path)
+        task_id = task_queue.add(path,
+                method='POST',
+                params=params)
+    else:
+        logger.info('Non-Queue sample and receive')
+        do_transition_for(obj, 'sample')
+        do_transition_for(obj, 'receive')
 
 
 def get_roles_for_permission(permission, brain_or_object):
@@ -1093,3 +1125,17 @@ def normalize_filename(string):
     # get the file nomalizer utility
     normalizer = getUtility(IFileNameNormalizer).normalize
     return normalizer(string)
+
+class AsyncView(BrowserView):
+
+    def async_sample_and_receive(self):
+
+        logger.info('async_sample_and_receive server')
+        form = self.request.form
+        obj_uid = form.get('obj_uid')
+        if obj_uid is None:
+            raise RuntimeError('async_sample_and_receive requires obj_uid')
+        obj = ploneapi.content.get(UID=obj_uid)
+
+        ploneapi.content.transition(obj, 'sample')
+        ploneapi.content.transition(obj, 'receive')

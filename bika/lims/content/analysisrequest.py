@@ -2854,10 +2854,9 @@ class AnalysisRequest(BaseFolder):
         # if skip(self, "sample"):
         #     return
         # transition our sample
-        workflow = getToolByName(self, 'portal_workflow')
         sample = self.getSample()
         if not skip(sample, "sample", peek=True):
-            workflow.doActionFor(sample, "sample")
+            api.do_transition_for(sample, "sample")
 
     # def workflow_script_to_be_preserved(self):
     #     if skip(self, "to_be_preserved"):
