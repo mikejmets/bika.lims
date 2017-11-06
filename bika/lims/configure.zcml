@@ -92,4 +92,13 @@
         provides="bika.lims.interfaces.IGenerateID"
         />
 
+  <browser:page
+    for="*"
+    name="async_sample_and_receive"
+    class="bika.lims.api.AsyncView"
+    attribute="async_sample_and_receive"
+    permission="zope.Public"
+    layer="bika.lims.interfaces.IBikaLIMS"
+  />
+
 </configure>

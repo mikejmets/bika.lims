@@ -1040,6 +1040,16 @@ class AnalysisRequestsView(BikaListingView):
 
         # Only "BIKA: ManageAnalysisRequests" may see the copy to new button.
         # elsewhere it is hacked in where required.
+        if True:
+            review_states = []
+            for review_state in self.review_states:
+                review_state.get('custom_actions', []).extend(
+                    [{'id': 'sample_and_receive',
+                      'title': _('Sample & Receive'),
+                      'url': 'workflow_action?action=sample_and_receive'}, ])
+                review_states.append(review_state)
+            self.review_states = review_states
+
         if self.copy_to_new_allowed:
             review_states = []
             for review_state in self.review_states:

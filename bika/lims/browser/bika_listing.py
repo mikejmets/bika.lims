@@ -241,6 +241,48 @@ class WorkflowAction:
         self.request.response.redirect(url)
         return
 
+    def workflow_action_sample_and_receive(self):
+        """Invoked from an AR listing form in the current context,
+        passing the selected AR
+        titles and default sticker template as request parameters.
+        """
+        objects = WorkflowAction._get_selected_items(self)
+        if not objects:
+            message = self.context.translate(
+                _("No ARs have been selected"))
+            self.context.plone_utils.addPortalMessage(message, 'info')
+            self.destination_url = self.context.absolute_url()
+            self.request.response.redirect(self.destination_url)
+            return
+
+        ids = []
+        for key in objects.keys():
+            obj = objects[key]
+            ids.append(obj.Title())
+            messages = []
+            if ploneapi.content.get_state(obj) != 'to_be_sampled':
+                messages.append('Not in "To Be Sampled" state')
+            if obj.getDateSampled() is None:
+                messages.append('Requires DateSampled')
+            if obj.getSampler() is None or len(obj.getSampler()) == 0:
+                messages.append('Requires Sampler')
+        
+            if len(messages) > 0:
+                message = self.context.translate(
+                    _('Transition errors for %s: %s' % (
+                        obj.Title(), ', '.join(messages))))
+                self.context.plone_utils.addPortalMessage(message, 'error')
+                self.request.response.redirect(self.context.absolute_url())
+            else: 
+                message = self.context.translate(
+                        _("Submitted %s to the queue for processing" % (
+                            obj.Title())))
+                self.context.plone_utils.addPortalMessage(message, 'info')
+                api.async_sample_and_receive(objects[key], self.context)
+
+        self.request.response.redirect(self.context.absolute_url())
+        return
+
     def __call__(self):
         request = self.request
         form = request.form
@@ -248,7 +290,7 @@ class WorkflowAction:
 
         if self.destination_url == "":
             self.destination_url = request.get_header("referer",
-                                                      self.context.absolute_url())
+                                                  self.context.absolute_url())
 
         action, came_from = self._get_form_workflow_action()
 
