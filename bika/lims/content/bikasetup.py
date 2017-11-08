@@ -565,8 +565,8 @@ schema = BikaFolderSchema.copy() + Schema((
         schemata="Appearance",
         default=False,
         widget=BooleanWidget(
-            label=_("Hide Instrument and Method columns on the AR View"),
-            description=_("This makes ARView table rendering faster")
+            label=_("Deduce Columns in Analyses listing on AR View"),
+            description=_("Hide some columns in the analyses listing of the AR View to improve performance. Columns include Method, Instrument, Analyst and Due Date")
         ),
     ),
     BooleanField(
