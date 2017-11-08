@@ -18,7 +18,7 @@ from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
 
 from bika.lims import api
-# from bika.lims import logger
+from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
 from bika.lims.numbergenerator import INumberGenerator
 
@@ -149,8 +149,8 @@ def generateUniqueId(context, parent=False, portal_type=''):
                 prefix = prefix_config.format(**variables_map)
             elif config.get('split_length', None) > 0:
                 prefix_config = '{}-{}'.format(
-                                portal_type.lower(),
-                                '-'.join(form.split('-')[:config['split_length']]))
+                        portal_type.lower(),
+                        '-'.join(form.split('-')[:config['split_length']]))
                 prefix = prefix_config.format(**variables_map)
             else:
                 prefix = config['prefix']
@@ -161,6 +161,7 @@ def generateUniqueId(context, parent=False, portal_type=''):
             raise RuntimeError(msg)
     variables_map['seq'] = new_seq + 1
     result = form.format(**variables_map)
+    logger.info('generateUniqueId: %s' % api.normalize_filename(result))
     return api.normalize_filename(result)
 
 

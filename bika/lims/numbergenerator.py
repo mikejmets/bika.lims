@@ -106,13 +106,13 @@ class NumberGenerator(object):
                     storage[key] = seed
                 except KeyError:
                     storage[key] = seed
-                    logger.info("NUMBER => %d" % storage[key])
+                    logger.debug("NUMBER => %d" % storage[key])
             finally:
                 logger.debug("*** consecutive number lock release ***")
                 self.storage._p_changed = True
                 lock.release()
 
-            logger.info("In set_seed NUMBER => %d" % storage[key])
+            logger.debug("In set_seed NUMBER => %d" % storage[key])
         return storage[key]
 
 

@@ -1,9 +1,6 @@
-import logging
 from bika.lims.browser import BrowserView
 from bika.lims.numbergenerator import INumberGenerator
 from zope.component import getUtility
-
-logger = logging.getLogger("bika.lims.browser.idserver.view")
 
 class IDServerView(BrowserView):
 
@@ -13,12 +10,12 @@ class IDServerView(BrowserView):
         form = self.request.form
         prefix = form.get('prefix', None)
         if prefix is None:
-            return
+            return 'No prefix provided'
         seed = form.get('seed', None)
         if seed is None:
-            return
+            return 'No seed provided'
 
         seed = int(seed) - 1
         number_generator = getUtility(INumberGenerator)
         new_seq = number_generator.set_seed(key=prefix, seed=seed)
-        logger.debug('In IDServerView: new_seq is %s' % new_seq)
+        return 'IDServerView: "%s" seeded to %s' % (prefix, new_seq)
