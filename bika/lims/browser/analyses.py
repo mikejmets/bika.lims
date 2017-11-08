@@ -75,10 +75,6 @@ class AnalysesView(BikaListingView):
             'Partition': {
                 'title': _("Partition"),
                 'sortable': False},
-            'Analyst': {
-                'title': _('Analyst'),
-                'sortable': False,
-                'toggle': True},
             'state_title': {
                 'title': _('Status'),
                 'sortable': False},
@@ -117,10 +113,6 @@ class AnalysesView(BikaListingView):
                 'title': _('Captured'),
                 'index': 'getResultCaptureDate',
                 'sortable': False},
-            'DueDate': {
-                'title': _('Due Date'),
-                'index': 'getDueDate',
-                'sortable': False},
         }
         self.review_states = [
             {
@@ -134,10 +126,8 @@ class AnalysesView(BikaListingView):
                     'Result',
                     'ConvertedResult',
                     'Specification',
-                    'Analyst',
                     'Uncertainty',
                     'CaptureDate',
-                    'DueDate',
                     'state_title',
                 ]
             },
@@ -149,6 +139,15 @@ class AnalysesView(BikaListingView):
                     'toggle': True}
             self.columns['Instrument'] = {
                     'title': _('Instrument'),
+                    'sortable': False,
+                    'toggle': True}
+            self.columns['DueDate'] = {
+                    'title': _('Due Date'),
+                    'index': 'getDueDate',
+                    'sortable': False}
+            self.columns['Analyst'] = {
+                    'title': _('Analyst'),
+                    'index': False,
                     'sortable': False,
                     'toggle': True}
             self.review_states = [
@@ -745,25 +744,26 @@ class AnalysesView(BikaListingView):
                 if obj.portal_type == 'ReferenceAnalysis' \
                 else obj.getResultCaptureDate()
 
-            duedate = obj.aq_parent.getExpiryDate() \
-                if obj.portal_type == 'ReferenceAnalysis' \
-                else obj.getDueDate()
+            if not hide_ar_columns:
+                duedate = obj.aq_parent.getExpiryDate() \
+                    if obj.portal_type == 'ReferenceAnalysis' \
+                    else obj.getDueDate()
 
-            item['replace']['DueDate'] = \
-                self.ulocalized_time(duedate, long_format=1)
+                item['replace']['DueDate'] = \
+                    self.ulocalized_time(duedate, long_format=1)
 
-            if item['review_state'] not in ['to_be_sampled',
-                                            'to_be_preserved',
-                                            'sample_due',
-                                            'published']:
+                if item['review_state'] not in ['to_be_sampled',
+                                                'to_be_preserved',
+                                                'sample_due',
+                                                'published']:
 
-                if (resultdate and resultdate > duedate) \
-                   or (not resultdate and DateTime() > duedate):
+                    if (resultdate and resultdate > duedate) \
+                       or (not resultdate and DateTime() > duedate):
 
-                    item['replace']['DueDate'] = '%s <img width="16" height="16" src="%s/++resource++bika.lims.images/late.png" title="%s"/>' % \
-                        (self.ulocalized_time(duedate, long_format=1),
-                         self.portal_url,
-                         t(_("Late Analysis")))
+                        item['replace']['DueDate'] = '%s <img width="16" height="16" src="%s/++resource++bika.lims.images/late.png" title="%s"/>' % \
+                            (self.ulocalized_time(duedate, long_format=1),
+                             self.portal_url,
+                             t(_("Late Analysis")))
 
             after_icons = []
             # Submitting user may not verify results unless the user is labman
@@ -942,8 +942,9 @@ class QCAnalysesView(AnalysesView):
         bika_setup = self.portal.bika_setup
         hide_ar_columns = bika_setup.getHideARColumns()
         AnalysesView.__init__(self, context, request, **kwargs)
-        self.columns['getReferenceAnalysesGroupID'] = {'title': _('QC Sample ID'),
-                                                       'sortable': False}
+        self.columns['getReferenceAnalysesGroupID'] = \
+                                {'title': _('QC Sample ID'),
+                                 'sortable': False}
         self.columns['Worksheet'] = {'title': _('Worksheet'),
                                      'sortable': False}
         self.review_states[0]['columns'] = ['Service',
@@ -953,7 +954,6 @@ class QCAnalysesView(AnalysesView):
                                             'Result',
                                             'Uncertainty',
                                             'CaptureDate',
-                                            'DueDate',
                                             'state_title']
         if not hide_ar_columns:
             self.review_states[0]['columns'] = ['Service',
