@@ -20,8 +20,6 @@ class IDServerView(BrowserView):
             return 'No seed provided'
         if not seed.isdigit():
             return 'Seed must be a digit'
-        if not seed.isdigit():
-            return 'Seed must be a digit'
         seed = int(seed)
         if seed < 0:
             return 'Seed cannot be negative'
