@@ -109,10 +109,6 @@ class AnalysesView(BikaListingView):
             'Attachments': {
                 'title': _('Attachments'),
                 'sortable': False},
-            'CaptureDate': {
-                'title': _('Captured'),
-                'index': 'getResultCaptureDate',
-                'sortable': False},
         }
         self.review_states = [
             {
@@ -127,7 +123,6 @@ class AnalysesView(BikaListingView):
                     'ConvertedResult',
                     'Specification',
                     'Uncertainty',
-                    'CaptureDate',
                     'state_title',
                 ]
             },
@@ -150,6 +145,10 @@ class AnalysesView(BikaListingView):
                     'index': False,
                     'sortable': False,
                     'toggle': True}
+            self.columns['CaptureDate'] = {
+                'title': _('Captured'),
+                'index': 'getResultCaptureDate',
+                'sortable': False}
             self.review_states = [
                 {
                     'id': 'default',
@@ -953,7 +952,6 @@ class QCAnalysesView(AnalysesView):
                                             'Partition',
                                             'Result',
                                             'Uncertainty',
-                                            'CaptureDate',
                                             'state_title']
         if not hide_ar_columns:
             self.review_states[0]['columns'] = ['Service',
