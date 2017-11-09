@@ -91,7 +91,9 @@ class AnalysisRequestViewView(BrowserView):
                                                      {'id': 'verify'}]
                 t.show_workflow_action_buttons = True
                 t.show_select_column = True
-                if getSecurityManager().checkPermission(EditFieldResults, self.context) \
+                if 'DueDate' in t.review_states[0]['columns'] and \
+                    getSecurityManager().checkPermission(
+                            EditFieldResults, self.context) \
                    and poc == 'field':
                     t.review_states[0]['columns'].remove('DueDate')
                 self.tables[POINTS_OF_CAPTURE.getValue(poc)] = t.contents_table()
