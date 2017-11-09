@@ -100,10 +100,12 @@ class NumberGenerator(object):
             logger.error("set_number: Value must be an integer")
             return
 
-        lock.acquire()
-        storage[key] = value
-        self.storage._p_changed = True
-        lock.release()
+        try:
+            lock.acquire()
+            storage[key] = value
+        finally:
+            self.storage._p_changed = True
+            lock.release()
 
         return storage[key]
 
