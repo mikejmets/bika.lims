@@ -58,8 +58,6 @@ def generateUniqueId(context, parent=False, portal_type=''):
     """ Generate pretty content IDs.
     """
 
-    if portal_type == '':
-        portal_type = context.portal_type
     def getLastCounter(context, config):
         if config.get('counter_type', '') == 'backreference':
             return len(context.getBackReferences(config['counter_reference'])) - 1
@@ -68,11 +66,6 @@ def generateUniqueId(context, parent=False, portal_type=''):
         else:
             raise RuntimeError('ID Server: missing values in configuration')
 
-    number_generator = getUtility(INumberGenerator)
-    # keys = number_generator.keys()
-    # values = number_generator.values()
-    # for i in range(len(keys)):
-    #     print '%s : %s' % (keys[i], values[i])
 
     def getConfigByPortalType(config_map, portal_type):
         config = {}
@@ -82,6 +75,20 @@ def generateUniqueId(context, parent=False, portal_type=''):
                 break
         return config
 
+    def splitSliceJoin(string, separator="-", start=0, end=None):
+        if not isinstance(string, basestring):
+            return None
+        try:
+            segments = string.split(separator)
+            if end is None:
+                end = len(segments)
+            return separator.join(segments[start:end])
+        except KeyError:
+            return None
+
+    if portal_type == '':
+        portal_type = context.portal_type
+    number_generator = getUtility(INumberGenerator)
     config_map = api.get_bika_setup().getIDFormatting()
     config = getConfigByPortalType(
         config_map=config_map,
@@ -140,14 +147,14 @@ def generateUniqueId(context, parent=False, portal_type=''):
     elif config['sequence_type'] == 'generated':
         try:
             if config.get('split_length', None) == 0:
-                prefix_config = '{}-{}'.format(portal_type.lower(),
-                                               '-'.join(form.split('-')[:-1]),
-                                               )
+                prefix_config = '{}-{}'.format(
+                        portal_type.lower(),
+                        splitSliceJoin(form, end=-1))
                 prefix = prefix_config.format(**variables_map)
             elif config.get('split_length', None) > 0:
                 prefix_config = '{}-{}'.format(
                         portal_type.lower(),
-                        '-'.join(form.split('-')[:config['split_length']]))
+                        splitSliceJoin(form, end=config['split_length']))
                 prefix = prefix_config.format(**variables_map)
             else:
                 prefix = config['prefix']
