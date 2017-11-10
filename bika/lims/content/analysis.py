@@ -1338,7 +1338,6 @@ class Analysis(BaseContent):
         self.reindexObject()
 
     def workflow_script_submit(self):
-        import pdb; pdb.set_trace()
         # DuplicateAnalysis doesn't have analysis_workflow.
         if self.portal_type == "DuplicateAnalysis":
             return
