@@ -76,12 +76,36 @@ def generateUniqueId(context, parent=False, portal_type=''):
         return config
 
     def splitSliceJoin(string, separator="-", start=0, end=None):
+        """ split a string, slice out some segments and rejoin them
+        >>> splitSliceJoin(1)
+        None
+        >>> splitSliceJoin('B17-SAM-0001', start='1')
+        None
+        >>> splitSliceJoin('B17-SAM-0001', end='1')
+        None
+        >>> splitSliceJoin('B17-SAM-0001', start=2, end=1)
+        None
+        >>> splitSliceJoin('B17-SAM-0001')
+        'B17-SAM-0001'
+        >>> splitSliceJoin('B17-SAM-0001', start=1)
+        'SAM-0001'
+        >>> splitSliceJoin('B17-SAM-0001', start=1, end=2)
+        'SAM'
+        """
         if not isinstance(string, basestring):
+            return None
+        if not isinstance(start, int):
+            return None
+        if not isinstance(end, int):
+            return None
+        if start <= end:
             return None
         try:
             segments = string.split(separator)
             if end is None:
                 end = len(segments)
+            if end > len(segments):
+                return None
             return separator.join(segments[start:end])
         except KeyError:
             return None
