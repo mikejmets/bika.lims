@@ -2,6 +2,7 @@ import logging
 import json
 import cStringIO
 import os
+import shutil
 import smtplib
 from plone import api as ploneapi
 from bika.lims.browser import BrowserView
@@ -118,8 +119,11 @@ class ImportInstrumentResultsView(BrowserView):
                         try:
                             os.rename(current_file, temp_file)
                         except Exception, e:
-                            os.remove(temp_file)
-                            os.rename(current_file, temp_file)
+                            try:
+                                shutil.move(current_file, temp_file)
+                            except Exception, e:
+                                raise RuntimeError('Cannot move file %s to %s (%s)' % (
+                                        current_file, temp_file, str(e)))
                         if task_queue is not None:
                             path = [i for i in self.context.getPhysicalPath()]
                             path.append('async_import_instrument_result')
@@ -137,6 +141,7 @@ class ImportInstrumentResultsView(BrowserView):
                                     method='POST',
                                     params=params)
                         else:
+                            logger.info('No import-results Task Queue found')
                             data = open(temp_file, 'r').read()
                             file = FileUpload(FileToUpload(
                                         cStringIO.StringIO(data),fname))
@@ -193,6 +198,7 @@ class ImportInstrumentResultsView(BrowserView):
         return ('Done', errors)
 
     def async_import_instrument_result(self):
+        logger.info('Async import instrument result start')
         msgs = []
         errors = []
         request = self.request
@@ -243,7 +249,7 @@ class ImportInstrumentResultsView(BrowserView):
         elif import_importer == 'agilent.masshunter.masshunter':
             from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
-        logger.info('Async import instrument result')
+        logger.info('Async import instrument result ready')
 
         data = open(result_file, 'r').read()
         file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
@@ -292,6 +298,7 @@ class ImportInstrumentResultsView(BrowserView):
         self._email_analyst(analyst_email, analyst_name, message)
         if 'Import' in globals():
             del Import
+        logger.info('Async import instrument result done')
 
     def _email_errors(self, errors):
         message = '\n'.join(errors)
