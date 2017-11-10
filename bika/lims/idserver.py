@@ -5,22 +5,25 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
-import zLOG
-import urllib
-import transaction
 
-from zope.component import getUtility
-from zope.interface import implements
-from zope.container.interfaces import INameChooser
+import transaction
+import urllib
+import zLOG
 
 from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
 from OFS.CopySupport import CopyError
 
 from bika.lims import api
-from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
+from bika.lims import logger
+from bika.lims.interfaces import IIdServer
 from bika.lims.numbergenerator import INumberGenerator
+from zope.component import getAdapters
+from zope.component import getUtility
+from zope.container.interfaces import INameChooser
+from zope.interface import implements
+
 
 class IDServerUnavailable(Exception):
     pass
@@ -48,7 +51,9 @@ def idserver_generate_id(context, prefix, batch_size=None):
     except:
         from sys import exc_info
         info = exc_info()
-        zLOG.LOG('INFO', 0, '', 'generate_id raised exception: %s, %s \n ID server URL: %s' % (info[0], info[1], url))
+        msg = 'generate_id raised exception: {}, {} \n ID server URL: {}'
+        msg = msg.format(info[0], info[1], url)
+        zLOG.LOG('INFO', 0, '', msg)
         raise IDServerUnavailable(_('ID Server unavailable'))
 
     return new_id
@@ -68,12 +73,12 @@ def generateUniqueId(context, parent=False, portal_type=''):
 
 
     def getConfigByPortalType(config_map, portal_type):
-        config = {}
+        config_by_pt = {}
         for c in config_map:
             if c['portal_type'] == portal_type:
-                config = c
+                config_by_pt = c
                 break
-        return config
+        return config_by_pt
 
     def splitSliceJoin(string, separator="-", start=0, end=None):
         """ split a string, slice out some segments and rejoin them
@@ -207,12 +212,15 @@ def renameAfterCreation(obj):
     # Can't rename without a subtransaction commit when using portal_factory
     transaction.savepoint(optimistic=True)
     # The id returned should be normalized already
-    new_id = generateUniqueId(obj)
-    # Remember the new id in the _bika_id attribute
-    obj._bika_id = new_id
-    # Rename the content
-    try:
-        obj.aq_inner.aq_parent.manage_renameObject(obj.id, new_id)
-    except CopyError, e:
-        api.fail('Object with ID %s already exists' % new_id)
+    new_id = None
+    # Checking if an adapter exists for this content type. If yes, we will
+    # get new_id from adapter.
+    for name, adapter in getAdapters((obj, ), IIdServer):
+        if new_id:
+            logger.warn(('More than one ID Generator Adapter found for'
+                         'content type -> %s') % obj.portal_type)
+        new_id = adapter.generate_id(obj.portal_type)
+    if not new_id:
+        new_id = generateUniqueId(obj)
+    obj.aq_inner.aq_parent.manage_renameObject(obj.id, new_id)
     return new_id
