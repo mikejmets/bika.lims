@@ -76,7 +76,7 @@ class ImportInstrumentResultsView(BrowserView):
                         break
                 if not instrument_model:
                     msg = 'Instrument: {} on path {} Not Found'.format(
-                                                            instrument_model,
+                                                            instrument,
                                                             analyst_filepath)
                     errors.append(msg)
                     continue
@@ -98,7 +98,7 @@ class ImportInstrumentResultsView(BrowserView):
                 elif import_importer == 'shimadzu.nexera.LC2040C':
                     from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
                 elif import_importer == 'shimadzu.nexera.LCMS8050':
-                    from bika.lims.exportimport.instruments.shimadzu.nexera.CMS8050 import Import
+                    from bika.lims.exportimport.instruments.shimadzu.nexera.LCMS8050 import Import
                 elif import_importer == 'agilent.masshunter.masshunter':
                     from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
