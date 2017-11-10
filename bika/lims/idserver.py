@@ -16,14 +16,13 @@ from zope.container.interfaces import INameChooser
 
 from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
+from OFS.CopySupport import CopyError
 
 from bika.lims import api
 from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
 from bika.lims.numbergenerator import INumberGenerator
 
-
-logger = logging.getLogger("bika.lims.idserver")
 class IDServerUnavailable(Exception):
     pass
 
@@ -60,8 +59,6 @@ def generateUniqueId(context, parent=False, portal_type=''):
     """ Generate pretty content IDs.
     """
 
-    if portal_type == '':
-        portal_type = context.portal_type
     def getLastCounter(context, config):
         if config.get('counter_type', '') == 'backreference':
             return \
@@ -71,11 +68,6 @@ def generateUniqueId(context, parent=False, portal_type=''):
         else:
             raise RuntimeError('ID Server: missing values in configuration')
 
-    number_generator = getUtility(INumberGenerator)
-    # keys = number_generator.keys()
-    # values = number_generator.values()
-    # for i in range(len(keys)):
-    #     print '%s : %s' % (keys[i], values[i])
 
     def getConfigByPortalType(config_map, portal_type):
         config = {}
@@ -85,6 +77,45 @@ def generateUniqueId(context, parent=False, portal_type=''):
                 break
         return config
 
+    def splitSliceJoin(string, separator="-", start=0, end=None):
+        """ split a string, slice out some segments and rejoin them
+        >>> splitSliceJoin(1)
+        None
+        >>> splitSliceJoin('B17-SAM-0001', start='1')
+        None
+        >>> splitSliceJoin('B17-SAM-0001', end='1')
+        None
+        >>> splitSliceJoin('B17-SAM-0001', start=2, end=1)
+        None
+        >>> splitSliceJoin('B17-SAM-0001')
+        'B17-SAM-0001'
+        >>> splitSliceJoin('B17-SAM-0001', start=1)
+        'SAM-0001'
+        >>> splitSliceJoin('B17-SAM-0001', start=1, end=2)
+        'SAM'
+        """
+        if not isinstance(string, basestring):
+            return None
+        if not isinstance(start, int):
+            return None
+        if end is not None:
+            if not isinstance(end, int):
+                return None
+            if start >= end:
+                return None
+        try:
+            segments = string.split(separator)
+            if end is None:
+                end = len(segments)
+            if end > len(segments):
+                return None
+            return separator.join(segments[start:end])
+        except KeyError:
+            return None
+
+    if portal_type == '':
+        portal_type = context.portal_type
+    number_generator = getUtility(INumberGenerator)
     config_map = api.get_bika_setup().getIDFormatting()
     config = getConfigByPortalType(
         config_map=config_map,
@@ -143,14 +174,14 @@ def generateUniqueId(context, parent=False, portal_type=''):
     elif config['sequence_type'] == 'generated':
         try:
             if config.get('split_length', None) == 0:
-                prefix_config = '{}-{}'.format(portal_type.lower(),
-                                               '-'.join(form.split('-')[:-1]),
-                                               )
+                prefix_config = '{}-{}'.format(
+                        portal_type.lower(),
+                        splitSliceJoin(form, end=-1))
                 prefix = prefix_config.format(**variables_map)
             elif config.get('split_length', None) > 0:
                 prefix_config = '{}-{}'.format(
                         portal_type.lower(),
-                        '-'.join(form.split('-')[:config['split_length']]))
+                        splitSliceJoin(form, end=config['split_length']))
                 prefix = prefix_config.format(**variables_map)
             else:
                 prefix = config['prefix']
@@ -179,5 +210,8 @@ def renameAfterCreation(obj):
     # Remember the new id in the _bika_id attribute
     obj._bika_id = new_id
     # Rename the content
-    obj.aq_inner.aq_parent.manage_renameObject(obj.id, new_id)
+    try:
+        obj.aq_inner.aq_parent.manage_renameObject(obj.id, new_id)
+    except CopyError, e:
+        api.fail('Object with ID %s already exists' % new_id)
     return new_id
