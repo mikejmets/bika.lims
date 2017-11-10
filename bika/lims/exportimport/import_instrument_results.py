@@ -2,6 +2,7 @@ import logging
 import json
 import cStringIO
 import os
+import shutil
 import smtplib
 from plone import api as ploneapi
 from bika.lims.browser import BrowserView
@@ -76,7 +77,7 @@ class ImportInstrumentResultsView(BrowserView):
                         break
                 if not instrument_model:
                     msg = 'Instrument: {} on path {} Not Found'.format(
-                                                            instrument_model,
+                                                            instrument,
                                                             analyst_filepath)
                     errors.append(msg)
                     continue
@@ -98,7 +99,7 @@ class ImportInstrumentResultsView(BrowserView):
                 elif import_importer == 'shimadzu.nexera.LC2040C':
                     from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
                 elif import_importer == 'shimadzu.nexera.LCMS8050':
-                    from bika.lims.exportimport.instruments.shimadzu.nexera.CMS8050 import Import
+                    from bika.lims.exportimport.instruments.shimadzu.nexera.LCMS8050 import Import
                 elif import_importer == 'agilent.masshunter.masshunter':
                     from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
@@ -118,8 +119,11 @@ class ImportInstrumentResultsView(BrowserView):
                         try:
                             os.rename(current_file, temp_file)
                         except Exception, e:
-                            os.remove(temp_file)
-                            os.rename(current_file, temp_file)
+                            try:
+                                shutil.move(current_file, temp_file)
+                            except Exception, e:
+                                raise RuntimeError('Cannot move file %s to %s (%s)' % (
+                                        current_file, temp_file, str(e)))
                         if task_queue is not None:
                             path = [i for i in self.context.getPhysicalPath()]
                             path.append('async_import_instrument_result')
@@ -137,6 +141,7 @@ class ImportInstrumentResultsView(BrowserView):
                                     method='POST',
                                     params=params)
                         else:
+                            logger.info('No import-results Task Queue found')
                             data = open(temp_file, 'r').read()
                             file = FileUpload(FileToUpload(
                                         cStringIO.StringIO(data),fname))
@@ -193,34 +198,43 @@ class ImportInstrumentResultsView(BrowserView):
         return ('Done', errors)
 
     def async_import_instrument_result(self):
+        logger.info('Async import instrument result start')
         msgs = []
         errors = []
         request = self.request
         form = self.request.form
         instrument_path = form.get('instrument_path', '')
         if len(instrument_path) == 0:
-            msgs.append('No folder provided')
+            msgs.append('No Instrument folder provided')
+            self._email_errors(msgs)
             return
         fname = form.get('fname', '')
         if len(fname) == 0:
-            msgs.append('No file name provided')
+            msgs.append(
+                    'No file name provided on path: {}'.format(
+                        instrument_path))
+            self._email_errors(msgs)
             return
         result_file = os.path.join(instrument_path, 'wip', fname)
         analyst_folder = form.get('analyst_folder', '')
         if len(analyst_folder) == 0:
-            msgs.append('No user provided')
+            msgs.append('No user/analyst provided')
+            self._email_errors(msgs)
             return
         analyst_email = form.get('analyst_email', '')
         if len(analyst_email) == 0:
-            msgs.append('No email provided')
+            msgs.append('No analyst email provided')
+            self._email_errors(msgs)
             return
         analyst_name = form.get('analyst_name', '')
         if len(analyst_name) == 0:
-            msgs.append('No name provided')
+            msgs.append('No analsyt name provided')
+            self._email_errors(msgs)
             return
         import_importer = form.get('import_importer', '')
         if len(import_importer) == 0:
             msgs.append('Import not provided')
+            self._email_errors(msgs)
             return
         if import_importer == 'shimadzu.gcms.tq8030':
             from bika.lims.exportimport.instruments.shimadzu.gcms.tq8030 import Import
@@ -235,7 +249,7 @@ class ImportInstrumentResultsView(BrowserView):
         elif import_importer == 'agilent.masshunter.masshunter':
             from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
-        logger.info('Async import instrument result')
+        logger.info('Async import instrument result ready')
 
         data = open(result_file, 'r').read()
         file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
@@ -284,6 +298,7 @@ class ImportInstrumentResultsView(BrowserView):
         self._email_analyst(analyst_email, analyst_name, message)
         if 'Import' in globals():
             del Import
+        logger.info('Async import instrument result done')
 
     def _email_errors(self, errors):
         message = '\n'.join(errors)
