@@ -144,8 +144,8 @@ def generateUniqueId(context, parent=False, portal_type=''):
     elif portal_type == "Sample":
         sampleDate = None
         sampleType = context.getSampleType().getPrefix()
-        if context.getSamplingDate():
-            sampleDate = DT2dt(context.getSamplingDate())
+        if context.getDateSampled():
+            sampleDate = DT2dt(context.getDateSampled())
 
         variables_map = {
             'clientId': context.aq_parent.getClientID(),
