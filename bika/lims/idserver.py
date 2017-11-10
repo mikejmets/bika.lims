@@ -15,12 +15,12 @@ from zope.container.interfaces import INameChooser
 
 from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
+from OFS.CopySupport import CopyError
 
 from bika.lims import api
 from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
 from bika.lims.numbergenerator import INumberGenerator
-
 
 class IDServerUnavailable(Exception):
     pass
@@ -96,10 +96,11 @@ def generateUniqueId(context, parent=False, portal_type=''):
             return None
         if not isinstance(start, int):
             return None
-        if not isinstance(end, int):
-            return None
-        if start <= end:
-            return None
+        if end is not None:
+            if not isinstance(end, int):
+                return None
+            if start >= end:
+                return None
         try:
             segments = string.split(separator)
             if end is None:
@@ -207,5 +208,8 @@ def renameAfterCreation(obj):
     # Remember the new id in the _bika_id attribute
     obj._bika_id = new_id
     # Rename the content
-    obj.aq_inner.aq_parent.manage_renameObject(obj.id, new_id)
+    try:
+        obj.aq_inner.aq_parent.manage_renameObject(obj.id, new_id)
+    except CopyError, e:
+        api.fail('Object with ID %s already exists' % new_id)
     return new_id
