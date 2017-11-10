@@ -5,11 +5,12 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
-
 import transaction
 import urllib
 import zLOG
 
+import transaction
+import zLOG
 from DateTime import DateTime
 from Products.ATContentTypes.utils import DT2dt
 from OFS.CopySupport import CopyError
@@ -17,6 +18,7 @@ from OFS.CopySupport import CopyError
 from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims import logger
+from bika.lims.browser.fields.uidreferencefield import get_backreferences
 from bika.lims.interfaces import IIdServer
 from bika.lims.numbergenerator import INumberGenerator
 from zope.component import getAdapters
@@ -184,7 +186,7 @@ def generateUniqueId(context, parent=False, portal_type=''):
                         portal_type.lower(),
                         splitSliceJoin(form, end=-1))
                 prefix = prefix_config.format(**variables_map)
-            elif config.get('split_length', None) > 0:
+            elif config.get('split_length', 0) > 0:
                 prefix_config = '{}-{}'.format(
                         portal_type.lower(),
                         splitSliceJoin(form, end=config['split_length']))
