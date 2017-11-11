@@ -40,6 +40,7 @@ from plone.i18n.normalizer.interfaces import IFileNameNormalizer
 from plone.i18n.normalizer.interfaces import IIDNormalizer
 
 from bika.lims import logger
+from bika.lims import bikaMessageFactory as _
 
 """Bika LIMS Framework API
 
@@ -897,7 +898,7 @@ def do_transition_for(brain_or_object, transition):
     notify(BikaAfterTransitionEvent(obj, transition))
     return obj
 
-def async_sample_and_receive(brain_or_object, context):
+def async_sample_and_receive(brain_or_object, context, dateSampled, sampler):
     """Performs a workflow transition sample and receive for provided object.
 
     :param brain_or_object: A single catalog brain or content object
@@ -913,15 +914,26 @@ def async_sample_and_receive(brain_or_object, context):
 
         params = {
                 'obj_uid': obj.UID(),
+                'dateSampled': dateSampled,
+                'sampler': sampler,
                 }
         logger.info('Queue Task: path=%s' % path)
         task_id = task_queue.add(path,
                 method='POST',
                 params=params)
+        message = context.translate(
+                _("Submitted %s to the queue for processing" % (
+                    obj.Title())))
+        context.plone_utils.addPortalMessage(message, 'info')
     else:
         logger.info('Non-Queue sample and receive')
+        obj.setDateSampled(dateSampled)
+        obj.setSampler(sampler)
         do_transition_for(obj, 'sample')
         do_transition_for(obj, 'receive')
+        message = context.translate(
+                _("Sampled and Received %s" % ( obj.Title())))
+        context.plone_utils.addPortalMessage(message, 'info')
 
 
 def get_roles_for_permission(permission, brain_or_object):
@@ -1136,6 +1148,10 @@ class AsyncView(BrowserView):
         if obj_uid is None:
             raise RuntimeError('async_sample_and_receive requires obj_uid')
         obj = ploneapi.content.get(UID=obj_uid)
+        dateSampled = form.get('dateSampled')
+        sampler = form.get('sampler')
 
+        obj.setDateSampled(dateSampled)
+        obj.setSampler(sampler)
         ploneapi.content.transition(obj, 'sample')
         ploneapi.content.transition(obj, 'receive')
