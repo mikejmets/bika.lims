@@ -179,6 +179,11 @@ class WorkflowAction:
         passing the selected AR
         titles and default sticker template as request parameters.
         """
+        form = self.request.form
+        def getValueByKey(value_list, key):
+            for adict in value_list:
+                return adict.get(key, None)
+
         objects = WorkflowAction._get_selected_items(self)
         if not objects:
             message = self.context.translate(
@@ -195,9 +200,19 @@ class WorkflowAction:
             messages = []
             if ploneapi.content.get_state(obj) != 'to_be_sampled':
                 messages.append('Not in "To Be Sampled" state')
-            if obj.getDateSampled() is None:
+            dateSampled = None
+            if obj.getDateSampled():
+                dateSampled = obj.getDateSampled()
+            else:
+                dateSampled = getValueByKey(form.get('getDateSampled'), key)
+            if dateSampled is None:
                 messages.append('Requires DateSampled')
-            if obj.getSampler() is None or len(obj.getSampler()) == 0:
+            sampler = None
+            if obj.getSampler():
+                sampler = obj.getSampler()
+            else:
+                sampler = getValueByKey(form.get('getSampler'), key)
+            if sampler is None:
                 messages.append('Requires Sampler')
         
             if len(messages) > 0:
@@ -207,11 +222,8 @@ class WorkflowAction:
                 self.context.plone_utils.addPortalMessage(message, 'error')
                 self.request.response.redirect(self.context.absolute_url())
             else: 
-                message = self.context.translate(
-                        _("Submitted %s to the queue for processing" % (
-                            obj.Title())))
-                self.context.plone_utils.addPortalMessage(message, 'info')
-                api.async_sample_and_receive(objects[key], self.context)
+                api.async_sample_and_receive(
+                        objects[key], self.context, dateSampled, sampler)
 
         self.request.response.redirect(self.context.absolute_url())
         return
