@@ -170,7 +170,7 @@ def generateUniqueId(context, parent=False, portal_type=''):
             }
         variables_map = {
             'year': DateTime().strftime("%Y")[2:],
-            }
+        }
 
     # Actual id construction starts here
     new_seq = 0
