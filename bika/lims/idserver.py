@@ -109,7 +109,9 @@ def generateUniqueId(context, parent=False, portal_type=''):
                 end = len(segments)
             if end > len(segments):
                 return None
-            return separator.join(segments[start:end])
+            result = separator.join(segments[start:end])
+            result = api.normalize_filename(result)
+            return result
         except KeyError:
             return None
 

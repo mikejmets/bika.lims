@@ -65,6 +65,7 @@ Variables::
     >>> bika_sampleconditions = bika_setup.bika_sampleconditions
     >>> portal_url = portal.absolute_url()
     >>> bika_setup_url = portal_url + "/bika_setup"
+    >>> browser = self.getBrowser()
 
 
 Analysis Requests (AR)
@@ -215,7 +216,13 @@ Change ID formats and create new `AnalysisRequest`::
     ...             'form': '{sampleId}-P{seq:d}',
     ...             'portal_type': 'SamplePartition',
     ...             'sequence_type': 'counter',
-    ...             'value': ''}
+    ...             'value': ''},
+    ...            {'form': 'BÖ-{year}-{seq:04d}',
+    ...             'portal_type': 'Batch',
+    ...             'prefix': 'batch',
+    ...             'sequence_type': 'generated',
+    ...             'split_length': 1,
+    ...             'value': ''},
     ...          ]
 
     >>> bika_setup.setIDFormatting(values)
@@ -232,3 +239,13 @@ Change ID formats and create new `AnalysisRequest`::
     >>> ar = create_analysisrequest(client, request, values, service_uids)
     >>> ar
     <AnalysisRequest at /plone/clients/client-1/RB-20170131-water-0001-R001>
+
+Re-seed and create a new `Batch`::
+    >>> current_user = ploneapi.user.get_current()
+    >>> ploneapi.user.grant_roles(user=current_user,roles = ['Manager'])
+    >>> transaction.commit()
+    >>> browser.open(portal_url + '/seed?prefix=batch-BA&seed=10')
+    >>> batch = api.create(batches, "Batch", ClientID="RB")
+    >>> batch.getId() == "BA-{}-0011".format(year)
+    True
+
