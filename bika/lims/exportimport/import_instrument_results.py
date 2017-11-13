@@ -35,6 +35,7 @@ class ImportInstrumentResultsView(BrowserView):
         request = self.request
         bsc = api.get_tool("bika_setup_catalog")
         analysts_folder = os.environ.get('INSTRUMENT_RESULTS_IMPORTER', '')
+        #TODO: Maybe get all analysts
         errors = []
         archive = []
         if not os.path.isdir(analysts_folder):
@@ -73,7 +74,8 @@ class ImportInstrumentResultsView(BrowserView):
                 instrument_model = None
                 for myinstrument in instruments_catalog:
                     if myinstrument.Title == instrument:
-                        instrument_model = myinstrument.getObject().getModel()
+                        ins_obj = myinstrument.getObject()
+                        instrument_model = ins_obj.getResultImporterId()
                         break
                 if not instrument_model:
                     msg = 'Instrument: {} on path {} Not Found'.format(
@@ -82,7 +84,7 @@ class ImportInstrumentResultsView(BrowserView):
                     errors.append(msg)
                     continue
                 myimporter = []
-                exim = [i for i in exims if i[1] == instrument_model]
+                exim = [i for i in exims if i[0] == instrument_model]
                 if len(exim) > 0:
                     myimporter = exim[0]
                     import_importer = myimporter[0]
