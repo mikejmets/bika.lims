@@ -149,19 +149,28 @@ def generateUniqueId(context, parent=False, portal_type=''):
             'year': DateTime().strftime("%Y")[2:],
         }
     elif portal_type == "Sample":
-        sampleDate = None
         sampleType = context.getSampleType().getPrefix()
-        if context.getDateSampled():
-            sampleDate = DT2dt(context.getDateSampled())
+
+        if context.getSamplingDate():
+            samplingDate = DT2dt(context.getSamplingDate())
         else:
             # No Sample Date?
             logger.error("Sample {} has no sample date set".format(
                 context.getId()))
-            sampleDate = DT2dt(DateTime())
+            samplingDate = DT2dt(DateTime())
+
+        if context.getDateSampled():
+            dateSampled = DT2dt(context.getDateSampled())
+        else:
+            # No Sample Date?
+            logger.error("Sample {} has no sample date set".format(
+                context.getId()))
+            dateSampled = DT2dt(DateTime())
 
         variables_map = {
             'clientId': context.aq_parent.getClientID(),
-            'sampleDate': sampleDate,
+            'dateSampled': dateSampled,
+            'samplingDate': samplingDate,
             'sampleType': sampleType,
             'year': DateTime().strftime("%Y")[2:],
         }
