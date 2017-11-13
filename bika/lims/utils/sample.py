@@ -21,7 +21,9 @@ def create_sample(context, request, values):
     else:
         sample = _createObjectByType('Sample', context, tmpID())
         # Specifically set the sample type
+        sample_values = dict(values)
         sample.setSampleType(values['SampleType'])
+        del sample_values['SampleType']
         # Specifically set the sample point
         if 'SamplePoint' in values:
             sample.setSamplePoint(values['SamplePoint'])
@@ -29,7 +31,14 @@ def create_sample(context, request, values):
         if 'StorageLocation' in values:
             sample.setStorageLocation(values['StorageLocation'])
         # Update the created sample with indicated values
-        sample.processForm(REQUEST=request, values=values)
+        if 'Client' in sample_values:
+            del sample_values['Client']
+        if 'Contact' in sample_values:
+            del sample_values['Contact']
+        try:
+            sample.processForm(REQUEST=request, values=sample_values)
+        except Exception, e:
+            raise RuntimeError('WTF: %s' % str(e))
         # Perform the appropriate workflow action
         workflow_action =  'sampling_workflow' if workflow_enabled \
             else 'no_sampling_workflow'
