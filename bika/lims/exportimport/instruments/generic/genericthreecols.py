@@ -145,6 +145,10 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
         if splitted[0] == 'end':
             return 0
 
+        blank_line = [i for i in splitted if i !='']
+        if len(blank_line) == 0:
+            return 0
+
         quantitation = {}
         clean_splitted = splitted[1:-1]#First value on the line is AR
         for i in range(len(clean_splitted)):
