@@ -66,6 +66,7 @@ Variables::
     >>> portal_url = portal.absolute_url()
     >>> bika_setup_url = portal_url + "/bika_setup"
     >>> browser = self.getBrowser()
+    >>> current_user = ploneapi.user.get_current()
 
 
 Analysis Requests (AR)
@@ -152,6 +153,8 @@ An `AnalysisRequest` can be created::
     ...           'SampleType': sampletype
     ...          }
 
+    >>> ploneapi.user.grant_roles(user=current_user,roles = ['Sampler', 'LabClerk'])
+    >>> transaction.commit()
     >>> service_uids = [analysisservice.UID()]
     >>> ar = create_analysisrequest(client, request, values, service_uids)
     >>> ar
@@ -197,7 +200,7 @@ Create a forth `Batch`::
 
 Change ID formats and create new `AnalysisRequest`::
     >>> values = [
-    ...            {'form': '{clientId}-{sampleDate:%Y%m%d}-{sampleType}-{seq:04d}',
+    ...            {'form': '{clientId}-{samplingDate:%Y%m%d}-{sampleType}-{seq:04d}',
     ...             'portal_type': 'Sample',
     ...             'prefix': 'sample',
     ...             'sequence_type': 'generated',
@@ -241,7 +244,6 @@ Change ID formats and create new `AnalysisRequest`::
     <AnalysisRequest at /plone/clients/client-1/RB-20170131-water-0001-R001>
 
 Re-seed and create a new `Batch`::
-    >>> current_user = ploneapi.user.get_current()
     >>> ploneapi.user.grant_roles(user=current_user,roles = ['Manager'])
     >>> transaction.commit()
     >>> browser.open(portal_url + '/seed?prefix=batch-BA&seed=10')
