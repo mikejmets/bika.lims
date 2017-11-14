@@ -18,7 +18,6 @@ from OFS.CopySupport import CopyError
 from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims import logger
-from bika.lims.browser.fields.uidreferencefield import get_backreferences
 from bika.lims.interfaces import IIdServer
 from bika.lims.numbergenerator import INumberGenerator
 from zope.component import getAdapters
