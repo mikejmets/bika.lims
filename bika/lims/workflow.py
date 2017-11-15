@@ -5,6 +5,7 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
+from bika.lims import bikaMessageFactory as _
 from bika.lims import enum
 from bika.lims import PMF
 from bika.lims.browser import ulocalized_time
@@ -14,11 +15,13 @@ from bika.lims.utils import changeWorkflowState
 from bika.lims.utils import t
 from bika.lims import logger
 from bika.lims import api
+from collective.taskqueue.interfaces import ITaskQueue
 from Products.CMFCore.interfaces import IContentish
 from Products.CMFCore.WorkflowCore import WorkflowException
 from Products.CMFPlone.interfaces import IWorkflowChain
 from Products.CMFPlone.workflow import ToolWorkflowChain
 from zope.component import adapts
+from zope.component import queryUtility
 from zope.interface import implementer
 from zope.interface import implements
 from zope.interface import Interface
@@ -62,6 +65,33 @@ def doActionFor(instance, action_id):
             logger.warn(message)
     return actionperformed, message
 
+def doAsyncActionFor(instance, action_id):
+    task_queue = queryUtility(ITaskQueue, name='transition-objects')
+    if task_queue is None:
+        logger.info('Do NOT Queue object %s for transition %s' % (
+            instance.getId(), action_id))
+        return doActionFor(instance, action_id)
+
+    logger.info('Queue object %s for transition %s' % (
+        instance.getId(), action_id))
+    path = [i for i in instance.getPhysicalPath()[:-1]]
+    path.append('async_transition_object')
+    path = '/'.join(path)
+
+    params = {
+            'obj_uid': instance.UID(),
+            'action_id': action_id
+            }
+    logger.info('Queue Task: path=%s' % path)
+    task_id = task_queue.add(path,
+            method='POST',
+            params=params)
+    message = instance.translate(
+            _("Submitted %s %s to the queue" % (
+                action_id, instance.Title())))
+    plone_utils = ploneapi.portal.get_tool('plone_utils')
+    plone_utils.addPortalMessage(message, 'info')
+    return True, message
 
 def BeforeTransitionEventHandler(instance, event):
     """This will run the workflow_before_* on any
