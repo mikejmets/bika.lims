@@ -15,6 +15,7 @@ from zope.component.hooks import getSite
 from bika.lims import logger
 from bika.lims.exportimport.load_setup_data import LoadSetupData
 from bika.lims.utils.analysisrequest import create_analysisrequest
+from collective.taskqueue.testing import TASK_QUEUE_FUNCTIONAL_TESTING
 from plone import api
 from plone.app.robotframework.testing import REMOTE_LIBRARY_BUNDLE_FIXTURE
 from plone.app.robotframework.remote import RemoteLibrary, RemoteLibraryLayer
@@ -274,4 +275,11 @@ BIKA_ROBOT_TESTING = FunctionalTesting(
            REMOTE_FIXTURE,
            z2.ZSERVER_FIXTURE),
     name="BikaTestingLayer:Robot"
+)
+
+BIKA_ASYNC_FIXTURE = BikaTestLayer()
+BIKA_ASYNC_FIXTURE['getBrowser'] = getBrowser
+BIKA_ASYNC_FIXTURE = FunctionalTesting(
+    bases=(BIKA_FUNCTIONAL_FIXTURE, TASK_QUEUE_FUNCTIONAL_TESTING),
+    name="BikaTestingLayer:Async"
 )
