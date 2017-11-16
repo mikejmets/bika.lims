@@ -109,6 +109,10 @@ An `AnalysisService` defines a analysis service offered by the laboratory::
     >>> analysisservice
     <AnalysisService at /plone/bika_setup/bika_analysisservices/analysisservice-1>
 
+    >>> calcium = api.create(bika_analysisservices, "AnalysisService", title="Calcium", ShortTitle="Ca", Category=analysiscategory, Keyword="Ca")
+    >>> calcium
+    <AnalysisService at /plone/bika_setup/bika_analysisservices/analysisservice-2>
+
 Finally, the `AnalysisRequest` can be created::
 
     >>> values = {
@@ -119,27 +123,66 @@ Finally, the `AnalysisRequest` can be created::
     ...           'SampleType': sampletype
     ...          }
 
-    >>> service_uids = [analysisservice.UID()]
-    >>> ar = create_analysisrequest(client, request, values, service_uids)
-    >>> ar
+    >>> service_uids = [analysisservice.UID(), calcium.UID()]
+    >>> ar1 = create_analysisrequest(client, request, values, service_uids)
+    >>> ar1
     <AnalysisRequest at /plone/clients/client-1/water-0001-R01>
-    >>> api.do_transition_for(ar, 'receive')
+    >>> api.do_transition_for(ar1, 'receive')
     <AnalysisRequest at /plone/clients/client-1/water-0001-R01>
     >>> transaction.commit()
-    >>> api.get_workflow_status_of(ar)
+    >>> api.get_workflow_status_of(ar1)
     'sample_received'
+
+    >>> values = {
+    ...           'Client': client,
+    ...           'Contact': contact,
+    ...           'SamplingDate': date_now,
+    ...           'DateSampled': date_now,
+    ...           'SampleType': sampletype
+    ...          }
+
+    >>> service_uids = [analysisservice.UID(), calcium.UID()]
+    >>> ar2 = create_analysisrequest(client, request, values, service_uids)
+    >>> ar2
+    <AnalysisRequest at /plone/clients/client-1/water-0002-R01>
+    >>> api.do_transition_for(ar2, 'receive')
+    <AnalysisRequest at /plone/clients/client-1/water-0002-R01>
+    >>> transaction.commit()
+    >>> api.get_workflow_status_of(ar2)
+    'sample_received'
+
+    >>> values = {
+    ...           'Client': client,
+    ...           'Contact': contact,
+    ...           'SamplingDate': date_now,
+    ...           'DateSampled': date_now,
+    ...           'SampleType': sampletype
+    ...          }
+
+    >>> service_uids = [analysisservice.UID(), calcium.UID()]
+    >>> ar3 = create_analysisrequest(client, request, values, service_uids)
+    >>> ar3
+    <AnalysisRequest at /plone/clients/client-1/water-0003-R01>
+    >>> api.do_transition_for(ar3, 'receive')
+    <AnalysisRequest at /plone/clients/client-1/water-0003-R01>
+    >>> transaction.commit()
+    >>> api.get_workflow_status_of(ar3)
+    'sample_received'
+
     >>> results_import_url = portal_url + '/import_instrument_results'
     >>> browser.open(results_import_url)
     >>> contents = browser.contents
     >>> 'Import finished successfully: 1 ARs and 1 results updated' in contents
     True
+    >>> browser.contents.count('Import finished successfully: 1 ARs and 2 results updated')
+    2
 
 Move back import files::
 
     >>> this_dir = os.path.dirname(os.path.abspath(__file__))
     >>> analysts_folder = this_dir.replace('docs', 'tests/files/importresult/')
 
-Test Analyst 1::
+Cleanup, move files back and delete archives and wip folders::
 
     >>> test_analy1 = os.path.join(analysts_folder, 'test_analyst')
     >>> instr1 = os.path.join(test_analy1, 'Instrument-1')
@@ -149,4 +192,20 @@ Test Analyst 1::
     >>> os.rename(current_file, dest_file)
     >>> '2-dimension.csv' in os.listdir(instr1)
     True
+    >>> current_file = os.path.join(instr1_arch, 'TQ-8030.txt')
+    >>> dest_file = os.path.join(instr1, 'TQ-8030.txt')
+    >>> os.rename(current_file, dest_file)
+    >>> 'TQ-8030.txt' in os.listdir(instr1)
+    True
+    >>> os.rmdir(instr1_arch)
+    >>> os.rmdir(os.path.join(instr1, 'wip'))
 
+    >>> instr2 = os.path.join(test_analy1, 'Instrument-2')
+    >>> instr2_arch = os.path.join(instr2, 'archives')
+    >>> current_file = os.path.join(instr2_arch, 'nexera')
+    >>> dest_file = os.path.join(instr2, 'nexera')
+    >>> os.rename(current_file, dest_file)
+    >>> 'nexera' in os.listdir(instr2)
+    True
+    >>> os.rmdir(instr2_arch)
+    >>> os.rmdir(os.path.join(instr2, 'wip'))
