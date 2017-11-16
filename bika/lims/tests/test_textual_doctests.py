@@ -31,6 +31,7 @@ DOCTESTS = [
     "../docs/LaboratorySupervisorField.rst",
     "../docs/SamplingCOCSetupTab.rst",
     "../docs/UnitConversions.rst",
+    "../docs/ImportInstrumentResults.rst",
 ]
 
 
