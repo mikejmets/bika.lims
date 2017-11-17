@@ -318,7 +318,6 @@
     visible="True"
     i18n:attributes="title">
   <permission>BIKA: Manage Bika</permission>
-
  </configlet>
 
  <configlet title="Unit Conversions" action_id="bika_unitconversions"
@@ -327,6 +326,7 @@
     url_expr="string:$portal_url/bika_setup/bika_unitconversions"
     visible="True">
   <permission>BIKA: Manage Bika</permission>
+ </configlet>
 
  <configlet title="Client Types" action_id="bika_clienttypes"
     appId="bika.lims" category="bika" condition_expr=""
@@ -334,7 +334,6 @@
     url_expr="string:$portal_url/bika_setup/bika_clienttypes"
     visible="True">
   <permission>BIKA: Manage Bika</permission>
-
  </configlet>
 
 </object>
