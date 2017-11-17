@@ -23,8 +23,8 @@ schema = Organisation.schema.copy() + Schema((
     StringField(
         'LaboratorySupervisor',
         mode="rw",
-        read_permission=CMFCorePermissions.View,
-        write_permission=CMFCorePermissions.ModifyPortalContent,
+        read_permission=View,
+        write_permission=ModifyPortalContent,
         vocabulary='getLabContacts',
         acquire=True,
         widget=SelectionWidget(

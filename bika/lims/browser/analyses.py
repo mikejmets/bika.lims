@@ -972,6 +972,7 @@ class AnalysesView(BikaListingView):
         # Gettin all the items
         items = super(AnalysesView, self).folderitems(classic=False)
 
+        for item in items:
             # add unit conversion information
             item['unit_conversions'] = []
             if item['review_state'] not in (
