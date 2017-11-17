@@ -178,6 +178,7 @@ class ReferenceAnalysesView(AnalysesView):
         # they are not actually used in the table rendering.
         item['Keyword'] = service.getKeyword()
         item['Unit'] = service.getUnit()
+        item['CapturedRaw'] = capture_date and capture_date.strftime('%Y-%m-%d %I:%M %p') or ''
 
         self.addToJSON(obj, service, item)
         return item
@@ -205,7 +206,7 @@ class ReferenceAnalysesView(AnalysesView):
             upper = smax + error_amount
             lower = smin - error_amount
 
-            anrow = {'date': item['Captured'],
+            anrow = {'date': item['CapturedRaw'],
                      'min': smin,
                      'max': smax,
                      'target': target,
