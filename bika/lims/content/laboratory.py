@@ -42,7 +42,14 @@ schema = Organisation.schema.copy() + Schema((
     UIDReferenceField(
         'Supervisor',
         required=0,
-        ),
+        allowed_types=('LabContact',),
+        vocabulary='_getLabContacts',
+        write_permission = ManageBika,
+        widget=UIDSelectionWidget(
+            format='select',
+            label=_("Supervisor"),
+            description=_("Supervisor of the Lab")
+        )
     ),
     BooleanField('LaboratoryAccredited',
         default = False,
@@ -134,13 +141,14 @@ class Laboratory(UniqueObject, Organisation):
         title = self.getName() and self.getName() or _("Laboratory")
         return safe_unicode(title).encode('utf-8')
 
-    def getLabContacts(self):
-        """Return a list of Lab Contacts
-        """
-        lab_contacts = api.content.find(portal_type="LabContact")
-        contacts = [['', ''], ]
-        for contact in lab_contacts:
-            contacts.append([contact.id, contact.Title])
-        return DisplayList(contacts)
+    def _getLabContacts(self):
+        bsc = api.get_tool('bika_setup_catalog')
+        # fallback - all Lab Contacts
+        pairs = [['', '']]
+        for contact in bsc(portal_type='LabContact',
+                           inactive_state='active',
+                           sort_on='sortable_title'):
+            pairs.append((contact.UID, contact.Title))
+        return DisplayList(pairs)
 
 registerType(Laboratory, PROJECTNAME)
