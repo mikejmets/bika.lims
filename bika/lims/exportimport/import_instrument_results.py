@@ -35,6 +35,15 @@ class ImportInstrumentResultsView(BrowserView):
         request = self.request
         bsc = api.get_tool("bika_setup_catalog")
         analysts_folder = os.environ.get('INSTRUMENT_RESULTS_IMPORTER', '')
+        #NOTE: This is for running the test
+        send_email = True
+        messages = []
+        if analysts_folder == '':
+            send_email = False
+            this_dir = os.path.dirname(os.path.abspath(__file__))
+            analysts_folder = this_dir.replace('exportimport', 
+                                               'tests/files/importresult')
+
         #TODO: Maybe get all analysts
         errors = []
         archive = []
@@ -187,8 +196,11 @@ class ImportInstrumentResultsView(BrowserView):
                                 for w in report['warns']:
                                     result_to_return.append(w)
                             message = '\n '.join(result_to_return)
-                            self._email_analyst(
-                                    analyst_email, analyst_name, message)
+                            if send_email:
+                                self._email_analyst(
+                                        analyst_email, analyst_name, message)
+                            else:
+                                messages.append(message)
 
                 # Avoid having Import from multiple module at the same time
                 if 'Import' in globals():
@@ -196,8 +208,9 @@ class ImportInstrumentResultsView(BrowserView):
 
         logger.info('Instrument Results Importer Done')
         if len(errors):
-            self._email_errors(errors)
-        return ('Done', errors)
+            if send_email:
+                self._email_errors(errors)
+        return ('Done', messages, errors)
 
     def async_import_instrument_result(self):
         logger.info('Async import instrument result start')
