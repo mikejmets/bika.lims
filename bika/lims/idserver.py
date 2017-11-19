@@ -263,7 +263,7 @@ def generateUniqueId(context, **kw):
         ctx = config.get("context")
 
         # get object behind the context name (falls back to the current context)
-        obj = config.get(ctx, context)
+        obj = variables.get(ctx, context)
 
         # get the counter type, which is either "backreference" or "contained"
         counter_type = config.get("counter_type")
@@ -276,7 +276,7 @@ def generateUniqueId(context, **kw):
         seq_items = get_objects_in_sequence(obj, counter_type, counter_reference)
 
         # since the current context is already in the list of items, we need to -1
-        number = len(seq_items) - 1
+        number = len(seq_items)
 
         # store the new number to the variables map for string interpolation
         variables["seq"] = number
@@ -297,16 +297,16 @@ def generateUniqueId(context, **kw):
             # we need to figure out the current state of the DB.
             prefix = prefix_template.format(**variables)
             existing = search_by_prefix(portal_type, prefix)
-            max_num = 1
+            max_num = 0
             for brain in existing:
                 num = to_int(slice(api.get_id(brain), start=split_length))
                 if num > max_num:
                     max_num = num
             # set the number generator
-            number_generator.set_number(key, max_num)
+            number_generator.set_number(key, max_num - 1)
 
         # generate a new number
-        number = number_generator.generate_number(key=key)
+        number = number_generator.generate_number(key=key) + 1
 
         # store the new number to the variables map for string interpolation
         variables["seq"] = number
