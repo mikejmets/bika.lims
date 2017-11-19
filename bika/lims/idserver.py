@@ -230,15 +230,6 @@ def generateUniqueId(context, **kw):
     # get the variables map for string replacement
     variables = get_variables(context, **kw)
 
-    # @mikejmets: Why this?
-    # => Please remove if not used or write a comment here.
-    if portal_type == "Sample" and kw.get("parent"):
-        config = get_config('SamplePartition')
-        variables.update({
-            'sampleId': context.getId(),
-            'sample': context,
-        })
-
     # The new generated number
     number = 0
 
