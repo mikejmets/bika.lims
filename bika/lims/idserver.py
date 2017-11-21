@@ -66,6 +66,7 @@ def get_objects_in_sequence(brain_or_object, ctype, cref):
         return get_contained_items(obj, cref)
     raise ValueError("Reference value is mandatory for sequence type counter")
 
+
 def get_backreferences(obj, relationship):
     """Returns the backreferences
     """
@@ -224,21 +225,23 @@ def get_ids_with_prefix(portal_type, prefix):
     ids = map(api.get_id, brains)
     return ids
 
-def get_seq_index(id_template, separator='-'):
-    """ Find the index of the seq varriable in the id_template
-        e.g. id_template = '{year}-{client}-{seq}' returns 2
+
+def make_storage_key(portal_type, prefix=None):
+    """Make a storage (dict-) key for the number generator
     """
-    # split the given id_template at the given separator
-    segments = split(id_template, separator)
-    seq_index = 0
-    for idx in range(len(segments)):
-        segment = segments[idx]
-        segment = segment.replace('{', '')
-        segment = segment.replace('}', '')
-        if segment.split(':')[0] == 'seq':
-            seq_index = idx
-            break
-    return seq_index
+    key = portal_type.lower()
+    if prefix:
+        key = "{}-{}".format(key, prefix)
+    return key
+
+
+def get_seq_number_from_id(id, prefix, **kw):
+    """Return the sequence number of the given ID
+    """
+    separator = kw.get("separator", "-")
+    seq_number = to_int(id.replace(prefix, "").strip(separator))
+    return seq_number
+
 
 def get_counted_number(context, config, variables, **kw):
     """Compute the number for the sequence type "Counter"
@@ -263,11 +266,14 @@ def get_counted_number(context, config, variables, **kw):
     number = len(seq_items)
     return number
 
+
 def get_generated_number(context, config, variables, **kw):
     """Generate a new persistent number with the number generator for the
     sequence type "Generated"
     """
-    separator = '-'
+
+    # separator where to split the ID
+    separator = kw.get('separator', '-')
 
     # allow portal_type override
     portal_type = kw.get("portal_type") or api.get_portal_type(context)
@@ -286,34 +292,35 @@ def get_generated_number(context, config, variables, **kw):
 
     # generate the key for the number generator storage
     prefix = prefix_template.format(**variables)
-    key = portal_type.lower()
-    if prefix:
-        key = "{}-{}".format(key, prefix)
 
-    # XXX: Handle flushed storage - refactoring needed here!
+    # normalize out any unicode characters like Ö, É, etc. from the prefix
+    prefix = api.normalize_filename(prefix)
+
+    # The key used for the storage
+    key = make_storage_key(portal_type, prefix)
+
+    # Handle flushed storage
     if key not in number_generator:
-        # we need to figure out the current state of the DB.
-        seq_index = get_seq_index(id_template, separator)
-        existing = search_by_prefix(portal_type, prefix)
         max_num = 0
-        for brain in existing:
-            segments = split(api.get_id(brain), separator)
-            num = to_int(segments[seq_index])
-            if num > max_num:
-                max_num = num
+        existing = get_ids_with_prefix(portal_type, prefix)
+        numbers = map(lambda id: get_seq_number_from_id(id, prefix), existing)
+        # figure out the highest number in the sequence
+        if numbers:
+            max_num = max(numbers)
         # set the number generator
+        logger.info("*** SEEDING Prefix '{}' to {}".format(prefix, max_num))
         number_generator.set_number(key, max_num)
 
-    # TODO: We need a way to figure out the max numbers allowed in this
-    # sequence to raise a KeyError when the current number exceeds the maximum
-    # number possible in the sequence
-
-    # TODO: This allows us to "preview" the next generated ID in the UI
     if not kw.get("dry_run", False):
-        # generate a new number
+        # Generate a new number
+        # NOTE Even when the number exceeds the given ID sequence format,
+        #      it will overflow gracefully, e.g.
+        #      >>> {sampleId}-R{seq:03d}'.format(sampleId="Water", seq=999999)
+        #      'Water-R999999‘
         number = number_generator.generate_number(key=key)
     else:
-        # just fetch the next number
+        # => This allows us to "preview" the next generated ID in the UI
+        # TODO Show the user the next generated number somewhere in the UI
         number = number_generator.get(key, 1)
     return number
 
