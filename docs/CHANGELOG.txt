@@ -7,6 +7,8 @@
 - LIMS-2696: bika_listing performance: Used refactor on other(mostly used) Listings
 - LIMS-2696: bika_listing performance: refactor folderitem to use column_* methods
 - Issue-2278: Verify Calculated Results the first time around
+- Issue-2317: AR Add fails if an Analysis Category was disabled
+- Issue-2316: AR Add fails silently if e.g. the ID of the AR was already taken
 - Issue-2308: Folderitems methods of Instrument Calibrations, Certifications and Validations are missing some objects
 - Issue-2304: Bika Listing for Analysis Specifications fails on category expansion
 - Issue-2302: UnicodeDecodeError if title field validator

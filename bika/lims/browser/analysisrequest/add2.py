@@ -526,7 +526,8 @@ class AnalysisRequestAddView(BrowserView):
 
         for brain in services:
             category = brain.getCategoryTitle
-            analyses[category].append(brain)
+            if category in analyses:
+                analyses[category].append(brain)
         return analyses
 
     @cache(cache_key)
@@ -1667,7 +1668,9 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
         # extract records from request
         records = self.get_records()
 
-        errors = {}
+        fielderrors = {}
+        errors = {"message": "", "fielderrors": {}}
+
         attachments = {}
         valid_records = []
 
@@ -1722,7 +1725,7 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             for field in missing:
                 fieldname = "{}-{}".format(field, n)
                 msg = _("Field '{}' is required".format(field))
-                errors[fieldname] = msg
+                fielderrors[fieldname] = msg
 
             # Selected Analysis UIDs
             selected_analysis_uids = record.get("Analyses", [])
@@ -1778,7 +1781,9 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             # append the valid record to the list of valid records
             valid_records.append(valid_record)
 
-        if errors:
+        # return immediately with an error response if some field checks failed
+        if fielderrors:
+            errors["fielderrors"] = fielderrors
             return {'errors': errors}
 
         # Process Form

@@ -332,13 +332,26 @@ Bika LIMS
         to_email = from_email
         subject = 'Instrument Results Import Errors'
         mail_text = mail_template.format(message=message)
+        #Exit if mail alread sent
+        email_file_name = '/tmp/result_import_email'
+        if os.path.exists(email_file_name):
+            email_file = open(email_file_name, 'r')
+            file_contents = email_file.read()
+            email_file.close()
+            if mail_text == file_contents:
+                logger.info('Skip sys admin error email')
+                return
+        email_file = open(email_file_name, 'w')
+        email_file.write(mail_text)
+        email_file.close()
         try:
             logger.info('Email Errors complete: %s' % to_email)
             return mail_host.send(
                         mail_text, to_email, from_email,
                         subject=subject, charset="utf-8", immediate=True)
         except smtplib.SMTPRecipientsRefused:
-            raise smtplib.SMTPRecipientsRefused('Recipient address rejected by server')
+            raise smtplib.SMTPRecipientsRefused(
+                    'Recipient address rejected by server')
 
     def _email_analyst(self, to_email, name, message):
         mail_template = """
