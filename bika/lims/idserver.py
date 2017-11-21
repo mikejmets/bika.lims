@@ -226,23 +226,6 @@ def get_ids_with_prefix(portal_type, prefix):
     return ids
 
 
-def get_seq_index(id_template, separator='-'):
-    """ Find the index of the seq varriable in the id_template
-        e.g. id_template = '{year}-{client}-{seq}' returns 2
-    """
-    # split the given id_template at the given separator
-    segments = split(id_template, separator)
-    seq_index = 0
-    for idx in range(len(segments)):
-        segment = segments[idx]
-        segment = segment.replace('{', '')
-        segment = segment.replace('}', '')
-        if segment.split(':')[0] == 'seq':
-            seq_index = idx
-            break
-    return seq_index
-
-
 def make_storage_key(portal_type, prefix=None):
     """Make a storage (dict-) key for the number generator
     """
