@@ -3,6 +3,10 @@
 
 - Add 2-Dimensional-CSV Instrument also save blank values and ND as 0 to all BC Instruments
 - Saving '-----' and negetive values as 0 and not saving none float values including empty string(Only for Shimadzu instruments)
+- Issue-2317: AR Add fails if an Analysis Category was disabled
+- Issue-2316: AR Add fails silently if e.g. the ID of the AR was already taken
+- Issue-2308: Folderitems methods of Instrument Calibrations, Certifications and Validations are missing some objects
+- Issue-2304: Bika Listing for Analysis Specifications fails on category expansion
 - Issue-2302: UnicodeDecodeError if title field validator
 - Issue-2299: Low performance on retrieving analysis data
 - Issue-2268: Show the Unit in Manage Analyses View
