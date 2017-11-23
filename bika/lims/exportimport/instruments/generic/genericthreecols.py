@@ -193,10 +193,12 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
             kw = re.sub(r"\W", "", self._keywords[i])
             if not is_keyword(kw):
                 new_kw = find_kw(quantitation['AR'], kw)
-                quantitation[kw] = quantitation['resultValue']
-                del quantitation['resultValue']
-                kw = new_kw
-                kw = re.sub(r"\W", "", kw)
+                if new_kw:
+                    quantitation[kw] = quantitation['resultValue']
+                    del quantitation['resultValue']
+                    kw = new_kw
+                    kw = re.sub(r"\W", "", kw)
+
             self._addRawResult(quantitation['AR'],
                                values={kw:quantitation},
                                override=False)

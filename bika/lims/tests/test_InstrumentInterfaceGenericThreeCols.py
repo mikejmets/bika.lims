@@ -74,20 +74,42 @@ class TestInstrumentImport(BikaSimpleTestCase):
         c = self.addthing(self.portal.bika_setup.bika_analysisservices,
                           'AnalysisService', title='Calcium', Keyword="Ca")
 
-        self.calculation = self.addthing(self.portal.bika_setup.bika_calculations,
-                          'Calculation', title='TotalMagCal', Keyword="Mg")
-        self.calculation.setFormula('[Mg] + [Ca]')
+        calc1 = self.addthing(self.portal.bika_setup.bika_calculations,
+                          'Calculation', title='TotalMagCal')
+        calc1.setFormula('[Mg] + [Ca]')
         transaction.commit()
 
         d = self.addthing(self.portal.bika_setup.bika_analysisservices,
                           'AnalysisService', title='THCaCO3', Keyword="THCaCO3")
 
         d.setUseDefaultCalculation(False)
-        d.setDeferredCalculation(self.calculation)
+        d.setDeferredCalculation(calc1)
         transaction.commit()
+
+        calc2 = self.addthing(self.portal.bika_setup.bika_calculations,
+                          'Calculation', title='Test-Total-Pest')
+        pest1 = {'keyword': 'pest1', 'title': 'Pesticide 1',
+                'value': 0, 'type': 'int', 'hidden': False, 'unit': ''}
+        pest2 = {'keyword': 'pest2', 'title': 'Pesticide 2',
+                'value': 0, 'type': 'int', 'hidden': False, 'unit': ''}
+        pest3 = {'keyword': 'pest3', 'title': 'Pesticide 3',
+                'value': 0, 'type': 'int', 'hidden': False, 'unit': ''}
+        interims = [pest1, pest2, pest3]
+        calc2.setInterimFields(interims)
+        transaction.commit()
+        self.assertEqual(calc2.getInterimFields(), interims)
+
+        calc2.setFormula('((([pest1] > 0.0) or ([pest2] > .05) or ([pest3] > 10.0) ) and "FAIL" or "PASS" )')
+        transaction.commit()
+        e = self.addthing(self.portal.bika_setup.bika_analysisservices,
+                          'AnalysisService', title='Total Terpenes', Keyword="TotalTerpenes")
+        e.setUseDefaultCalculation(False)
+        e.setDeferredCalculation(calc2)
+        transaction.commit()
+
         self.addthing(self.portal.bika_setup.bika_analysisprofiles,
                       'AnalysisProfile', title='MicroBio',
-                      Service=[a.UID(), b.UID(), c.UID(), d.UID()])
+                      Service=[a.UID(), b.UID(), c.UID(), d.UID(), e.UID()])
         transaction.commit()
 
 
@@ -198,7 +220,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 2 ARs and 6 results updated'
+        text = 'Import finished successfully: 2 ARs and 12 results updated'
         if text not in results:
             self.fail("AR Import failed")
         for ar in ars:
@@ -232,6 +254,11 @@ Total price excl Tax,,,,,,,,,,,,,,
                             msg = "Result did not get updated"
                             self.fail('{}:{}'.format(msg, an.getKeyword()))
 
+                    if an.getKeyword() == 'TotalTerpenes':
+                        if an.getResult() != 'FAIL':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+
 
             if ar.getObject().getId() == '1-0002-R01':
                 for an in analyses:
@@ -255,6 +282,12 @@ Total price excl Tax,,,,,,,,,,,,,,
                         if an.getResult() != '6.0':
                             msg = "Result did not get updated"
                             self.fail('{}:{}'.format(msg, an.getKeyword()))
+
+                    if an.getKeyword() == 'TotalTerpenes':
+                        if an.getResult() != 'PASS':
+                            msg = "Result did not get updated"
+                            self.fail('{}:{}'.format(msg, an.getKeyword()))
+
 
         # To be verified AR/AS
         filename = '%s/files/genericthreecols-ToBeVerified.csv' % path
@@ -426,7 +459,7 @@ Total price excl Tax,,,,,,,,,,,,,,
         context = self.portal
         results = Import(context, request)
         transaction.commit()
-        text = 'Import finished successfully: 1 ARs and 3 results updated'
+        text = 'Import finished successfully: 1 ARs and 6 results updated'
         if text not in results:
             self.fail("AR Import failed")
         for ar in ars:
