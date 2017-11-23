@@ -311,6 +311,8 @@ class WorkflowAction:
                                 item.deleteLastVerificator()
                     elif action == 'verify':
                         success, message = doAsyncActionFor(item, action)
+                    elif action == 'cancel':
+                        success, message = doAsyncActionFor(item, action)
                     else:
                         success, message = doActionFor(item, action)
                     if success:
