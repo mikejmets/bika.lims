@@ -574,7 +574,10 @@ class AnalysisResultsImporter(Logger):
                     analysis.Analyst = self.user._id
                 if self.advance_to_state:
                     try:
-                        api.do_transition_for(analysis, self.advance_to_state)
+                        available_transions = [i['id'] for i in \
+                                api.get_transitions_for(analysis)]
+                        if self.advance_to_state in available_transions:
+                            api.do_transition_for(analysis, self.advance_to_state)
                     except:
                         self.log("Failed to perform transition '{}' on {}: {}"\
                                 .format(self.advance_to_state, objid, acode))
@@ -842,7 +845,10 @@ class AnalysisResultsImporter(Logger):
                 analysis.setResultCaptureDate(capturedate)
             if self.advance_to_state:
                 try:
-                    api.do_transition_for(analysis, self.advance_to_state)
+                    available_transions = [i['id'] for i in \
+                            api.get_transitions_for(analysis)]
+                    if self.advance_to_state in available_transions:
+                        api.do_transition_for(analysis, self.advance_to_state)
                 except:
                     self.log("Failed to perform transition '{}' on {}: {}"\
                             .format(self.advance_to_state, objid, acode))
