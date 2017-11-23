@@ -10,7 +10,7 @@ from Products.Archetypes.event import ObjectInitializedEvent
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from bika.lims import bikaMessageFactory as _
-from bika.lims.utils import t
+from bika.lims import api
 from bika.lims import logger
 from bika.lims.browser import BrowserView
 from bika.lims.idserver import renameAfterCreation
@@ -103,6 +103,27 @@ def Import(context, request):
     return json.dumps(results)
 
 
+def is_keyword(kw):
+    bsc = api.get_tool('bika_setup_catalog')
+    return len(bsc(getKeyword=kw))
+
+def find_kw(ar, kw):
+    keyword = None
+    bc= api.get_tool('bika_catalog')
+    ar = bc(portal_type='AnalysisRequest', id=ar)
+    if len(ar) == 1:
+        obj  = ar[0].getObject()
+        analyses = obj.getAnalyses(full_objects=True)
+        for analysis in analyses:
+            interims = hasattr(analysis, 'getInterimFields') \
+                        and analysis.getInterimFields() or []
+            for interim in interims:
+                if interim['keyword'] == kw:
+                    keyword = analysis.getKeyword()
+                    break
+    return keyword
+
+
 class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
 
     QUANTITATIONRESULTS_NUMERICHEADERS = ('Title8', 'Title9','Title31',
@@ -169,9 +190,17 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
             result = self.zeroValueDefaultInstrumentResults(column_name, result, line)
             quantitation[quantitation['DefaultResult']] = result
 
-            val = re.sub(r"\W", "", self._keywords[i])
+            kw = re.sub(r"\W", "", self._keywords[i])
+            if not is_keyword(kw):
+                new_kw = find_kw(quantitation['AR'], kw)
+                if new_kw:
+                    quantitation[kw] = quantitation['resultValue']
+                    del quantitation['resultValue']
+                    kw = new_kw
+                    kw = re.sub(r"\W", "", kw)
+
             self._addRawResult(quantitation['AR'],
-                               values={val:quantitation},
+                               values={kw:quantitation},
                                override=False)
             quantitation = {}
 
