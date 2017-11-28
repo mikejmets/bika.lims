@@ -1028,4 +1028,5 @@ class AJAXARManageCategoryExpand(BrowserView):
                     category=cat,
                     getPointOfCapture=poc,
                     )
+            asv.allow_edit = True
             return asv.rendered_items()
