@@ -1129,7 +1129,7 @@ class BikaListingView(BrowserView):
             Then you can insert your own form tags around it.
         """
         # Category which we are going to query:
-        self.cat = self.request.get('ajax_category_expand')
+        self.cat = self.request.get('cat')
         self.contentFilter[self.category_index] = self.request.get('cat')
 
         # These are required to allow the template to work with this class as
