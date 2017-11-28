@@ -53,11 +53,7 @@ class AnalysisRequestManageResultsView(AnalysisRequestViewView):
                                                          {'id': 'retract'},
                                                          {'id': 'verify'}]
                     t.show_select_column = False
-                    t.expand_all_categories= False
-                    t.ajax_categories = True
-                    t.category_index = 'getCategoryTitle'
-                    t.ajax_categories_url = self.context.absolute_url() + \
-                                               "/ajax_ar_manage_expand_category"
+                    t.expand_all_categories= True
 
                     poc_value = POINTS_OF_CAPTURE.getValue(poc)
                     self.tables[poc_value] = t.contents_table()
