@@ -477,6 +477,10 @@ class BikaListingView(BrowserView):
         self.show_all = False
         self.show_more = False
         self.limit_from = 0
+        if 'ajax_categories' in kwargs:
+            self.ajax_categories= kwargs['ajax_categories']
+        if 'ajax_categories_url' in kwargs:
+            self.ajax_categories_url = kwargs['ajax_categories_url']
 
     @property
     def review_state(self):
@@ -1037,7 +1041,8 @@ class BikaListingView(BrowserView):
                 # otherwise, self.contentsMethod must handle contentFilter
                 brains = self.contentsMethod(contentFilterTemp)
         else:
-            logger.debug("Bika Listing Table Query={}".format(contentFilterTemp))
+            logger.debug(
+                "Bika Listing Table Query={}".format(contentFilterTemp))
             brains = self.contentsMethod(contentFilterTemp)
 
         # idx increases one unit each time an object is added to the 'items'

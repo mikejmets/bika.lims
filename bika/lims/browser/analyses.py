@@ -21,6 +21,7 @@ from Products.CMFPlone.utils import safe_unicode
 from bika.lims import api
 from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
+from bika.lims.browser import BrowserView
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.config import QCANALYSIS_TYPES
 from bika.lims.interfaces import IResultOutOfRange
@@ -56,6 +57,7 @@ class AnalysesView(BikaListingView):
         self.show_column_toggles = False
         self.pagesize = 999999
         self.form_id = 'analyses_form'
+        self.category_index = 'getCategoryTitle'
 
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.portal_url = self.portal.absolute_url()
@@ -149,9 +151,13 @@ class AnalysesView(BikaListingView):
             self.review_states[0]['columns'].remove('Partition')
 
         super(AnalysesView, self).__init__(context,
-                                           request,
-                                           show_categories=context.bika_setup.getCategoriseAnalysisServices(),
-                                           expand_all_categories=True)
+             request,
+             show_categories=context.bika_setup.getCategoriseAnalysisServices(),
+             expand_all_categories=False,
+             ajax_categories=True,
+             ajax_categories_url="{}/{}".format(
+                 context.absolute_url(),
+                 "ajax_ar_manage_expand_category"))
 
     def get_analysis_spec(self, analysis):
         if hasattr(analysis, 'getResultsRange'):
@@ -938,3 +944,21 @@ class QCAnalysesView(AnalysesView):
         # Sort items
         items = sorted(items, key=itemgetter('sortcode'))
         return items
+
+class AJAXARManageCategoryExpand(BrowserView):
+
+    def createAnalysesView(self, context, request, **kwargs):
+        return AnalysesView(context, request, **kwargs)
+
+    def __call__(self):
+        if 'ajax_category_expand' in self.request.keys():
+            cat = self.request.get('cat')
+            form_id = self.request.get('form_id')
+            poc = form_id.split('_')[0]
+            asv = self.createAnalysesView(
+                    self.context,
+                    self.request,
+                    category=cat,
+                    getPointOfCapture=poc,
+                    )
+            return asv.rendered_items()

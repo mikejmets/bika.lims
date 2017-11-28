@@ -100,13 +100,3 @@ class AnalysisRequestManageResultsView(AnalysisRequestViewView):
                         "instruments. Results edition not allowed")
             message = "%s: %s" % (message, (', '.join(invalid)))
             self.context.plone_utils.addPortalMessage(message, 'warn')
-
-class AJAXARManageCategoryExpand(BrowserView):
-    def createAnalysesView(self, context, request, **kwargs):
-        return AnalysesView(context, request, **kwargs)
-
-    def __call__(self):
-        if 'ajax_category_expand' in self.request.keys():
-            cat = self.request.get('cat')
-            asv = self.createAnalysesView(self.context, self.request, category=cat)
-            return asv.rendered_items()

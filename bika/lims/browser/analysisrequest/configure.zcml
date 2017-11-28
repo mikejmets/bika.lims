@@ -243,7 +243,7 @@
     <browser:page
       for="*"
       name="ajax_ar_manage_expand_category"
-      class="bika.lims.browser.analysisrequest.manage_results.AJAXARManageCategoryExpand"
+      class="bika.lims.browser.analyses.AJAXARManageCategoryExpand"
       permission="zope.Public"
       layer="bika.lims.interfaces.IBikaLIMS"
     />
