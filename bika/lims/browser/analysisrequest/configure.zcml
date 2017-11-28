@@ -245,7 +245,7 @@
       name="import_ar_photos"
       class="bika.lims.browser.analysisrequest.analysisrequests_photos.ARPhotosImporter"
       attribute="import_ar_photos"
-      permission="zope2.View"
+      permission="zope.Public"
       layer="bika.lims.interfaces.IBikaLIMS"
     />
 
@@ -263,6 +263,14 @@
       name="queue_count"
       class="bika.lims.utils.analysisrequest.Async_AR_Utils"
       attribute="queue_count"
+      permission="zope.Public"
+      layer="bika.lims.interfaces.IBikaLIMS"
+    />
+
+  <browser:page
+      for="*"
+      name="ajax_ar_manage_expand_category"
+      class="bika.lims.browser.analyses.AJAXARManageCategoryExpand"
       permission="zope.Public"
       layer="bika.lims.interfaces.IBikaLIMS"
     />

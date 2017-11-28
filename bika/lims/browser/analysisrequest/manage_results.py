@@ -22,6 +22,7 @@ from plone.app.layout.globals.interfaces import IViewView
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements
+from bika.lims.browser import BrowserView
 
 import plone
 
@@ -51,7 +52,13 @@ class AnalysisRequestManageResultsView(AnalysisRequestViewView):
                     t.review_states[0]['transitions'] = [{'id': 'submit'},
                                                          {'id': 'retract'},
                                                          {'id': 'verify'}]
-                    t.show_select_column = True
+                    t.show_select_column = False
+                    t.expand_all_categories= False
+                    t.ajax_categories = True
+                    t.category_index = 'getCategoryTitle'
+                    t.ajax_categories_url = self.context.absolute_url() + \
+                                               "/ajax_ar_manage_expand_category"
+
                     poc_value = POINTS_OF_CAPTURE.getValue(poc)
                     self.tables[poc_value] = t.contents_table()
             # If a general retracted is done, rise a waring
