@@ -63,6 +63,7 @@ Variables::
     >>> bika_storagelocations = bika_setup.bika_storagelocations
     >>> bika_samplingdeviations = bika_setup.bika_samplingdeviations
     >>> bika_sampleconditions = bika_setup.bika_sampleconditions
+    >>> bika_containers = bika_setup.bika_containers
     >>> portal_url = portal.absolute_url()
     >>> bika_setup_url = portal_url + "/bika_setup"
     >>> browser = self.getBrowser()
@@ -254,5 +255,25 @@ Re-seed and create a new `Batch`::
     >>> ar = create_analysisrequest(client, request, values, service_uids)
     >>> ar.getId()
     'RB-20170131-water-0002-R001'
+    >>> batch = api.create(batches, "Batch", ClientID="RB")
+    >>> batch.getId()
+    'BA-17-0012'
+    >>> batch.getId() == "BA-{}-0012".format(year)
+    True
+
+Bika Setup
+----------
+A `Container` is a bika_setup type that must be tested::
+
+    >>> container = api.create(bika_containers, "Container", Name="Big Jar")
+    >>> container
+    <Container at /plone/bika_setup/bika_containers/container-1>
+    >>> container = api.create(bika_containers, "Container", Name="Small Jar")
+    >>> container
+    <Container at /plone/bika_setup/bika_containers/container-2>
+    >>> browser.open(portal_url + '/ng_flush')
+    >>> container = api.create(bika_containers, "Container", Name="Tiny Jar")
+    >>> container
+    <Container at /plone/bika_setup/bika_containers/container-3>
 
 TODO: Test the case when numbers are exhausted in a sequence!
