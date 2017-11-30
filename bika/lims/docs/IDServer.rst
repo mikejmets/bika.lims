@@ -251,13 +251,12 @@ Re-seed and create a new `Batch`::
     >>> batch = api.create(batches, "Batch", ClientID="RB")
     >>> batch.getId() == "BA-{}-0011".format(year)
     True
+    >>> transaction.commit()
     >>> browser.open(portal_url + '/ng_flush')
     >>> ar = create_analysisrequest(client, request, values, service_uids)
     >>> ar.getId()
     'RB-20170131-water-0002-R001'
     >>> batch = api.create(batches, "Batch", ClientID="RB")
-    >>> batch.getId()
-    'BA-17-0012'
     >>> batch.getId() == "BA-{}-0012".format(year)
     True
 
@@ -271,6 +270,7 @@ A `Container` is a bika_setup type that must be tested::
     >>> container = api.create(bika_containers, "Container", Name="Small Jar")
     >>> container
     <Container at /plone/bika_setup/bika_containers/container-2>
+    >>> transaction.commit()
     >>> browser.open(portal_url + '/ng_flush')
     >>> container = api.create(bika_containers, "Container", Name="Tiny Jar")
     >>> container
