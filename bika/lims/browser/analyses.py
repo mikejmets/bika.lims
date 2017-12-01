@@ -1030,8 +1030,8 @@ class AJAXARManageCategoryExpand(BrowserView):
         if 'ajax_category_expand' in self.request.keys():
             cat = self.request.get('cat')
             analysis_view = AnalysesView(self.context, self.request)
-            analysis_view.allow_edit = True
-            #analysis_view.contentFilter['getCategoryTitle'] = cat
+            analysis_view.allow_edit = False
+            analysis_view.contentFilter['getCategoryTitle'] = cat
             astv =  AnalysesTableView(bika_listing=analysis_view)
             astv.bika_listing.allow_edit = True
             astv.bika_listing.show_categories = False
