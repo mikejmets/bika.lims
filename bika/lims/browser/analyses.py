@@ -956,11 +956,8 @@ class QCAnalysesView(AnalysesView):
 
 class AnalysesTableView(BikaListingTable):
     pass
-class AJAXARManageCategoryExpand(BrowserView):
 
-    def createAnalysesTableView(self, context, request, **kwargs):
-        analysis_view = AnalysesView(context, request, **kwargs)
-        return AnalysesTableView(bika_listing=analysis_view, **kwargs)
+class AJAXARManageCategoryExpand(BrowserView):
 
     def __call__(self):
         if 'ajax_category_expand' in self.request.keys():
@@ -969,10 +966,6 @@ class AJAXARManageCategoryExpand(BrowserView):
             analysis_view.allow_edit = True
             #analysis_view.contentFilter['getCategoryTitle'] = cat
             astv =  AnalysesTableView(bika_listing=analysis_view)
-            #astv = self.createAnalysesTableView(
-            #        self.context,
-            #        self.request,
-            #        )
             astv.bika_listing.allow_edit = True
             astv.bika_listing.show_categories = False
             astv.bika_listing.show_select_column = True
