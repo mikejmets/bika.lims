@@ -54,6 +54,7 @@ class AnalysisRequestManageResultsView(AnalysisRequestViewView):
                                                          {'id': 'verify'}]
                     t.show_select_column = False
                     t.expand_all_categories= True
+                    t.show_select_all_checkbox = True
 
                     poc_value = POINTS_OF_CAPTURE.getValue(poc)
                     self.tables[poc_value] = t.contents_table()

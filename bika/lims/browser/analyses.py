@@ -54,6 +54,7 @@ class AnalysesView(BikaListingView):
         self.context_actions = {}
         self.show_sort_column = False
         self.show_select_row = False
+        self.show_select_all_checkbox = False
         self.show_select_column = False
         self.show_column_toggles = False
         self.pagesize = 999999
@@ -1033,7 +1034,7 @@ class AJAXARManageCategoryExpand(BrowserView):
             analysis_view.allow_edit = False
             analysis_view.contentFilter['getCategoryTitle'] = cat
             astv =  AnalysesTableView(bika_listing=analysis_view)
-            astv.bika_listing.allow_edit = True
+            astv.bika_listing.allow_edit = False
             astv.bika_listing.show_categories = False
-            astv.bika_listing.show_select_column = True
+            astv.bika_listing.show_select_column = False
             return astv.rendered_items(cat=cat)
