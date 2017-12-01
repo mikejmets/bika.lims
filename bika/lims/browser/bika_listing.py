@@ -1073,6 +1073,9 @@ class BikaListingView(BrowserView):
                 else:
                     self.field_icons[uid] = alerts[uid]
 
+        category_title =  "None"
+        if obj.portal_type == 'Analysis':
+            category_title = obj.getCategoryTitle()
         return {
             "obj": obj,
             "id": id,
@@ -1094,7 +1097,7 @@ class BikaListingView(BrowserView):
             "class": css_class,
             "item_data": "[]",
             "table_row_class": "",
-            "category": "None",
+            "category": category_title,
             "path": path,
             "fti": fti,
             "obj_type": obj.Type,
@@ -1491,7 +1494,8 @@ class BikaListingTable(tableview.Table):
         for item in self.batch:
             if item.get('category', 'None') == cat:
                 self.this_cat_batch.append(item)
-        return self.render_items()
+        html = self.render_items()
+        return html
 
     def hide_hidden_attributes(self):
         """Use the bika_listing's contentFilter's portal_type

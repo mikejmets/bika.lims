@@ -23,6 +23,7 @@ from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
 from bika.lims.browser import BrowserView
 from bika.lims.browser.bika_listing import BikaListingView
+from bika.lims.browser.bika_listing import BikaListingTable
 from bika.lims.config import QCANALYSIS_TYPES
 from bika.lims.interfaces import IResultOutOfRange
 from bika.lims.utils import isActive
@@ -932,6 +933,14 @@ class AnalysesView(BikaListingView):
 
         return items
 
+    def contents_table(self, table_only=False):
+        """ If you set table_only to true, then nothing outside of the
+            <table/> tag will be printed (form tags, authenticator, etc).
+            Then you can insert your own form tags around it.
+        """
+        table = AnalysesTableView(bika_listing=self, table_only=table_only)
+        return table.render(self)
+
 
 class QCAnalysesView(AnalysesView):
     """ Renders the table of QC Analyses performed related to an AR. Different
@@ -1012,21 +1021,19 @@ class QCAnalysesView(AnalysesView):
         items = sorted(items, key=itemgetter('sortcode'))
         return items
 
-class AJAXARManageCategoryExpand(BrowserView):
+class AnalysesTableView(BikaListingTable):
+    pass
 
-    def createAnalysesView(self, context, request, **kwargs):
-        return AnalysesView(context, request, **kwargs)
+class AJAXARManageCategoryExpand(BrowserView):
 
     def __call__(self):
         if 'ajax_category_expand' in self.request.keys():
             cat = self.request.get('cat')
-            form_id = self.request.get('form_id')
-            poc = form_id.split('_')[0]
-            asv = self.createAnalysesView(
-                    self.context,
-                    self.request,
-                    category=cat,
-                    getPointOfCapture=poc,
-                    )
-            asv.allow_edit = True
-            return asv.rendered_items()
+            analysis_view = AnalysesView(self.context, self.request)
+            analysis_view.allow_edit = True
+            #analysis_view.contentFilter['getCategoryTitle'] = cat
+            astv =  AnalysesTableView(bika_listing=analysis_view)
+            astv.bika_listing.allow_edit = True
+            astv.bika_listing.show_categories = False
+            astv.bika_listing.show_select_column = True
+            return astv.rendered_items(cat=cat)

@@ -22,9 +22,6 @@ window.bika.lims.controllers =  {
     ".range-chart":
         ['RangeGraph'],
 
-    // Calculation utils
-    ".ajax_calculate":
-        ['CalculationUtils'],
 
     // Atachments
     ".attachments":
@@ -114,10 +111,12 @@ window.bika.lims.controllers =  {
         ['WorksheetManageResultsView',
          'AnalysisRequestViewView',
          'RejectionKickOff',
+         'CalculationUtils',
          'AnalysisRequestManageResultsView'],
 
     ".portaltype-analysisrequest.template-manage_results":
         ['WorksheetManageResultsView',
+         'CalculationUtils',
          'AnalysisRequestManageResultsView'],
 
     ".portaltype-analysisrequest.template-analyses":
