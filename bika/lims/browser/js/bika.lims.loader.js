@@ -23,7 +23,7 @@ window.bika.lims.controllers =  {
         ['RangeGraph'],
 
     // Calculation utils
-    ".ajax_calculate":
+    ".portaltype-analysisrequest":
         ['CalculationUtils'],
 
     // Atachments
