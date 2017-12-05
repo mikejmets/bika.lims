@@ -106,15 +106,21 @@ class DashboardView(BrowserView):
         self.min_date_range = {'query': (self.min_date, self.date_to), 'range': 'min:max'}
 
     def get_sections(self):
-        """ Returns an array with the sections to be displayed.
+        """ Returns an array with the sections to be displayed. Required
+            sections are selected in the Appearance tab of Bika Setup.
             Every section is a dictionary with the following structure:
                 {'id': <section_identifier>,
                  'title': <section_title>,
                 'panels': <array of panels>}
         """
-        sections = [self.get_analyses_section(),
-                    self.get_analysisrequests_section(),
-                    self.get_worksheets_section()]
+        sections = []
+        choices = self.context.bika_setup.getDashboardSections()
+        if 'analyses' in choices:
+            sections.append(self.get_analyses_section())
+        if 'analysisrequests' in choices:
+            sections.append(self.get_analysisrequests_section())
+        if 'worksheets' in choices:
+            sections.append(self.get_worksheets_section())
         return sections
 
     def get_analysisrequests_section(self):

@@ -145,6 +145,12 @@ STICKER_AUTO_OPTIONS = DisplayList((
     ('receive', _('Receive')),
 ))
 
+DASHBOARD_SECTIONS = DisplayList((
+    ('analyses', _('Analyses')),
+    ('analysisrequests', _('Analysis Requests')),
+    ('worksheets', _('Worksheets')),
+))
+
 
 schema = BikaFolderSchema.copy() + Schema((
     IntegerField(
@@ -540,6 +546,18 @@ schema = BikaFolderSchema.copy() + Schema((
             label=_("Use Dashboard as default front page"),
             description=_("Select this to activate the dashboard as a default front page.")
         ),
+    ),
+    LinesField(
+        'DashboardSections',
+        schemata="Appearance",
+        multiValued=1,
+        vocabulary=DASHBOARD_SECTIONS,
+        widget=MultiSelectionWidget(
+            format='select',
+            label=_("Dashboard Section"),
+            description=_(
+                "Select which sections you'd like displayed on the dashboard"),
+        )
     ),
     ReferenceField(
         'LandingPage',
