@@ -217,7 +217,7 @@ def search_catalogs(portal_type):
     all_brains = []
     for catalog_name in catalog_names:
         catalog = api.get_tool(catalog_name)
-        brains = catalog({"portal_type": portal_type})
+        brains = api.search({"portal_type": portal_type}, catalog=catalog_name)
         for brain in brains:
             if brain.UID not in UIDs:
                 all_brains.append(brain)
