@@ -183,19 +183,28 @@ class AbstractAnalysis(AbstractBaseAnalysis):
 
     @security.public
     def deleteLastVerificator(self):
-        verificators = self.getVerificators().split(',')
+        verificators_str = self.getVerificators()
+        if not verificators_str:
+            return
+        verificators = verificators_str.split(',')
         del verificators[-1]
         self.setVerificators(",".join(verificators))
         self.reindexObject()
 
     @security.public
     def wasVerifiedByUser(self, username):
-        verificators = self.getVerificators().split(',')
+        verificators_str = self.getVerificators()
+        if not verificators_str:
+            return False
+        verificators = verificators_str.split(',')
         return username in verificators
 
     @security.public
     def getLastVerificator(self):
-        return self.getVerificators().split(',')[-1]
+        verificators = self.getVerificators()
+        if not verificators:
+            return None
+        return verificators.split(',')[-1]
 
     @security.public
     def setVerificator(self, value):
@@ -402,8 +411,12 @@ class AbstractAnalysis(AbstractBaseAnalysis):
         raise NotImplementedError("getDependents is not implemented.")
 
     @security.public
-    def getDependencies(self):
-        """Return a list of analyses who we depend on to calculate our result.
+    def getDependencies(self, retracted=False):
+        """Return a list of siblings who we depend on to calculate our result.
+        :param retracted: If false retracted/rejected analyses are dismissed
+        :type retracted: bool
+        :return: Analyses the current analysis depends on
+        :rtype: list of IAnalysis
         """
         raise NotImplementedError("getDependencies is not implemented.")
 

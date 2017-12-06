@@ -26,7 +26,6 @@ from Products.CMFPlone.utils import _createObjectByType, safe_unicode
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from bika.lims import POINTS_OF_CAPTURE, bikaMessageFactory as _, t
 from bika.lims import logger
-from bika.lims.api import get_tool
 from bika.lims.browser import BrowserView, ulocalized_time
 from bika.lims.catalog.analysis_catalog import CATALOG_ANALYSIS_LISTING
 from bika.lims.idserver import renameAfterCreation
@@ -86,7 +85,7 @@ class AnalysisRequestPublishView(BrowserView):
     def __call__(self):
         if self.context.portal_type == 'AnalysisRequest':
             self._ars = [self.context]
-        elif self.context.portal_type == 'AnalysisRequestsFolder' \
+        elif self.context.portal_type in ('AnalysisRequestsFolder', 'Client') \
                 and self.request.get('items', ''):
             uids = self.request.get('items').split(',')
             uc = getToolByName(self.context, 'uid_catalog')
@@ -1277,7 +1276,7 @@ class AnalysisRequestDigester:
         workflow = getToolByName(self.context, 'portal_workflow')
         showhidden = self.isHiddenAnalysesVisible()
 
-        catalog = get_tool(CATALOG_ANALYSIS_LISTING)
+        catalog = getToolByName(self.context, CATALOG_ANALYSIS_LISTING)
         brains = catalog({'getRequestUID': ar.UID(),
                           'review_state': analysis_states,
                           'sort_on': 'sortable_title'})
