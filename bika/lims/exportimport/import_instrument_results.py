@@ -137,7 +137,7 @@ class ImportInstrumentResultsView(BrowserView):
                                         current_file, temp_file, str(e))
                                 errors.append(msg)
                                 continue
-                        logger.info('Moved file % to %s' % (current_file, temp_file))
+                        logger.info('Moved file %s to %s' % (current_file, temp_file))
                         if task_queue is not None:
                             path = [i for i in self.context.getPhysicalPath()]
                             path.append('async_import_instrument_result')
@@ -263,7 +263,7 @@ class ImportInstrumentResultsView(BrowserView):
         elif import_importer == 'shimadzu.nexera.LC2040C':
             from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
         elif import_importer == 'shimadzu.nexera.LCMS8050':
-            from bika.lims.exportimport.instruments.shimadzu.nexera.CMS8050 import Import
+            from bika.lims.exportimport.instruments.shimadzu.nexera.LMS8050 import Import
         elif import_importer == 'agilent.masshunter.masshunter':
             from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
