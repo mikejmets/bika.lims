@@ -263,7 +263,7 @@ class ImportInstrumentResultsView(BrowserView):
         elif import_importer == 'shimadzu.nexera.LC2040C':
             from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
         elif import_importer == 'shimadzu.nexera.LCMS8050':
-            from bika.lims.exportimport.instruments.shimadzu.nexera.LMS8050 import Import
+            from bika.lims.exportimport.instruments.shimadzu.nexera.LCMS8050 import Import
         elif import_importer == 'agilent.masshunter.masshunter':
             from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
@@ -273,12 +273,14 @@ class ImportInstrumentResultsView(BrowserView):
             data = open(result_file, 'r').read()
         except Exception, e:
             msgs.append('Could not open results file %s' % result_file)
+            logger.error('Async import instrument result: errors = %s' % msgs)
             self._email_errors(msgs)
             return
         try:
             afile = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
         except Exception, e:
             msgs.append('Could not upload results file %s' % fname)
+            logger.error('Async import instrument result: errors = %s' % msgs)
             self._email_errors(msgs)
             return
 
@@ -302,6 +304,7 @@ class ImportInstrumentResultsView(BrowserView):
             logger.error('Async import instrument result import: %s' % errors)
             results = '[]'
 
+        logger.info('Async import instrument results: import complete')
         archive_file = os.path.join(instrument_path, 'archives', fname)
         try:
             os.rename(result_file, archive_file)
@@ -312,6 +315,7 @@ class ImportInstrumentResultsView(BrowserView):
             except:
                 logger.error('Async import instrument result: cannot move %s to %s' % (result_file, archive_file))
 
+        logger.info('Async import instrument results: archive complete')
 
         report = json.loads(results)
         result_to_return = []
@@ -331,7 +335,7 @@ class ImportInstrumentResultsView(BrowserView):
         self._email_analyst(analyst_email, analyst_name, message)
         if 'Import' in globals():
             del Import
-        logger.info('Async import instrument result done')
+        logger.info('Async import instrument result exit')
 
     def _email_errors(self, errors):
         message = '\n'.join(errors)
