@@ -331,13 +331,9 @@ class ImportInstrumentResultsView(BrowserView):
         self._email_analyst(analyst_email, analyst_name, message)
         if 'Import' in globals():
             del Import
-<<<<<<< HEAD
         if len(report['errors']) > 0:
             self._email_errors(report['errors'])
-        logger.info('Async import instrument result done')
-=======
         logger.info('Async import instrument result exit')
->>>>>>> 6acf6a64431fe3eb4d8181b7200c97f0139fe8c7
 
     def _email_errors(self, errors):
         message = '\n'.join(errors)
