@@ -19,6 +19,7 @@ from zope.interface import implements
 
 from bika.lims import api
 from bika.lims.utils import to_utf8
+from bika.lims.utils import safe_unicode
 from bika.lims import bikaMessageFactory as _
 
 
@@ -112,15 +113,17 @@ class UniqueFieldValidator:
         parent_path = api.get_parent_path(instance)
         portal_type = instance.portal_type
         catalog_query = {"portal_type": portal_type,
-                            "path": {"query": parent_path, "depth": 1}}
+                         "path": {"query": parent_path, "depth": 1}}
 
-        if field_index and field_index in catalog.indexes():
-            # We use the field index to reduce the results list
-            catalog_query[field_index] = value
-            parent_objects = map(api.get_object, catalog(catalog_query))
-        elif fieldname in catalog.indexes():
+        # We try here to avoid waking up all the objects, because this can be
+        # likely very expensive if the parent object contains many objects
+        if fieldname in catalog.indexes():
             # We use the fieldname as index to reduce the results list
-            catalog_query[fieldname] = value
+            catalog_query[fieldname] = to_utf8(safe_unicode(value))
+            parent_objects = map(api.get_object, catalog(catalog_query))
+        elif field_index and field_index in catalog.indexes():
+            # We use the field index to reduce the results list
+            catalog_query[field_index] = to_utf8(safe_unicode(value))
             parent_objects = map(api.get_object, catalog(catalog_query))
         else:
             # fall back to the objectValues :(

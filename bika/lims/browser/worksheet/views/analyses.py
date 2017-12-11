@@ -84,8 +84,13 @@ class AnalysesView(BaseView):
         new_items = []
         for x, item in enumerate(items):
             obj = item['obj']
-            pos = [slot['position'] for slot in layout if
-                   slot['analysis_uid'] == obj.UID()][0]
+            slots = [slot['position'] for slot in layout if
+                   slot['analysis_uid'] == obj.UID()]
+            #TODO: Do 'contentFilter':{'cancellation_state': 'active'} on BaseView
+            if len(slots) == 0:
+                continue
+
+            pos = slots[0]
 
             # compensate for possible bad data (dbw#104)
             if type(pos) in (list, tuple):

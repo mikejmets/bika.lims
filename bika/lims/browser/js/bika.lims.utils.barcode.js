@@ -24,10 +24,12 @@ function BarcodeUtils() {
             var code = $(this).attr('data-code');
             var barHeight = $(this).attr('data-barHeight');
             var addQuietZone = $(this).attr('data-addQuietZone');
+            var output = $(this).attr('data-output');
             var showHRI = $(this).attr('data-showHRI');
             $(this).barcode(id, code,
                             {'barHeight': parseInt(barHeight),
                              'addQuietZone': Boolean(addQuietZone),
+                             'output': output,
                              'showHRI': Boolean(showHRI) });
         });
     }

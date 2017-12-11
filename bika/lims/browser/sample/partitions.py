@@ -206,7 +206,7 @@ class SamplePartitionsView(BikaListingView):
 ##                and not samplingdate > DateTime():
 ##                item['required'] += ['getSampler', 'getDateSampled']
 ##                item['allow_edit'] += ['getSampler', 'getDateSampled']
-##                samplers = getUsers(part, ['Sampler', 'LabManager', 'Manager'])
+##                samplers = getUsers(['Sampler', 'LabManager', 'Manager'])
 ##                getAuthenticatedMember = part.portal_membership.getAuthenticatedMember
 ##                username = getAuthenticatedMember().getUserName()
 ##                users = [({'ResultValue': u, 'ResultText': samplers.getValue(u)})
@@ -225,7 +225,7 @@ class SamplePartitionsView(BikaListingView):
                 item['required'] += ['getPreserver', 'getDatePreserved']
                 if self.allow_edit:
                     item['allow_edit'] += ['getPreserver', 'getDatePreserved']
-                preservers = getUsers(part, ['Preserver', 'LabManager', 'Manager'])
+                preservers = getUsers(['Preserver', 'LabManager', 'Manager'])
                 getAuthenticatedMember = part.portal_membership.getAuthenticatedMember
                 username = getAuthenticatedMember().getUserName()
                 users = [({'ResultValue': u, 'ResultText': preservers.getValue(u)})

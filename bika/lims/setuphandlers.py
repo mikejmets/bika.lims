@@ -118,9 +118,10 @@ class BikaGenerator:
                        'bika_attachmenttypes',
                        'bika_batchlabels',
                        'bika_calculations',
-                       'bika_departments',
+                       'bika_clienttypes',
                        'bika_containers',
                        'bika_containertypes',
+                       'bika_departments',
                        'bika_preservations',
                        'bika_identifiertypes',
                        'bika_instruments',
@@ -142,6 +143,7 @@ class BikaGenerator:
                        'bika_subgroups',
                        'bika_suppliers',
                        'bika_referencedefinitions',
+                       'bika_unitconversions',
                        'bika_worksheettemplates'):
             try:
                 obj = bika_setup._getOb(obj_id)
@@ -265,7 +267,7 @@ class BikaGenerator:
         mp(permissions.ModifyPortalContent, ['Manager', 'LabManager', 'LabClerk', 'Owner'], 0)
         mp(ManageClients, ['Manager', 'LabManager', 'LabClerk'], 0)
         mp(permissions.AddPortalContent, ['Manager', 'LabManager', 'LabClerk', 'Owner'], 0)
-        mp(AddAnalysisSpec, ['Manager', 'LabManager', 'Owner'], 0)
+        mp(AddAnalysisSpec, ['Manager', 'LabManager', 'LabClerk', 'Owner'], 0)
         portal.clients.reindexObject()
 
         # We have to manually set the permissions of Contacts according to

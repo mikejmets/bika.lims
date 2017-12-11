@@ -7,26 +7,40 @@
 
 from Acquisition import aq_base
 from AccessControl.PermissionRole import rolesForPermissionOn
+from collective.taskqueue.interfaces import ITaskQueue
 
 from Products.CMFPlone.utils import base_hasattr
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.interfaces import IFolderish
 from Products.Archetypes.BaseObject import BaseObject
+from Products.Five.browser import BrowserView
 from Products.ZCatalog.interfaces import ICatalogBrain
 from Products.CMFPlone.utils import _createObjectByType
 from Products.CMFCore.WorkflowCore import WorkflowException
 
 from zope import globalrequest
-from zope.lifecycleevent import modified
+from zope.event import notify
+from zope.interface import implements
+from zope.component import getUtility
 from zope.component import getMultiAdapter
+from zope.component import queryUtility
+from zope.component.interfaces import IFactory
+from zope.component.interfaces import ObjectEvent
+from zope.component.interfaces import IObjectEvent
+from zope.lifecycleevent import modified
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from plone import api as ploneapi
+from plone.memoize.volatile import DontCache
 from plone.api.exc import InvalidParameterError
 from plone.dexterity.interfaces import IDexterityContent
 from plone.app.layout.viewlets.content import ContentHistoryView
+from plone.i18n.normalizer.interfaces import IFileNameNormalizer
+from plone.i18n.normalizer.interfaces import IIDNormalizer
 
 from bika.lims import logger
+from bika.lims import bikaMessageFactory as _
 
 """Bika LIMS Framework API
 
@@ -58,6 +72,43 @@ class BikaLIMSError(Exception):
     """Base exception class for bika.lims errors."""
 
 
+class IBikaTransitionEvent(IObjectEvent):
+    """Bika WF transition event interface"""
+
+
+class IBikaBeforeTransitionEvent(IBikaTransitionEvent):
+    """Fired before the transition is invoked"""
+
+
+class IBikaAfterTransitionEvent(IBikaTransitionEvent):
+    """Fired after the transition done"""
+
+
+class IBikaTransitionFailedEvent(IBikaTransitionEvent):
+    """Fired if the transition failed"""
+
+
+class BikaTransitionEvent(ObjectEvent):
+    """Bika WF transition event"""
+    def __init__(self, obj, transition, exception=None):
+        ObjectEvent.__init__(self, obj)
+        self.obj = obj
+        self.transition = transition
+        self.exception = exception
+
+
+class BikaBeforeTransitionEvent(BikaTransitionEvent):
+    implements(IBikaBeforeTransitionEvent)
+
+
+class BikaAfterTransitionEvent(BikaTransitionEvent):
+    implements(IBikaAfterTransitionEvent)
+
+
+class BikaTransitionFailedEvent(BikaTransitionEvent):
+    implements(IBikaTransitionFailedEvent)
+
+
 def get_portal():
     """Get the portal object
 
@@ -73,8 +124,11 @@ def get_bika_setup():
     return portal.get("bika_setup")
 
 
-def create(container, portal_type, **kwargs):
+def create(container, portal_type, *args, **kwargs):
     """Creates an object in Bika LIMS
+
+    This code uses most of the parts from the TypesTool
+    see: `Products.CMFCore.TypesTool._constructInstance`
 
     :param container: container
     :type container: ATContentType/DexterityContentType/CatalogBrain
@@ -87,11 +141,31 @@ def create(container, portal_type, **kwargs):
     from bika.lims.utils import tmpID
     if kwargs.get("title") is None:
         kwargs["title"] = "New {}".format(portal_type)
-    obj = _createObjectByType(portal_type, container, tmpID())
-    obj.edit(**kwargs)
-    obj.processForm()
-    # explicit notification
-    modified(obj)
+
+    # generate a temporary ID
+    tmp_id = tmpID()
+
+    # get the fti
+    types_tool = get_tool("portal_types")
+    fti = types_tool.getTypeInfo(portal_type)
+
+    if fti.product:
+        obj = _createObjectByType(portal_type, container, tmp_id)
+        obj.edit(**kwargs)
+        obj.processForm()
+    else:
+        # newstyle factory
+        factory = getUtility(IFactory, fti.factory)
+        obj = factory(tmp_id, *args, **kwargs)
+        if hasattr(obj, '_setPortalTypeName'):
+            obj._setPortalTypeName(fti.getId())
+        notify(ObjectCreatedEvent(obj))
+        # notifies ObjectWillBeAddedEvent, ObjectAddedEvent and ContainerModifiedEvent
+        container._setObject(tmp_id, obj)
+        # we get the object here with the current object id, as it might be renamed
+        # already by an event handler
+        obj = container._getOb(obj.getId())
+
     return obj
 
 
@@ -553,32 +627,6 @@ def search(query, catalog=_marker):
     return catalogs[0](query)
 
 
-def get_catalogs_for(brain_or_object):
-    """Returns the registered catalogs for the given brain_or_object
-
-    :param brain_or_object: A single catalog brain or content object
-    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
-    :param attr: Attribute name
-    :type attr: str
-    :returns: list of retgistered catalog tools
-    :rtype: list
-    """
-    catalogs = []
-
-    portal_type = brain_or_object.portal_type
-    # Use the archetypes_tool to gather the right catalogs
-    archetype_tool = get_tool("archetype_tool", None)
-    # but only if the user did not specify any catalogs explicitly
-
-    if archetype_tool:
-        # we just want the first of the registered catalogs
-        catalogs.extend(archetype_tool.getCatalogsByType(portal_type))
-
-    if not catalogs:
-        return [get_portal_catalog()]
-    return catalogs
-
-
 def safe_getattr(brain_or_object, attr, default=_marker):
     """Return the attribute value
 
@@ -684,6 +732,100 @@ def get_workflow_status_of(brain_or_object, state_var="review_state"):
     return workflow.getInfoFor(ob=obj, name=state_var)
 
 
+def get_creation_date(brain_or_object):
+    """Get the creation date of the brain or object
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Creation date
+    :rtype: DateTime
+    """
+    created = getattr(brain_or_object, "created", None)
+    if created is None:
+        fail("Object {} has no creation date ".format(
+             repr(brain_or_object)))
+    if callable(created):
+        return created()
+    return created
+
+
+def get_modification_date(brain_or_object):
+    """Get the modification date of the brain or object
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Modification date
+    :rtype: DateTime
+    """
+    modified = getattr(brain_or_object, "modified", None)
+    if modified is None:
+        fail("Object {} has no modification date ".format(
+             repr(brain_or_object)))
+    if callable(modified):
+        return modified()
+    return modified
+
+
+def get_review_status(brain_or_object):
+    """Get the `review_state` of an object
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Value of the review_status variable
+    :rtype: String
+    """
+    if is_brain(brain_or_object):
+        return brain_or_object.review_state
+    return get_workflow_status_of(brain_or_object, state_var="review_state")
+
+
+def get_cancellation_status(brain_or_object, default="active"):
+    """Get the `cancellation_state` of an object
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Value of the review_status variable
+    :rtype: String
+    """
+    if is_brain(brain_or_object):
+        return getattr(brain_or_object, "cancellation_state", default)
+    workflows = get_workflows_for(brain_or_object)
+    if 'bika_cancellation_workflow' not in workflows:
+        return default
+    return get_workflow_status_of(brain_or_object, 'cancellation_state')
+
+
+def get_inactive_status(brain_or_object, default="active"):
+    """Get the `cancellation_state` of an objct
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Value of the review_status variable
+    :rtype: String
+    """
+    if is_brain(brain_or_object):
+        return getattr(brain_or_object, "inactive_state", default)
+    workflows = get_workflows_for(brain_or_object)
+    if 'bika_inactive_workflow' not in workflows:
+        return default
+    return get_workflow_status_of(brain_or_object, 'inactive_state')
+
+
+def is_active(brain_or_object):
+    """Check if the workflow state of the object is 'inactive' or 'cancelled'.
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: False if the object is in the state 'inactive' or 'cancelled'
+    :rtype: bool
+    """
+    if get_inactive_status(brain_or_object) == "inactive":
+        return False
+    if get_cancellation_status(brain_or_object) == "cancelled":
+        return False
+    return True
+
+
 def get_catalogs_for(brain_or_object, default="portal_catalog"):
     """Get all registered catalogs for the given portal_type, catalog brain or
     content object
@@ -712,6 +854,23 @@ def get_catalogs_for(brain_or_object, default="portal_catalog"):
     return catalogs
 
 
+def get_transitions_for(brain_or_object):
+    """List available workflow transitions for all workflows
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: All possible available and allowed transitions
+    :rtype: list[dict]
+    """
+    workflow = get_tool('portal_workflow')
+    transitions = []
+    instance = get_object(brain_or_object)
+    for wfid in get_workflows_for(brain_or_object):
+        wf = workflow[wfid]
+        tlist = wf.getTransitionsFor(instance)
+        transitions.extend([t for t in tlist if t not in transitions])
+    return transitions
+
 def do_transition_for(brain_or_object, transition):
     """Performs a workflow transition for the passed in object.
 
@@ -722,35 +881,59 @@ def do_transition_for(brain_or_object, transition):
     if not isinstance(transition, basestring):
         fail("Transition type needs to be string, got '%s'" % type(transition))
     obj = get_object(brain_or_object)
-    ploneapi.content.transition(obj, transition)
+    available = [t['id'] for t in get_transitions_for(brain_or_object)]
+    if transition not in available:
+        fail("Transition %s not available in %s" % (
+            transition, ', '.join(available)))
+    # notify the BeforeTransitionEvent
+    notify(BikaBeforeTransitionEvent(obj, transition))
+    try:
+        ploneapi.content.transition(obj, transition)
+    except ploneapi.exc.InvalidParameterError as e:
+        # notify the TransitionFailedEvent
+        notify(BikaTransitionFailedEvent(obj, transition, exception=e))
+        fail("Failed to perform transition '{}' on {}: {}".format(
+             transition, obj, str(e)))
+    # notify the AfterTransitionEvent
+    notify(BikaAfterTransitionEvent(obj, transition))
     return obj
 
-
-def is_active(brain_or_object):
-    """Check if the workflow state of the object is 'inactive' or 'cancelled'.
+def async_sample_and_receive(brain_or_object, context, dateSampled, sampler):
+    """Performs a workflow transition sample and receive for provided object.
 
     :param brain_or_object: A single catalog brain or content object
-    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
-    :returns: False if the object is in the state 'inactive' or 'cancelled'
-    :rtype: bool
+    :returns: The object where the transtion was performed
     """
-    if is_brain(brain_or_object):
-        if base_hasattr(brain_or_object, 'inactive_state') and \
-           brain_or_object.inactive_state == 'inactive':
-            return False
-        if base_hasattr(brain_or_object, 'cancellation_state') and \
-           brain_or_object.cancellation_state == 'cancelled':
-            return False
     obj = get_object(brain_or_object)
-    wf = get_tool('portal_workflow')
-    workflows = get_workflows_for(obj)
-    if 'bika_inactive_workflow' in workflows \
-            and wf.getInfoFor(obj, 'inactive_state') == 'inactive':
-        return False
-    if 'bika_cancellation_workflow' in workflows \
-            and wf.getInfoFor(obj, 'cancellation_state') == 'cancelled':
-        return False
-    return True
+    task_queue = queryUtility(ITaskQueue, name='sample-receive')
+    if task_queue is not None:
+        logger.info('Queue sample and receive')
+        path = [i for i in context.getPhysicalPath()]
+        path.append('async_sample_and_receive')
+        path = '/'.join(path)
+
+        params = {
+                'obj_uid': obj.UID(),
+                'dateSampled': dateSampled,
+                'sampler': sampler,
+                }
+        logger.info('Queue Task: path=%s' % path)
+        task_id = task_queue.add(path,
+                method='POST',
+                params=params)
+        message = context.translate(
+                _("Submitted %s to the queue for processing" % (
+                    obj.Title())))
+        context.plone_utils.addPortalMessage(message, 'info')
+    else:
+        logger.info('Non-Queue sample and receive')
+        obj.setDateSampled(dateSampled)
+        obj.setSampler(sampler)
+        do_transition_for(obj, 'sample')
+        do_transition_for(obj, 'receive')
+        message = context.translate(
+                _("Sampled and Received %s" % ( obj.Title())))
+        context.plone_utils.addPortalMessage(message, 'info')
 
 
 def get_roles_for_permission(permission, brain_or_object):
@@ -887,3 +1070,107 @@ def get_current_user():
     :returns: Current User
     """
     return ploneapi.user.get_current()
+
+
+def get_cache_key(brain_or_object):
+    """Generate a cache key for a common brain or object
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Cache Key
+    :rtype: str
+    """
+    key = [
+        get_portal_type(brain_or_object),
+        get_id(brain_or_object),
+        get_uid(brain_or_object),
+        # handle different domains gracefully
+        get_url(brain_or_object),
+        # Return the microsecond since the epoch in GMT
+        get_modification_date(brain_or_object).micros(),
+    ]
+    try:
+        key.append(get_review_status(brain_or_object))
+    except:
+        pass
+    return "-".join(map(lambda x: str(x), key))
+
+
+def bika_cache_key_decorator(method, self, brain_or_object):
+    """Bika cache key decorator usable for
+
+    :param brain_or_object: A single catalog brain or content object
+    :type brain_or_object: ATContentType/DexterityContentType/CatalogBrain
+    :returns: Cache Key
+    :rtype: str
+    """
+    if brain_or_object is None:
+        raise DontCache
+    return get_cache_key(brain_or_object)
+
+
+def normalize_id(string):
+    """Normalize the id
+
+    :param string: A string to normalize
+    :type string: str
+    :returns: Normalized ID
+    :rtype: str
+    """
+    if not isinstance(string, basestring):
+        fail("Type of argument must be string, found '{}'".format(type(string)))
+    # get the id nomalizer utility
+    normalizer = getUtility(IIDNormalizer).normalize
+    return normalizer(string)
+
+
+def normalize_filename(string):
+    """Normalize the filename
+
+    :param string: A string to normalize
+    :type string: str
+    :returns: Normalized ID
+    :rtype: str
+    """
+    if not isinstance(string, basestring):
+        fail("Type of argument must be string, found '{}'".format(type(string)))
+    # get the file nomalizer utility
+    normalizer = getUtility(IFileNameNormalizer).normalize
+    return normalizer(string)
+
+class AsyncView(BrowserView):
+
+    def async_sample_and_receive(self):
+
+        logger.info('async_sample_and_receive server entered')
+        form = self.request.form
+        obj_uid = form.get('obj_uid')
+        if obj_uid is None:
+            raise RuntimeError('async_sample_and_receive requires obj_uid')
+        obj = ploneapi.content.get(UID=obj_uid)
+        dateSampled = form.get('dateSampled')
+        sampler = form.get('sampler')
+
+        obj.setDateSampled(dateSampled)
+        obj.setSampler(sampler)
+        do_transition_for(obj, 'sample')
+        do_transition_for(obj, 'receive')
+        logger.info('async_sample_and_receive server complete')
+
+    def async_transition_object(self):
+
+        logger.info('async_transition_object server entered')
+        form = self.request.form
+        obj_uid = form.get('obj_uid')
+        if obj_uid is None:
+            raise RuntimeError('async_transition_object requires obj_uid')
+        obj = get_object_by_uid(uid=obj_uid)
+        if obj is None:
+            raise RuntimeError('async_transition_object unknown obj_uid')
+
+        action_id = form.get('action_id')
+        if action_id is None:
+            raise RuntimeError('async_transition_object requires action_id')
+
+        do_transition_for(obj, action_id)
+        logger.info('async_transition_object server complete')

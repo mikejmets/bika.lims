@@ -10,8 +10,9 @@ from bika.lims import logger
 from bika.lims.browser import BrowserView
 from bika.lims.config import POINTS_OF_CAPTURE
 from bika.lims.idserver import renameAfterCreation
+from bika.lims.interfaces import IAnalysisRequest
 from bika.lims.interfaces import IResultOutOfRange
-from bika.lims.utils import isnumber
+from bika.lims.utils import isnumber, convert_unit
 from bika.lims.utils import to_utf8, encode_header, createPdf, attachPdf
 from bika.lims.utils import to_utf8, formatDecimalMark, format_supsub
 from bika.lims.utils.analysis import format_uncertainty
@@ -21,6 +22,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.Utils import formataddr
 from operator import itemgetter
+from plone import api as ploneapi
 from plone.registry.interfaces import IRegistry
 from plone.resource.utils import iterDirectoriesOfType, queryResourceDirectory
 from Products.CMFCore.utils import getToolByName
@@ -352,7 +354,8 @@ class AnalysisRequestPublishView(BrowserView):
         data['sample'] = self._sample_data(ar)
         data['batch'] = self._batch_data(ar)
         data['specifications'] = self._specs_data(ar)
-        data['analyses'] = self._analyses_data(ar, ['verified', 'published'])
+        data['analyses'] = self._analyses_data(
+                                ar, ['verified', 'published'], data['sample'])
         data['qcanalyses'] = self._qcanalyses_data(ar, ['verified', 'published'])
         data['points_of_capture'] = sorted(set([an['point_of_capture'] for an in data['analyses']]))
         data['categories'] = sorted(set([an['category'] for an in data['analyses']]))
@@ -434,6 +437,7 @@ class AnalysisRequestPublishView(BrowserView):
 
         info = {
             "obj": attachment,
+            "uid": attachment.UID(),
             "keywords": attachment.getAttachmentKeys(),
             "type": attachment_type and attachment_type.Title() or "",
             "file": attachment_file,
@@ -445,14 +449,31 @@ class AnalysisRequestPublishView(BrowserView):
             "mimetype": attachment_mime,
             "title": attachment_file.Title(),
             "icon": attachment_file.icon,
-            "inline": "<embed src='{}'' class='inline-attachment inline-attachment-{}'/>".format(
-                attachment_file.absolute_url(), self.getDirection()),
+            "inline": "<embed src='{}/AttachmentFile' class='inline-attachment inline-attachment-{}'/>".format(
+                attachment.absolute_url(), self.getDirection()),
             "renderoption": attachment.getReportOption(),
         }
         if attachment_mime.startswith("image"):
-            info["inline"] = "<img src='{}' class='inline-attachment inline-attachment-{}'/>".format(
-                attachment_file.absolute_url(), self.getDirection())
+            info["inline"] = "<img src='{}/AttachmentFile' class='inline-attachment inline-attachment-{}'/>".format(
+                attachment.absolute_url(), self.getDirection())
         return info
+
+    def _sorted_attachments(self, ar, attachments=[]):
+        """Sorter to return the attachments in the same order as the user
+        defined in the attachments viewlet
+        """
+        inf = float("inf")
+        view = ar.restrictedTraverse("attachments_view")
+        order = view.get_attachments_order()
+
+        def att_cmp(att1, att2):
+            _n1 = att1.get('uid')
+            _n2 = att2.get('uid')
+            _i1 = _n1 in order and order.index(_n1) + 1 or inf
+            _i2 = _n2 in order and order.index(_n2) + 1 or inf
+            return cmp(_i1, _i2)
+
+        return sorted(attachments, cmp=att_cmp)
 
     def _get_ar_attachments(self, ar):
         attachments = []
@@ -461,16 +482,18 @@ class AnalysisRequestPublishView(BrowserView):
             if attachment.getReportOption() == "i":
                 continue
             attachments.append(self._get_attachment_info(attachment))
-        return attachments
+
+        return self._sorted_attachments(ar, attachments)
 
     def _get_an_attachments(self, ar):
         attachments = []
         for analysis in ar.getAnalyses(full_objects=True):
             for attachment in analysis.getAttachment():
+                # Skip attachments which have the (i)gnore flag set
                 if attachment.getReportOption() == "i":
                     continue
                 attachments.append(self._get_attachment_info(attachment))
-        return attachments
+        return self._sorted_attachments(ar, attachments)
 
     def _batch_data(self, ar):
         data = {}
@@ -604,8 +627,11 @@ class AnalysisRequestPublishView(BrowserView):
     def _client_address(self, client):
         client_address = client.getPostalAddress()
         if not client_address:
+            ar = self.getAnalysisRequestObj()
+            if not IAnalysisRequest.providedBy(ar):
+                return ""
             # Data from the first contact
-            contact = self.getAnalysisRequest().getContact()
+            contact = ar.getContact()
             if contact and contact.getBillingAddress():
                 client_address = contact.getBillingAddress()
             elif contact and contact.getPhysicalAddress():
@@ -641,7 +667,7 @@ class AnalysisRequestPublishView(BrowserView):
 
         return data
 
-    def _analyses_data(self, ar, analysis_states=['verified', 'published']):
+    def _analyses_data(self, ar, analysis_states=['verified', 'published'], sample=None):
         analyses = []
         dm = ar.aq_parent.getDecimalMark()
         batch = ar.getBatch()
@@ -659,7 +685,7 @@ class AnalysisRequestPublishView(BrowserView):
                     continue
 
             # Build the analysis-specific dict
-            andict = self._analysis_data(an, dm)
+            andict = self._analysis_data(an, dm, sample)
 
             # Are there previous results for the same AS and batch?
             andict['previous'] = []
@@ -679,10 +705,27 @@ class AnalysisRequestPublishView(BrowserView):
                 andict['previous'] = sorted(andict['previous'], key=itemgetter("capture_date"))
                 andict['previous_results'] = ", ".join([p['formatted_result'] for p in andict['previous'][-5:]])
 
+            #Append analysis
             analyses.append(andict)
+
+            #Append addition analysis for each unit conversion
+            if andict['unit_conversions']:
+                for uc_uid in andict['unit_conversions']:
+                    new = dict(andict)
+                    unit_conversion = ploneapi.content.get(UID=uc_uid)
+                    new['unit'] = unit_conversion.converted_unit
+                    new['uncertainty'] = ''
+                    new['formatted_specs'] = ''
+                    new['formatted_unit'] = unit_conversion.converted_unit
+                    if andict.get('result'):
+                        new['formatted_result'] = new['result'] = convert_unit(
+                                    andict['formatted_result'],
+                                    unit_conversion.formula,
+                                    dmk)
+                    analyses.append(new)
         return analyses
 
-    def _analysis_data(self, analysis, decimalmark=None):
+    def _analysis_data(self, analysis, decimalmark=None, sample=None):
         if analysis.UID() in self._cache['_analysis_data']:
             return self._cache['_analysis_data'][analysis.UID()]
 
@@ -715,7 +758,9 @@ class AnalysisRequestPublishView(BrowserView):
                             else None,
                   'worksheet': None,
                   'specs': {},
-                  'formatted_specs': ''}
+                  'formatted_specs': '',
+                  'unit_conversions': [],
+                  }
 
         if analysis.portal_type == 'DuplicateAnalysis':
             andict['reftype'] = 'd'
@@ -771,6 +816,17 @@ class AnalysisRequestPublishView(BrowserView):
                 if ret and ret['out_of_range']:
                     andict['outofrange'] = True
                     break
+        # Get unit conversions for result
+        st_uid = None
+        if sample and sample.get('sample_type') and \
+           sample['sample_type'].get('obj'):
+            st_uid = sample['sample_type']['obj'].UID()
+        if st_uid:
+            for unit_conversion in service.getUnitConversions():
+                if unit_conversion.get('SampleType') and \
+                   unit_conversion.get('Unit') and \
+                   unit_conversion.get('SampleType') == st_uid:
+                    andict['unit_conversions'].append(unit_conversion['Unit'])
         self._cache['_analysis_data'][analysis.UID()]  = andict
         return andict
 
@@ -1063,7 +1119,21 @@ class AnalysisRequestPublishView(BrowserView):
         for cc in ar.getCCContact():
             recips.append({'title': to_utf8(cc.Title()),
                            'email': cc.getEmailAddress(),
-                           'pubpref': contact.getPublicationPreference()})
+                           'pubpref': cc.getPublicationPreference()})
+
+        # CC Emails
+        # https://github.com/bikalims/bika.lims/issues/2292
+        plone_utils = getToolByName(self.context, "plone_utils")
+        ccemails = map(lambda x: x.strip(), ar.getCCEmails().split(","))
+        for ccemail in ccemails:
+            # Better do that with a field validator
+            if not plone_utils.validateSingleEmailAddress(ccemail):
+                logger.warn("Skipping invalid email address '{}'".format(ccemail))
+                continue
+            recips.append({
+                'title': ccemail,
+                'email': ccemail,
+                'pubpref': ('email', 'pdf', ),})
 
         return recips
 
@@ -1073,7 +1143,7 @@ class AnalysisRequestPublishView(BrowserView):
         """
         client = ar.aq_parent
         subject_items = client.getEmailSubject()
-        ai = co = cr = cs = False
+        ai = co = cr = cs = cn = False
         if 'ar' in subject_items:
             ai = True
         if 'co' in subject_items:
@@ -1082,10 +1152,13 @@ class AnalysisRequestPublishView(BrowserView):
             cr = True
         if 'cs' in subject_items:
             cs = True
+        if 'cn' in subject_items:
+            cn = True
         ais = []
         cos = []
         crs = []
         css = []
+        cns = []
         blanks_found = False
         if ai:
             ais.append(ar.getRequestID())
@@ -1109,6 +1182,8 @@ class AnalysisRequestPublishView(BrowserView):
                     css.append(sample.getClientSampleID())
             else:
                 blanks_found = True
+        if cn:
+            cns.append(ar.getClientTitle())
         line_items = []
         if ais:
             ais.sort()
@@ -1125,6 +1200,10 @@ class AnalysisRequestPublishView(BrowserView):
         if css:
             css.sort()
             li = t(_('Samples: ${samples}', mapping={'samples': ', '.join(css)}))
+            line_items.append(li)
+        if cns:
+            cns.sort()
+            li = t(_('Client: ${client}', mapping={'client': ', '.join(cns)}))
             line_items.append(li)
         tot_line = ' '.join(line_items)
         if tot_line:

@@ -186,6 +186,19 @@ schema = BikaFolderSchema.copy() + BikaSchema.copy() + Schema((
         ),
     ),
 
+    StringField(
+        'ResultImporterId',
+        vocabulary="getImportDataInterfacesList",
+        widget=SelectionWidget(
+            checkbox_bound=0,
+            label=_("Result Imported ID"),
+            description=_("Select an Import interface for this instrument."),
+            format='select',
+            default='',
+            visible=True,
+        ),
+    ),
+
     RecordsField(
         'DataInterfaceOptions',
         type='interfaceoptions',
@@ -388,6 +401,9 @@ class Instrument(ATFolder):
 
     def getExportDataInterfacesList(self):
         return getDataInterfaces(self, export_only=True)
+
+    def getImportDataInterfacesList(self):
+        return getDataInterfaces(self, export_only=False)
 
     def getScheduleTaskTypesList(self):
         return getMaintenanceTypes(self)

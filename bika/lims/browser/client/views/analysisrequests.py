@@ -23,8 +23,9 @@ class ClientAnalysisRequestsView(AnalysisRequestsView):
             "level": 0}
         review_states = []
         for review_state in self.review_states:
-            review_state['columns'].remove('Client')
-            review_states.append(review_state)
+            if review_state['columns']:
+                review_state['columns'].remove('Client')
+                review_states.append(review_state)
         self.review_states = review_states
 
     def __call__(self):
@@ -44,9 +45,7 @@ class ClientAnalysisRequestsView(AnalysisRequestsView):
             else:
                 if mtool.checkPermission(AddAnalysisRequest, self.context):
                     self.context_actions[_('Add')] = {
-                        'url': self.context.absolute_url() + \
-                               "/portal_factory/AnalysisRequest" + \
-                               "/Request new analyses/ar_add",
+                        'url': self.context.absolute_url() + "/ar_add",
                         'icon': '++resource++bika.lims.images/add.png'}
 
         return super(ClientAnalysisRequestsView, self).__call__()

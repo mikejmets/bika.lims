@@ -83,6 +83,7 @@ from bika.lims.interfaces import IAnalysisRequest
 from bika.lims.interfaces import ISamplePrepWorkflow
 
 from bika.lims import api
+from bika.lims import deprecated
 from bika.lims.config import PROJECTNAME
 from bika.lims import bikaMessageFactory as _
 from bika.lims.content.bikaschema import BikaSchema
@@ -162,6 +163,8 @@ schema = BikaSchema.copy() + Schema((
             size=20,
             helper_js=("bika_widgets/referencewidget.js",
                        "++resource++bika.lims.js/contact.js"),
+            description=_("The primary contact of this analysis request, " \
+                          "who will receive notifications and publications via email"),
             visible={
                 'edit': 'visible',
                 'view': 'visible',
@@ -207,6 +210,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=EditARContact,
         widget=ReferenceWidget(
             label=_("CC Contacts"),
+            description=_("The contacts used in CC for email notifications"),
             render_own_label=True,
             size=20,
             visible={
@@ -251,6 +255,7 @@ schema = BikaSchema.copy() + Schema((
         acquire_fieldname="CCEmails",
         widget=StringWidget(
             label=_("CC Emails"),
+            description=_("Additional email addresses to be notified"),
             visible={
                 'edit': 'visible',
                 'view': 'visible',
@@ -284,7 +289,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
             label=_("Client"),
-            description=_("You must assign this request to a client"),
+            description=_("The assigned client of this request"),
             size=20,
             render_own_label=True,
             visible={
@@ -361,6 +366,7 @@ schema = BikaSchema.copy() + Schema((
         widget=ReferenceWidget(
             label=_("Batch"),
             size=20,
+            description=_("The assigned batch of this request"),
             render_own_label=True,
             visible={
                 'edit': 'visible',
@@ -398,6 +404,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
             label=_("Sampling Round"),
+            description=_("The assigned sampling round of this request"),
             size=20,
             render_own_label=True,
             visible={
@@ -433,7 +440,8 @@ schema = BikaSchema.copy() + Schema((
         referenceClass=HoldingReference,
         relationship='AnalysisRequestSubGroup',
         widget=ReferenceWidget(
-            label=_("Sub-group"),
+            label=_("Batch Sub-group"),
+            description=_("The assigned batch sub group of this request"),
             size=20,
             render_own_label=True,
             visible={
@@ -481,7 +489,8 @@ schema = BikaSchema.copy() + Schema((
         read_permission=permissions.View,
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
-            label=_("Template"),
+            label=_("AR Template"),
+            description=_("The predefined values of the AR template are set in the request"),
             size=20,
             render_own_label=True,
             visible={
@@ -522,6 +531,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
             label=_("Analysis Profile"),
+            description=_("Analysis profiles apply a certain set of analyses"),
             size=20,
             render_own_label=True,
             visible=False,
@@ -543,6 +553,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
             label=_("Analysis Profiles"),
+            description=_("Analysis profiles apply a certain set of analyses"),
             size=20,
             render_own_label=True,
             visible={
@@ -580,6 +591,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=SampleSample,
         widget=DateTimeWidget(
             label=_("Date Sampled"),
+            description=_("The date when the sample was taken"),
             size=20,
             show_time=True,
             visible={
@@ -617,6 +629,7 @@ schema = BikaSchema.copy() + Schema((
         widget=BikaSelectionWidget(
             format='select',
             label=_("Sampler"),
+            description=_("The person who took the sample"),
             # see SamplingWOrkflowWidgetVisibility
             visible={
                 'edit': 'visible',
@@ -681,6 +694,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=DateTimeWidget(
             label=_("Sampling Date"),
+            description=_("The date when the sample will be taken"),
             size=20,
             show_time=True,
             render_own_label=True,
@@ -967,6 +981,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=StringWidget(
             label=_("Client Order Number"),
+            description=_("The client side order number for this request"),
             size=20,
             render_own_label=True,
             visible={
@@ -1002,6 +1017,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=StringWidget(
             label=_("Client Reference"),
+            description=_("The client side reference for this request"),
             size=20,
             render_own_label=True,
             visible={
@@ -1039,6 +1055,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=StringWidget(
             label=_("Client Sample ID"),
+            description=_("The client side identifier of the sample"),
             size=20,
             render_own_label=True,
             visible={
@@ -1077,6 +1094,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
             label=_("Sampling Deviation"),
+            description=_("Deviation between the sample and how it was sampled"),
             size=20,
             render_own_label=True,
             visible={
@@ -1118,6 +1136,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
             label=_("Sample condition"),
+            description=_("The current condition of the sample"),
             size=20,
             render_own_label=True,
             visible={
@@ -1156,6 +1175,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=StringWidget(
             label=_("Environmental conditions"),
+            description=_("The environmental condition during sampling"),
             visible={
                 'edit': 'visible',
                 'view': 'visible',
@@ -1228,7 +1248,9 @@ schema = BikaSchema.copy() + Schema((
         read_permission=permissions.View,
         write_permission=permissions.ModifyPortalContent,
         widget=BooleanWidget(
-            label=_("Ad-Hoc"),
+            label=_("Sampled AdHoc"),
+            description=_("Was the sample taken in non-scheduled matter, " \
+                          "e.g. out of a recurring sampling schedule?"),
             render_own_label=True,
             visible={
                 'edit': 'visible',
@@ -1265,6 +1287,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=BooleanWidget(
             label=_("Composite"),
+            description=_("Was the sample put together from multiple Samples?"),
             render_own_label=True,
             visible={
                 'edit': 'visible',
@@ -1331,7 +1354,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=BooleanWidget(
             label=_("Invoice Exclude"),
-            description=_("Select if analyses to be excluded from invoice"),
+            description=_("Should the analyses be excluded from the invoice?"),
             render_own_label=True,
             visible={
                 'edit': 'visible',
@@ -1412,6 +1435,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=DateTimeWidget(
             label=_("Date Received"),
+            description=_("The date when the sample was received"),
             visible={
                 'edit': 'visible',
                 'view': 'visible',
@@ -1440,6 +1464,7 @@ schema = BikaSchema.copy() + Schema((
         read_permission=permissions.View,
         widget=DateTimeWidget(
             label=_("Date Published"),
+            description=_("The date when the request was published"),
             visible={
                 'edit': 'visible',
                 'view': 'visible',
@@ -1476,6 +1501,7 @@ schema = BikaSchema.copy() + Schema((
         widget=TextAreaWidget(
             macro="bika_widgets/remarks",
             label=_("Remarks"),
+            description=_("Remarks and comments for this request"),
             append_only=True,
             visible={
                 'edit': 'visible',
@@ -1602,6 +1628,38 @@ schema = BikaSchema.copy() + Schema((
             visible=False,
         ),
     ),
+    StringField(
+        'ClientStateLicenseID',
+        mode="rw",
+        read_permission=permissions.View,
+        write_permission=permissions.ModifyPortalContent,
+        vocabulary='getClientLicenses',
+        acquire=True,
+        widget=SelectionWidget(
+            format="select",
+            label=_("Client's State License ID"),
+            description=_("Client's State License"),
+            visible={
+                'edit': 'visible',
+                'view': 'visible',
+                'add': 'edit',
+                'header_table': 'visible',
+                'sample_registered': {'view': 'visible', 'edit': 'visible', 'add': 'edit'},
+                'to_be_sampled': {'view': 'visible', 'edit': 'visible'},
+                'sampled': {'view': 'visible', 'edit': 'visible'},
+                'to_be_preserved': {'view': 'visible', 'edit': 'visible'},
+                'sample_due': {'view': 'visible', 'edit': 'visible'},
+                'sample_prep': {'view': 'visible', 'edit': 'invisible'},
+                'sample_received': {'view': 'visible', 'edit': 'invisible'},
+                'attachment_due': {'view': 'visible', 'edit': 'invisible'},
+                'to_be_verified': {'view': 'visible', 'edit': 'invisible'},
+                'verified': {'view': 'visible', 'edit': 'invisible'},
+                'published': {'view': 'visible', 'edit': 'invisible'},
+                'invalid': {'view': 'visible', 'edit': 'invisible'},
+            },
+            render_own_label=True,
+        ),
+    ),
 
     StringField(
         'PreparationWorkflow',
@@ -1613,6 +1671,7 @@ schema = BikaSchema.copy() + Schema((
         widget=SelectionWidget(
             format="select",
             label=_("Preparation Workflow"),
+            description=_("The needed preparation workflow for the sample in this request"),
             visible={
                 'edit': 'visible',
                 'view': 'visible',
@@ -1645,6 +1704,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget=ReferenceWidget(
             label=_("Priority"),
+            description=_("The urgency of this request"),
             size=10,
             render_own_label=True,
             visible={
@@ -2208,6 +2268,9 @@ class AnalysisRequest(BaseFolder):
         invoice_url = invoice.absolute_url()
         RESPONSE.redirect('{}/invoice_print'.format(invoice_url))
 
+    @deprecated(comment="bika.lims.content.analysisrequest.addARAttachment "
+                        "is deprecated and will be removed in Bika LIMS 3.3. "
+                        "Please use the view 'attachments_view' instead.")
     def addARAttachment(self, REQUEST=None, RESPONSE=None):
         """Add the file as an attachment
         """
@@ -2255,6 +2318,9 @@ class AnalysisRequest(BaseFolder):
         else:
             RESPONSE.redirect(self.absolute_url())
 
+    @deprecated(comment="bika.lims.content.analysisrequest.delARAttachment "
+                        "is deprecated and will be removed in Bika LIMS 3.3. "
+                        "Please use the view 'attachments_view' instead.")
     def delARAttachment(self, REQUEST=None, RESPONSE=None):
         """Delete the attachment
         """
@@ -2484,7 +2550,7 @@ class AnalysisRequest(BaseFolder):
         return getTransitionDate(self, 'publish')
 
     def getSamplers(self):
-        return getUsers(self, ['LabManager', 'Sampler'])
+        return getUsers(['LabManager', 'Sampler'])
 
     def getPreparationWorkflows(self):
         """Return a list of sample preparation workflows.  These are identified
@@ -2498,6 +2564,22 @@ class AnalysisRequest(BaseFolder):
             workflow = wf.getWorkflowById(workflow_id)
             prep_workflows.append([workflow_id, workflow.title])
         return DisplayList(prep_workflows)
+
+    def getClientLicenses(self):
+        """Return a list of sample preparation workflows.  These are identified
+        by scanning all workflow IDs for those beginning with "sampleprep".
+        """
+        bsc = getToolByName(self, 'bika_setup_catalog')
+        licenses = [['', ''], ]
+        client = self.getClient()
+        for license in client.getLicenses():
+            license_types = bsc(portal_type='ClientType', UID=license['LicenseType'])
+            if len(license_types) == 1:
+                license_type = license_types[0].Title
+                id_value = '{},{LicenseID},{LicenseNumber},{Authority}'.format(license_type, **license)
+                value = license_type
+                licenses.append([id_value, value])
+        return DisplayList(licenses)
 
     def getDepartments(self):
         """Returns a set with the departments assigned to the Analyses
@@ -2648,29 +2730,33 @@ class AnalysisRequest(BaseFolder):
 
         # Check if the analysis request state is to_be_verified
         review_state = workflow.getInfoFor(self, "review_state")
-        if review_state == 'to_be_verified':
-            # This means that all the analyses from this analysis request have
-            # already been transitioned to a 'verified' state, and so the
-            # analysis request itself
-            return True
-        else:
-            # Check if the analyses contained in this analysis request are
-            # verifiable. Only check those analyses not cancelled and that
-            # are not in a kind-of already verified state
-            canbeverified = True
-            omit = ['published', 'retracted', 'rejected', 'verified']
-            for a in self.getAnalyses(full_objects=True):
-                st = workflow.getInfoFor(a, 'cancellation_state', 'active')
-                if st == 'cancelled':
-                    continue
-                st = workflow.getInfoFor(a, 'review_state')
-                if st in omit:
-                    continue
-                # Can the analysis be verified?
-                if not a.isVerifiable(self):
-                    canbeverified = False
-                    break
-            return canbeverified
+        #NOTE: We've commented-out the code below because if the analyses
+        # on the are AR are not all Verified, the Verify transition is
+        # available on the AR, whereas it should not be available
+
+        #if review_state == 'to_be_verified':
+        #    # This means that all the analyses from this analysis request have
+        #    # already been transitioned to a 'verified' state, and so the
+        #    # analysis request itself
+        #    return True
+        #else:
+        #    # Check if the analyses contained in this analysis request are
+        #    # verifiable. Only check those analyses not cancelled and that
+        #    # are not in a kind-of already verified state
+        canbeverified = True
+        omit = ['published', 'retracted', 'rejected', 'verified']
+        for a in self.getAnalyses(full_objects=True):
+            st = workflow.getInfoFor(a, 'cancellation_state', 'active')
+            if st == 'cancelled':
+                continue
+            st = workflow.getInfoFor(a, 'review_state')
+            if st in omit:
+                continue
+            # Can the analysis be verified?
+            if not a.isVerifiable():
+                canbeverified = False
+                break
+        return canbeverified
 
     def isUserAllowedToVerify(self, member):
         """Checks if the specified user has enough privileges to verify the
@@ -2820,10 +2906,9 @@ class AnalysisRequest(BaseFolder):
         # if skip(self, "sample"):
         #     return
         # transition our sample
-        workflow = getToolByName(self, 'portal_workflow')
         sample = self.getSample()
         if not skip(sample, "sample", peek=True):
-            workflow.doActionFor(sample, "sample")
+            api.do_transition_for(sample, "sample")
 
     # def workflow_script_to_be_preserved(self):
     #     if skip(self, "to_be_preserved"):

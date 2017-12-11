@@ -6,7 +6,7 @@
 import os
 from setuptools import setup, find_packages
 
-version = '3.3.0'
+version = '3.4.0'
 
 
 def read(*rnames):
@@ -73,6 +73,8 @@ setup(name='bika.lims',
           'WeasyPrint==0.19.2',
           'z3c.jbot',
           'z3c.unconfigure==1.0.1',
+          'collective.taskqueue',
+
       ],
       extras_require={
           'test': [

@@ -71,6 +71,7 @@ def initialize(context):
     from content.calculation import Calculation
     from content.client import Client
     from content.clientfolder import ClientFolder
+    from content.clienttype import ClientType
     from content.contact import Contact
     from content.container import Container
     from content.containertype import ContainerType
@@ -122,6 +123,7 @@ def initialize(context):
     from content.suppliercontact import SupplierContact
     from content.supplyorderfolder import SupplyOrderFolder
     from content.supplyorder import SupplyOrder
+    from content.unitconversion import UnitConversion
     from content.worksheet import Worksheet
     from content.worksheetfolder import WorksheetFolder
     from content.worksheettemplate import WorksheetTemplate
@@ -135,6 +137,8 @@ def initialize(context):
     from controlpanel.bika_attachmenttypes import AttachmentTypes
     from controlpanel.bika_batchlabels import BatchLabels
     from controlpanel.bika_calculations import Calculations
+    from controlpanel.bika_clientdepartments import ClientDepartments
+    from controlpanel.bika_clienttypes import ClientTypes
     from controlpanel.bika_containers import Containers
     from controlpanel.bika_containertypes import ContainerTypes
     from controlpanel.bika_departments import Departments
@@ -156,6 +160,7 @@ def initialize(context):
     from controlpanel.bika_srtemplates import SRTemplates
     from controlpanel.bika_subgroups import SubGroups
     from controlpanel.bika_suppliers import Suppliers
+    from controlpanel.bika_unitconversions import UnitConversions
     from controlpanel.bika_worksheettemplates import WorksheetTemplates
 
     content_types, constructors, ftis = process_types(

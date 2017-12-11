@@ -60,9 +60,9 @@ ATTACHMENT_OPTIONS = DisplayList((
     ('n', _('Not Permitted')),
 ))
 ATTACHMENT_REPORT_OPTIONS = DisplayList((
+    ('r', _('Render in Report')),
     ('a', _('Attach to Report')),
     ('i', _('Ignore in Report')),
-    ('r', _('Render in Report')),
 ))
 DEFAULT_AR_SPECS = DisplayList((
     ('ar_specs', _('Analysis Request Specifications')),
@@ -79,6 +79,7 @@ EMAIL_SUBJECT_OPTIONS = DisplayList((
     ('co', _('Order ID')),
     ('cr', _('Client Reference')),
     ('cs', _('Client SID')),
+    ('cn', _('Client Name')),
 ))
 
 GENDERS = DisplayList((
@@ -128,4 +129,9 @@ MULTI_VERIFICATION_TYPE = DisplayList((
     ('self_multi_enabled', _('Allow same user to verify multiple times')),
     ('self_multi_not_cons', _('Allow same user to verify multiple times, but not consecutively')),
     ('self_multi_disabled', _('Disable multi-verification for the same user')),
+))
+INSTRUMENT_IMPORT_AUTO_OPTIONS = DisplayList((
+    ('', _("Don't transition ")),
+    #(Transition, _(state to transition to))
+    ('submit', _('Submit')),
 ))

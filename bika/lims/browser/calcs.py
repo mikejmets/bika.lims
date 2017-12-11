@@ -13,6 +13,7 @@ from zope.component import getAdapters
 from zope.interface import implements
 
 import plone
+from plone import api as ploneapi
 
 from Products.Archetypes.config import REFERENCE_CATALOG
 from Products.CMFCore.utils import getToolByName
@@ -22,6 +23,7 @@ from bika.lims import bikaMessageFactory as _
 from bika.lims.browser import BrowserView
 from bika.lims.interfaces import IAnalysis
 from bika.lims.interfaces import IFieldIcons
+from bika.lims.utils import convert_unit
 from bika.lims.utils import isnumber
 from bika.lims.utils import t
 from bika.lims.utils.analysis import format_numeric_result
@@ -75,7 +77,7 @@ class ajaxCalculateAnalysisEntry(BrowserView):
         self.context = context
         self.request = request
 
-    def calculate(self, uid=None):
+    def calculate(self, uid=None, sample_type_uid=None):
         analysis = self.analyses[uid]
         form_result = self.current_results[uid]['result']
         service = analysis.getService()
@@ -97,6 +99,22 @@ class ajaxCalculateAnalysisEntry(BrowserView):
             if form_result == "0/0":
                 Result['result'] = ""
 
+        if sample_type_uid and Result['result']:
+            for unit_conversion in service.getUnitConversions():
+                if unit_conversion.get('SampleType') and \
+                   unit_conversion.get('Unit') and \
+                   unit_conversion.get('ShowOnListing', False) and \
+                   unit_conversion.get('SampleType') == sample_type_uid:
+                    conversion = ploneapi.content.get(
+                            UID=unit_conversion['Unit'])
+                    Result['converted_result'] = '%s %s' % (
+                        convert_unit(
+                            Result['result'],
+                            conversion.formula,
+                            self.context.bika_setup.getResultsDecimalMark(),
+                            analysis.getPrecision()),
+                        conversion.converted_unit)
+                    break
         if calculation:
 
             '''
@@ -392,6 +410,7 @@ class ajaxCalculateAnalysisEntry(BrowserView):
         self.analyses = {}
         # ignore these analyses if objects no longer exist
         self.ignore_uids = []
+        sample_type_uid = self.context.getSampleType().UID()
 
         for analysis_uid, result in self.current_results.items():
             analysis = self.rc.lookupObject(analysis_uid)
@@ -401,7 +420,7 @@ class ajaxCalculateAnalysisEntry(BrowserView):
             self.analyses[analysis_uid] = analysis
 
         if uid not in self.ignore_uids:
-            self.calculate(uid)
+            self.calculate(uid=uid, sample_type_uid=sample_type_uid)
 
         results = []
         for result in self.results:

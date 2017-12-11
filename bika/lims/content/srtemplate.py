@@ -109,7 +109,7 @@ class SRTemplate(BaseContent):
         """ Returns the available users in the system with the roles
             'LabManager' and/or 'Sampler'
         """
-        return getUsers(self, ['LabManager', 'Sampler'])
+        return getUsers(['LabManager', 'Sampler'])
 
     def _getDepartmentsDisplayList(self):
         """ Returns the available departments in the system. Only the

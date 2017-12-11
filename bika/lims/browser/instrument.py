@@ -97,6 +97,9 @@ class InstrumentMaintenanceView(BikaListingView):
                          'getMaintainer']},
         ]
 
+    def contentsMethod(self, *args, **kw):
+        return self.context.getMaintenanceTasks()
+
     def folderitems(self):
         items = BikaListingView.folderitems(self)
         outitems = []
@@ -173,6 +176,9 @@ class InstrumentCalibrationsView(BikaListingView):
                          'getCalibrator']},
         ]
 
+    def contentsMethod(self, *args, **kw):
+        return self.context.getCalibrations()
+
     def folderitems(self):
         items = BikaListingView.folderitems(self)
         outitems = []
@@ -229,6 +235,9 @@ class InstrumentValidationsView(BikaListingView):
                          'getDownTo',
                          'getValidator']},
         ]
+
+    def contentsMethod(self, *args, **kw):
+        return self.context.getValidations()
 
     def folderitems(self):
         items = BikaListingView.folderitems(self)
@@ -310,6 +319,9 @@ class InstrumentScheduleView(BikaListingView):
                          'creator',
                          'created']},
         ]
+
+    def contentsMethod(self, *args, **kw):
+        return self.context.getSchedule()
 
     def folderitems(self):
         items = BikaListingView.folderitems(self)
@@ -508,7 +520,14 @@ class InstrumentCertificationsViewView(BrowserView):
     _certificationsview = None
 
     def __call__(self):
-        return self.template()
+        view = self.get_certifications_view()
+        view._process_request()
+        if self.request.get('table_only', '') == view.form_id:
+            return view.contents_table()
+        elif self.request.get('rows_only', '') == view.form_id:
+            return view.contents_table()
+        else:
+            return self.template()
 
     def get_certifications_table(self):
         """ Returns the table of Certifications
@@ -556,7 +575,7 @@ class InstrumentCertificationsView(BikaListingView):
         ]
         self.allow_edit = False
         self.show_select_column = False
-        self.show_workflow_action_buttons = False
+        self.show_workflow_action_buttons = True
         uids = [c.UID() for c in self.context.getCertifications()]
         self.catalog = 'portal_catalog'
         self.contentFilter = {'UID': uids, 'sort_on': 'sortable_title'}

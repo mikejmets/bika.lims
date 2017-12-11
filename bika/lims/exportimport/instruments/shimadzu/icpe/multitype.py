@@ -85,7 +85,8 @@ def Import(context, request):
                                            allowed_ar_states=status,
                                            allowed_analysis_states=None,
                                            override=over,
-                                           instrument_uid=instrument)
+                                           instrument_uid=instrument,
+                                           form=form)
         tbex = ''
         try:
             importer.process()
@@ -123,7 +124,7 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
         # Metals Mix Method with IS longer cali\tCAL1\tBlank\t9/23/2016 11:54:59 AM\t\tMRC\tAs\tQUANT\t193.759\t1\tppb\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tAfter Drift Correction\t-0.0936625\t-0.1063610\t-0.1266098\t\t\t\t\t\t\t\t-0.1088778\t0.0166172\t15.26
 
         splitted = [token.strip() for token in line.split('\t')]
-        quantitation = {'DefaultResult': 'Title8'}
+        quantitation = {'DefaultResult': 'Title21'}
         # File has no headers
         self._quantitationresultsheader  = ['Title%s' % x for x in range(44)]
         for colname in self._quantitationresultsheader:
@@ -137,35 +138,54 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
                     try:
                         quantitation[colname] = float(token)
                     except ValueError:
-                        self.warn(
-                            "No valid number ${token} in column ${index} (${column_name})",
-                            mapping={"token": token,
-                                     "index": str(i + 1),
-                                     "column_name": colname},
-                            numline=self._numline, line=line)
                         quantitation[colname] = token
+
                 elif colname == 'Title3':
                     d = datetime.strptime(token, "%m/%d/%Y %I:%M:%S %p")
                     quantitation[colname] = d
                 else:
                     quantitation[colname] = token
 
-                val = re.sub(r"\W", "", splitted[6])
-                self._addRawResult(quantitation['Title2'],
-                                   values={val:quantitation},
-                                   override=True)
             elif token:
                 self.err("Orphan value in column ${index} (${token})",
                          mapping={"index": str(i+1),
                                   "token": token},
                          numline=self._numline, line=line)
 
+        result = quantitation[quantitation['DefaultResult']]
+        column_name = quantitation['DefaultResult']
+        result = self.zeroValueDefaultInstrumentResults(column_name, result, line)
+        quantitation[quantitation['DefaultResult']] = result
+
+        val = re.sub(r"\W", "", splitted[6])
+        self._addRawResult(quantitation['Title2'],
+                           values={val:quantitation},
+                           override=False)
+
+    def zeroValueDefaultInstrumentResults(self, column_name, result, line):
+        result = str(result)
+        if result.startswith('--') or result == '' or result == 'ND':
+            return 0.0
+
+        try:
+            result = float(result)
+            if result < 0.0:
+                result  = 0.0
+        except ValueError:
+            self.err(
+                "No valid number ${result} in column (${column_name})",
+                mapping={"result": result,
+                         "column_name": column_name},
+                numline=self._numline, line=line)
+            return
+        return result
+
 class ICPEMultitypeImporter(AnalysisResultsImporter):
 
     def __init__(self, parser, context, idsearchcriteria, override,
                  allowed_ar_states=None, allowed_analysis_states=None,
-                 instrument_uid=''):
+                 instrument_uid='', form=None):
         AnalysisResultsImporter.__init__(self, parser, context, idsearchcriteria,
                                          override, allowed_ar_states,
                                          allowed_analysis_states,
-                                         instrument_uid)
+                                         instrument_uid, form)

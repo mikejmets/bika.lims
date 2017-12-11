@@ -5,8 +5,10 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
-from AccessControl import ClassSecurityInfo
 import csv
+import json
+from AccessControl import ClassSecurityInfo
+from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
 from Products.Archetypes.event import ObjectInitializedEvent
 from Products.CMFCore.WorkflowCore import WorkflowException
@@ -18,6 +20,7 @@ from bika.lims.content.analysisrequest import schema as ar_schema
 from bika.lims.content.sample import schema as sample_schema
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import IARImport, IClient
+from bika.lims import logger
 from bika.lims.utils import tmpID, getUsers
 from bika.lims.vocabularies import CatalogVocabulary
 from bika.lims.workflow import getTransitionDate
@@ -25,6 +28,7 @@ from collective.progressbar.events import InitialiseProgressBar
 from collective.progressbar.events import ProgressBar
 from collective.progressbar.events import ProgressState
 from collective.progressbar.events import UpdateProgressEvent
+from collective.taskqueue.interfaces import ITaskQueue
 from Products.Archetypes import atapi
 from Products.Archetypes.public import *
 from Products.Archetypes.references import HoldingReference
@@ -40,9 +44,10 @@ from Products.DataGridField import DatetimeColumn
 from Products.DataGridField import LinesColumn
 from Products.DataGridField import SelectColumn
 from Products.DataGridField import TimeColumn
-from plone import api
+from plone import api as ploneapi
 from plone.indexer import indexer
 from zope import event
+from zope.component import queryUtility
 from zope.event import notify
 from zope.i18nmessageid import MessageFactory
 from zope.interface import implements
@@ -313,45 +318,45 @@ class ARImport(BaseFolder):
         """Create objects from valid ARImport
         """
 
-        def convert_date_string(datestr):
-            return datestr.replace('-', '/')
-
-        def lookup_sampler_uid(import_user):
-            #Lookup sampler's uid
-            found = False
-            userid = None
-            user_ids = []
-            users = getUsers(self, ['LabManager', 'Sampler']).items()
-            for (samplerid, samplername) in users:
-                if import_user == samplerid:
-                    found = True
-                    userid = samplerid
-                    break
-                if import_user == samplername:
-                    user_ids.append(samplerid)
-            if found:
-                return userid
-            if len(user_ids) == 1:
-                return user_ids[0]
-            if len(user_ids) > 1:
-                #raise ValueError('Sampler %s is ambiguous' % import_user)
-                return None
-            #Otherwise
-            #raise ValueError('Sampler %s not found' % import_user)
-            return None
-
         bsc = getToolByName(self, 'bika_setup_catalog')
         workflow = getToolByName(self, 'portal_workflow')
         client = self.aq_parent
+        batch = self.schema['Batch'].get(self)
+        contact = self.getContact()
 
         title = _('Submitting AR Import')
         description = _('Creating and initialising objects')
-        bar = ProgressBar(self, self.REQUEST, title, description)
-        notify(InitialiseProgressBar(bar))
+        #bar = ProgressBar(self, self.REQUEST, title, description)
+        #notify(InitialiseProgressBar(bar))
 
         profiles = [x.getObject() for x in bsc(portal_type='AnalysisProfile')]
 
         gridrows = self.schema['SampleData'].get(self)
+        task_queue = queryUtility(ITaskQueue, name='arimport-create')
+        if task_queue is not None:
+            path = [i for i in client.getPhysicalPath()]
+            path.append('ar_import_async')
+            path = '/'.join(path)
+
+            params = {
+                    'gridrows': json.dumps(gridrows),
+                    'client_uid': client.UID(),
+                    'batch_uid': batch.UID(),
+                    'client_ref': self.getClientReference(),
+                    'client_order_num': self.getClientOrderNumber(),
+                    'contact_uid': contact.UID(),
+                    }
+            logger.info('Queue Task: path=%s' % path)
+            logger.debug('Que Task: path=%s, params=%s' % (
+                            path, params))
+            task_id = task_queue.add(path,
+                    method='POST',
+                    params=params)
+            # document has been written to, and redirect() fails here
+            self.REQUEST.response.write(
+                '<script>document.location.href="%s"</script>' % (
+                    client.absolute_url()))
+            return
         row_cnt = 0
         for therow in gridrows:
             row = therow.copy()
@@ -371,12 +376,13 @@ class ARImport(BaseFolder):
                 workflow.doActionFor(sample, 'no_sampling_workflow')
             part = _createObjectByType('SamplePartition', sample, 'part-1')
             part.unmarkCreationFlag()
+            renameAfterCreation(part)
             if swe:
                 workflow.doActionFor(part, 'sampling_workflow')
             else:
                 workflow.doActionFor(part, 'no_sampling_workflow')
             # Container is special... it could be a containertype.
-            container = self.get_row_container(row)
+            container = get_row_container(row)
             if container:
                 if container.portal_type == 'ContainerType':
                     containers = container.getContainers()
@@ -398,11 +404,18 @@ class ARImport(BaseFolder):
             row['Profile'] = newprofiles[0] if newprofiles else None
 
             # Same for analyses
-            newanalyses = set(self.get_row_services(row) +
-                              self.get_row_profile_services(row))
+            (analyses, errors) = get_row_services(row)
+            if errors:
+                for err in errors:
+                    self.error(err)
+            newanalyses = set(analyses)
+            (analyses, errors) = get_row_profile_services(row)
+            if errors:
+                for err in errors:
+                    self.error(err)
+            newanalyses.update(analyses)
             row['Analyses'] = []
             # get batch
-            batch = self.schema['Batch'].get(self)
             if batch:
                 row['Batch'] = batch
             # Add AR fields from schema into this row's data
@@ -427,9 +440,9 @@ class ARImport(BaseFolder):
                 workflow.doActionFor(ar, 'sampling_workflow')
             else:
                 workflow.doActionFor(ar, 'no_sampling_workflow')
-            progress_index = float(row_cnt) / len(gridrows) * 100
-            progress = ProgressState(self.REQUEST, progress_index)
-            notify(UpdateProgressEvent(progress))
+            #progress_index = float(row_cnt) / len(gridrows) * 100
+            #progress = ProgressState(self.REQUEST, progress_index)
+            #notify(UpdateProgressEvent(progress))
         # document has been written to, and redirect() fails here
         self.REQUEST.response.write(
             '<script>document.location.href="%s"</script>' % (
@@ -606,8 +619,9 @@ class ARImport(BaseFolder):
             gridrow = {'ClientSampleID': row['ClientSampleID']}
             del (row['ClientSampleID'])
 
-            gridrow['Sampler'] = row['Sampler']
-            del (row['Sampler'])
+            if 'Sampler' in row:
+                gridrow['Sampler'] = row['Sampler']
+                del (row['Sampler'])
 
             # We'll use this later to verify the number against selections
             if 'Total number of Analyses or Profiles' in row:
@@ -960,41 +974,6 @@ class ARImport(BaseFolder):
             if brains:
                 return brains
 
-    def get_row_services(self, row):
-        """Return a list of services which are referenced in Analyses.
-        values may be UID, Title or Keyword.
-        """
-        bsc = getToolByName(self, 'bika_setup_catalog')
-        services = set()
-        for val in row.get('Analyses', []):
-            brains = bsc(portal_type='AnalysisService', getKeyword=val)
-            if not brains:
-                brains = bsc(portal_type='AnalysisService', title=val)
-            if not brains:
-                brains = bsc(portal_type='AnalysisService', UID=val)
-            if brains:
-                services.add(brains[0].UID)
-            else:
-                self.error("Invalid analysis specified: %s" % val)
-        return list(services)
-
-    def get_row_profile_services(self, row):
-        """Return a list of services which are referenced in profiles
-        values may be UID, Title or ProfileKey.
-        """
-        bsc = getToolByName(self, 'bika_setup_catalog')
-        services = set()
-        profiles = [x.getObject() for x in bsc(portal_type='AnalysisProfile')]
-        for val in row.get('Profiles', []):
-            objects = [x for x in profiles
-                       if val in (x.getProfileKey(), x.UID(), x.Title())]
-            if objects:
-                for service in objects[0].getService():
-                    services.add(service.UID())
-            else:
-                self.error("Invalid profile specified: %s" % val)
-        return list(services)
-
     def get_row_container(self, row):
         """Return a sample container
         """
@@ -1054,6 +1033,178 @@ class ARImport(BaseFolder):
         errors.append(msg)
         self.setErrors(errors)
 
+def get_row_container(row):
+    """Return a sample container
+    """
+    bsc = ploneapi.portal.get_tool('bika_setup_catalog')
+    val = row.get('Container', False)
+    if val:
+        brains = bsc(portal_type='Container', UID=row['Container'])
+        if brains:
+            brains[0].getObject()
+        brains = bsc(portal_type='ContainerType', UID=row['Container'])
+        if brains:
+            # XXX Cheating.  The calculation of capacity vs. volume  is not done.
+            return brains[0].getObject()
+    return None
+
+def get_row_services(row):
+    """Return a list of services which are referenced in Analyses.
+    values may be UID, Title or Keyword.
+    """
+    bsc = ploneapi.portal.get_tool('bika_setup_catalog')
+    services = set()
+    errors = []
+    for val in row.get('Analyses', []):
+        brains = bsc(portal_type='AnalysisService', getKeyword=val)
+        if not brains:
+            brains = bsc(portal_type='AnalysisService', title=val)
+        if not brains:
+            brains = bsc(portal_type='AnalysisService', UID=val)
+        if brains:
+            services.add(brains[0].UID)
+        else:
+            errors.append("Invalid analysis specified: %s" % val)
+    return list(services), errors
+
+def get_row_profile_services(row):
+    """Return a list of services which are referenced in profiles
+    values may be UID, Title or ProfileKey.
+    """
+    bsc = ploneapi.portal.get_tool('bika_setup_catalog')
+    services = set()
+    errors = []
+    profiles = [x.getObject() for x in bsc(portal_type='AnalysisProfile')]
+    for val in row.get('Profiles', []):
+        objects = [x for x in profiles
+                   if val in (x.getProfileKey(), x.UID(), x.Title())]
+        if objects:
+            for service in objects[0].getService():
+                services.add(service.UID())
+        else:
+            errors.append("Invalid analysis specified: %s" % val)
+    return list(services), errors
+
+def arimport_create_analysis_requests(self, gridrows, client_uid):
+    workflow = ploneapi.portal.get_tool('portal_workflow')
+    bsc = ploneapi.portal.get_tool('bika_setup_catalog')
+    profiles = [x.getObject() for x in bsc(portal_type='AnalysisProfile')]
+
+    row_cnt = 0
+    for therow in gridrows:
+        row = therow.copy()
+        row_cnt += 1
+        # Create Sample
+        sample = _createObjectByType('Sample', client, tmpID())
+        sample.unmarkCreationFlag()
+        # First convert all row values into something the field can take
+        sample.edit(**row)
+        sample._renameAfterCreation()
+        event.notify(ObjectInitializedEvent(sample))
+        sample.at_post_create_script()
+        bika_setup = api.get_bika_setup()
+        swe = bika_setup.getSamplingWorkflowEnabled()
+        if swe:
+            workflow.doActionFor(sample, 'sampling_workflow')
+        else:
+            workflow.doActionFor(sample, 'no_sampling_workflow')
+        part = _createObjectByType('SamplePartition', sample, 'part-1')
+        part.unmarkCreationFlag()
+        renameAfterCreation(part)
+        if swe:
+            workflow.doActionFor(part, 'sampling_workflow')
+        else:
+            workflow.doActionFor(part, 'no_sampling_workflow')
+        # Container is special... it could be a containertype.
+        container = get_row_container(row)
+        if container:
+            if container.portal_type == 'ContainerType':
+                containers = container.getContainers()
+            # XXX And so we must calculate the best container for this partition
+            part.edit(Container=containers[0])
+
+        # Profiles are titles, profile keys, or UIDS: convert them to UIDs.
+        newprofiles = []
+        for title in row['Profiles']:
+            objects = [x for x in profiles
+                       if title in (x.getProfileKey(), x.UID(), x.Title())]
+            for obj in objects:
+                newprofiles.append(obj.UID())
+        row['Profiles'] = newprofiles
+
+        # BBB in bika.lims < 3.1.9, only one profile is permitted
+        # on an AR.  The services are all added, but only first selected
+        # profile name is stored.
+        row['Profile'] = newprofiles[0] if newprofiles else None
+
+        # Same for analyses
+        (analyses, errors) = get_row_services(row)
+        if errors:
+            for err in errors:
+                self.error(err)
+        newanalyses = set(analyses)
+        (analyses, errors) = get_row_profile_services(row)
+        if errors:
+            for err in errors:
+                self.error(err)
+        newanalyses.update(analyses)
+        row['Analyses'] = []
+        # get batch
+        batch = self.schema['Batch'].get(self)
+        if batch:
+            row['Batch'] = batch
+        # Add AR fields from schema into this row's data
+        row['ClientReference'] = self.getClientReference()
+        row['ClientOrderNumber'] = self.getClientOrderNumber()
+        row['Contact'] = self.getContact()
+        row['DateSampled'] = convert_date_string(row['DateSampled'])
+        if row['Sampler']:
+            row['Sampler'] = lookup_sampler_uid(row['Sampler'])
+
+        # Create AR
+        ar = _createObjectByType("AnalysisRequest", client, tmpID())
+        ar.setSample(sample)
+        ar.unmarkCreationFlag()
+        ar.edit(**row)
+        ar._renameAfterCreation()
+        ar.setAnalyses(list(newanalyses))
+        for analysis in ar.getAnalyses(full_objects=True):
+            analysis.setSamplePartition(part)
+        ar.at_post_create_script()
+        if swe:
+            workflow.doActionFor(ar, 'sampling_workflow')
+        else:
+            workflow.doActionFor(ar, 'no_sampling_workflow')
+        #progress_index = float(row_cnt) / len(gridrows) * 100
+        #progress = ProgressState(self.REQUEST, progress_index)
+        #notify(UpdateProgressEvent(progress))
+
+def convert_date_string(datestr):
+    return datestr.replace('-', '/')
+
+def lookup_sampler_uid(import_user):
+    #Lookup sampler's uid
+    found = False
+    userid = None
+    user_ids = []
+    users = getUsers(['LabManager', 'Sampler']).items()
+    for (samplerid, samplername) in users:
+        if import_user == samplerid:
+            found = True
+            userid = samplerid
+            break
+        if import_user == samplername:
+            user_ids.append(samplerid)
+    if found:
+        return userid
+    if len(user_ids) == 1:
+        return user_ids[0]
+    if len(user_ids) > 1:
+        #raise ValueError('Sampler %s is ambiguous' % import_user)
+        return ''
+    #Otherwise
+    #raise ValueError('Sampler %s not found' % import_user)
+    return ''
 
 @indexer(IARImport)
 def getDateValidated(instance):

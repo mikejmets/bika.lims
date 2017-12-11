@@ -21,11 +21,14 @@ from Products.CMFPlone.utils import safe_unicode
 from bika.lims import api
 from bika.lims import logger
 from bika.lims import bikaMessageFactory as _
+from bika.lims.browser import BrowserView
 from bika.lims.browser.bika_listing import BikaListingView
+from bika.lims.browser.bika_listing import BikaListingTable
 from bika.lims.config import QCANALYSIS_TYPES
 from bika.lims.interfaces import IResultOutOfRange
 from bika.lims.utils import isActive
 from bika.lims.utils import getUsers
+from bika.lims.utils import convert_unit
 from bika.lims.utils import formatDecimalMark
 from bika.lims.utils.analysis import format_uncertainty
 from bika.lims.utils import t, dicts_to_dict, format_supsub
@@ -36,7 +39,6 @@ from bika.lims.permissions import ViewRetractedAnalyses
 from bika.lims.permissions import ViewResults
 from bika.lims.permissions import AddAttachment
 from bika.lims.permissions import Verify as VerifyPermission
-
 
 class AnalysesView(BikaListingView):
     """ Displays a list of Analyses in a table.
@@ -52,13 +54,17 @@ class AnalysesView(BikaListingView):
         self.context_actions = {}
         self.show_sort_column = False
         self.show_select_row = False
+        self.show_select_all_checkbox = False
         self.show_select_column = False
         self.show_column_toggles = False
         self.pagesize = 999999
         self.form_id = 'analyses_form'
+        self.category_index = 'getCategoryTitle'
 
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.portal_url = self.portal.absolute_url()
+        bika_setup = self.portal.bika_setup
+        hide_ar_columns = bika_setup.getHideARColumns()
 
         request.set('disable_plone.rightcolumn', 1)
 
@@ -73,18 +79,6 @@ class AnalysesView(BikaListingView):
             'Partition': {
                 'title': _("Partition"),
                 'sortable': False},
-            'Method': {
-                'title': _('Method'),
-                'sortable': False,
-                'toggle': True},
-            'Instrument': {
-                'title': _('Instrument'),
-                'sortable': False,
-                'toggle': True},
-            'Analyst': {
-                'title': _('Analyst'),
-                'sortable': False,
-                'toggle': True},
             'state_title': {
                 'title': _('Status'),
                 'sortable': False},
@@ -95,6 +89,11 @@ class AnalysesView(BikaListingView):
             'Result': {
                 'title': _('Result'),
                 'input_width': '6',
+                'input_class': 'ajax_calculate numeric',
+                'sortable': False},
+            'ConvertedResult': {
+                'title': _('Converted'),
+                'input_width': '10',
                 'input_class': 'ajax_calculate numeric',
                 'sortable': False},
             'Specification': {
@@ -114,16 +113,7 @@ class AnalysesView(BikaListingView):
             'Attachments': {
                 'title': _('Attachments'),
                 'sortable': False},
-            'CaptureDate': {
-                'title': _('Captured'),
-                'index': 'getResultCaptureDate',
-                'sortable': False},
-            'DueDate': {
-                'title': _('Due Date'),
-                'index': 'getDueDate',
-                'sortable': False},
         }
-
         self.review_states = [
             {
                 'id': 'default',
@@ -133,24 +123,68 @@ class AnalysesView(BikaListingView):
                     'Service',
                     'Partition',
                     'Result',
+                    'ConvertedResult',
                     'Specification',
-                    'Method',
-                    'Instrument',
-                    'Analyst',
                     'Uncertainty',
-                    'CaptureDate',
-                    'DueDate',
                     'state_title',
                 ]
             },
         ]
+        if not hide_ar_columns:
+            self.columns['Method'] = {
+                    'title': _('Method'),
+                    'sortable': False,
+                    'toggle': True}
+            self.columns['Instrument'] = {
+                    'title': _('Instrument'),
+                    'sortable': False,
+                    'toggle': True}
+            self.columns['DueDate'] = {
+                    'title': _('Due Date'),
+                    'index': 'getDueDate',
+                    'sortable': False}
+            self.columns['Analyst'] = {
+                    'title': _('Analyst'),
+                    'index': False,
+                    'sortable': False,
+                    'toggle': True}
+            self.columns['CaptureDate'] = {
+                'title': _('Captured'),
+                'index': 'getResultCaptureDate',
+                'sortable': False}
+            self.review_states = [
+                {
+                    'id': 'default',
+                    'title': _('All'),
+                    'contentFilter': {},
+                    'columns': [
+                        'Service',
+                        'Partition',
+                        'DetectionLimit',
+                        'Result',
+                        'Specification',
+                        'Method',
+                        'Instrument',
+                        'Analyst',
+                        'Uncertainty',
+                        'CaptureDate',
+                        'DueDate',
+                        'state_title',
+                    ]
+                },
+            ]
+
         if not context.bika_setup.getShowPartitions():
             self.review_states[0]['columns'].remove('Partition')
 
         super(AnalysesView, self).__init__(context,
-                                           request,
-                                           show_categories=context.bika_setup.getCategoriseAnalysisServices(),
-                                           expand_all_categories=True)
+             request,
+             show_categories=context.bika_setup.getCategoriseAnalysisServices(),
+             expand_all_categories=False,
+             ajax_categories=True,
+             ajax_categories_url="{}/{}".format(
+                 context.absolute_url(),
+                 "ajax_ar_manage_expand_category"))
 
     def get_analysis_spec(self, analysis):
         if hasattr(analysis, 'getResultsRange'):
@@ -262,7 +296,7 @@ class AnalysesView(BikaListingView):
         return ret
 
     def getAnalysts(self):
-        analysts = getUsers(self.context, ['Manager', 'LabManager', 'Analyst'])
+        analysts = getUsers(['Manager', 'LabManager', 'Analyst'])
         analysts = analysts.sortedByKey()
         ret = []
         for a in analysts:
@@ -293,6 +327,8 @@ class AnalysesView(BikaListingView):
         return result
 
     def folderitems(self):
+        bika_setup = self.portal.bika_setup
+        hide_ar_columns = bika_setup.getHideARColumns()
         bsc = getToolByName(self.context, 'bika_setup_catalog')
         analysis_categories = bsc(portal_type="AnalysisCategory", sort_on="sortable_title")
         analysis_categories_order = dict([(b.Title, "{:04}".format(a)) for a, b in enumerate(analysis_categories)])
@@ -360,6 +396,7 @@ class AnalysesView(BikaListingView):
             item['Keyword'] = keyword
             item['Unit'] = format_supsub(unit) if unit else ''
             item['Result'] = ''
+            item['ConvertedResult'] = ''
             item['formatted_result'] = ''
             item['interim_fields'] = interim_fields
             item['Remarks'] = obj.getRemarks()
@@ -457,6 +494,7 @@ class AnalysesView(BikaListingView):
             if can_edit_analysis:
                 item['allow_edit'].extend(['Analyst',
                                            'Result',
+                                           'ConvertedResult',
                                            'Remarks'])
                 # if the Result field is editable, our interim fields are too
                 for f in self.interim_fields[obj.UID()]:
@@ -468,100 +506,102 @@ class AnalysesView(BikaListingView):
                    (item['calculation'] and self.interim_fields[obj.UID()]):
                     item['allow_edit'].append('retested')
 
-            # TODO: Only the labmanager must be able to change the method
-            # can_set_method = getSecurityManager().checkPermission(SetAnalysisMethod, obj)
-            can_set_method = can_edit_analysis \
-                and item['review_state'] in allowed_method_states
-            method = obj.getMethod() \
-                if hasattr(obj, 'getMethod') and obj.getMethod() else service.getMethod()
+            if not hide_ar_columns:
+                # TODO: Only the labmanager must be able to change the method
+                # can_set_method = getSecurityManager().checkPermission(SetAnalysisMethod, obj)
+                can_set_method = can_edit_analysis \
+                    and item['review_state'] in allowed_method_states
+                method = obj.getMethod() \
+                    if hasattr(obj, 'getMethod') and obj.getMethod() else service.getMethod()
 
-            # Display the methods selector if the AS has at least one
-            # method assigned
-            item['Method'] = ''
-            item['replace']['Method'] = ''
-            if can_set_method:
-                voc = self.get_methods_vocabulary(obj)
-                if voc:
-                    # The service has at least one method available
-                    item['Method'] = method.UID() if method else ''
-                    item['choices']['Method'] = voc
-                    item['allow_edit'].append('Method')
-                    show_methodinstr_columns = True
+                # Display the methods selector if the AS has at least one
+                # method assigned
+                item['Method'] = ''
+                item['replace']['Method'] = ''
+                if can_set_method:
+                    voc = self.get_methods_vocabulary(obj)
+                    if voc:
+                        # The service has at least one method available
+                        item['Method'] = method.UID() if method else ''
+                        item['choices']['Method'] = voc
+                        item['allow_edit'].append('Method')
+                        show_methodinstr_columns = True
+
+                    elif method:
+                        # This should never happen
+                        # The analysis has set a method, but its parent
+                        # service hasn't any method available O_o
+                        item['Method'] = method.Title()
+                        item['replace']['Method'] = "<a href='%s'>%s</a>" % \
+                            (method.absolute_url(), method.Title())
+                        show_methodinstr_columns = True
 
                 elif method:
-                    # This should never happen
-                    # The analysis has set a method, but its parent
-                    # service hasn't any method available O_o
+                    # Edition not allowed, but method set
                     item['Method'] = method.Title()
                     item['replace']['Method'] = "<a href='%s'>%s</a>" % \
                         (method.absolute_url(), method.Title())
                     show_methodinstr_columns = True
 
-            elif method:
-                # Edition not allowed, but method set
-                item['Method'] = method.Title()
-                item['replace']['Method'] = "<a href='%s'>%s</a>" % \
-                    (method.absolute_url(), method.Title())
-                show_methodinstr_columns = True
+            if not hide_ar_columns:
+                # TODO: Instrument selector dynamic behavior in worksheet Results
+                # Only the labmanager must be able to change the instrument to be used. Also,
+                # the instrument selection should be done in accordance with the method selected
+                # can_set_instrument = service.getInstrumentEntryOfResults() and getSecurityManager().checkPermission(SetAnalysisInstrument, obj)
+                can_set_instrument = service.getInstrumentEntryOfResults() \
+                    and can_edit_analysis \
+                    and item['review_state'] in allowed_method_states
 
-            # TODO: Instrument selector dynamic behavior in worksheet Results
-            # Only the labmanager must be able to change the instrument to be used. Also,
-            # the instrument selection should be done in accordance with the method selected
-            # can_set_instrument = service.getInstrumentEntryOfResults() and getSecurityManager().checkPermission(SetAnalysisInstrument, obj)
-            can_set_instrument = service.getInstrumentEntryOfResults() \
-                and can_edit_analysis \
-                and item['review_state'] in allowed_method_states
+                item['Instrument'] = ''
+                item['replace']['Instrument'] = ''
+                if service.getInstrumentEntryOfResults():
+                    instrument = None
 
-            item['Instrument'] = ''
-            item['replace']['Instrument'] = ''
-            if service.getInstrumentEntryOfResults():
-                instrument = None
+                    # If the analysis has an instrument already assigned, use it
+                    if service.getInstrumentEntryOfResults() \
+                        and hasattr(obj, 'getInstrument') \
+                            and obj.getInstrument():
+                            instrument = obj.getInstrument()
 
-                # If the analysis has an instrument already assigned, use it
-                if service.getInstrumentEntryOfResults() \
-                    and hasattr(obj, 'getInstrument') \
-                        and obj.getInstrument():
-                        instrument = obj.getInstrument()
+                    # Otherwise, use the Service's default instrument
+                    elif service.getInstrumentEntryOfResults():
+                            instrument = service.getInstrument()
 
-                # Otherwise, use the Service's default instrument
-                elif service.getInstrumentEntryOfResults():
-                        instrument = service.getInstrument()
+                    if can_set_instrument:
+                        # Edition allowed
+                        voc = self.get_instruments_vocabulary(obj)
+                        if voc:
+                            # The service has at least one instrument available
+                            item['Instrument'] = instrument.UID() if instrument else ''
+                            item['choices']['Instrument'] = voc
+                            item['allow_edit'].append('Instrument')
+                            show_methodinstr_columns = True
 
-                if can_set_instrument:
-                    # Edition allowed
-                    voc = self.get_instruments_vocabulary(obj)
-                    if voc:
-                        # The service has at least one instrument available
-                        item['Instrument'] = instrument.UID() if instrument else ''
-                        item['choices']['Instrument'] = voc
-                        item['allow_edit'].append('Instrument')
-                        show_methodinstr_columns = True
+                        elif instrument:
+                            # This should never happen
+                            # The analysis has an instrument set, but the
+                            # service hasn't any available instrument
+                            item['Instrument'] = instrument.Title()
+                            item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
+                                (instrument.absolute_url(), instrument.Title())
+                            show_methodinstr_columns = True
 
                     elif instrument:
-                        # This should never happen
-                        # The analysis has an instrument set, but the
-                        # service hasn't any available instrument
+                        # Edition not allowed, but instrument set
                         item['Instrument'] = instrument.Title()
                         item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
                             (instrument.absolute_url(), instrument.Title())
                         show_methodinstr_columns = True
 
-                elif instrument:
-                    # Edition not allowed, but instrument set
-                    item['Instrument'] = instrument.Title()
-                    item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
-                        (instrument.absolute_url(), instrument.Title())
-                    show_methodinstr_columns = True
-
-            else:
-                # Manual entry of results, instrument not allowed
-                item['Instrument'] = _('Manual')
-                msgtitle = t(_(
-                    "Instrument entry of results not allowed for ${service}",
-                    mapping={"service": safe_unicode(service.Title())},
-                ))
-                item['replace']['Instrument'] = \
-                    '<a href="#" title="%s">%s</a>' % (msgtitle, t(_('Manual')))
+                else:
+                    # Manual entry of results, instrument not allowed
+                    item['Instrument'] = _('Manual')
+                    msgtitle = t(_(
+                        "Instrument entry of results not allowed for ${service}",
+                        mapping={"service": safe_unicode(service.Title())},
+                    ))
+                    item['replace']['Instrument'] = \
+                        '<a href="#" title="%s">%s</a>' % (msgtitle, t(_('Manual')))
 
             # Sets the analyst assigned to this analysis
             if can_edit_analysis:
@@ -583,6 +623,9 @@ class AnalysesView(BikaListingView):
                     for attachment in obj.getAttachment():
                         af = attachment.getAttachmentFile()
                         icon = af.icon
+                        # handle blob icons
+                        if callable(icon):
+                            icon = icon()
                         attachments += "<span class='attachment' attachment_uid='%s'>" % (attachment.UID())
                         if icon:
                             attachments += "<img src='%s/%s'/>" % (self.portal_url, icon)
@@ -596,6 +639,7 @@ class AnalysesView(BikaListingView):
             # permission, otherwise just put an icon in Result column.
             if can_view_result:
                 item['Result'] = result
+                item['ConvertedResult'] = ''
                 scinot = self.context.bika_setup.getScientificNotationResults()
                 item['formatted_result'] = obj.getFormattedResult(sciformat=int(scinot),
                                                                   decimalmark=dmk)
@@ -706,25 +750,26 @@ class AnalysesView(BikaListingView):
                 if obj.portal_type == 'ReferenceAnalysis' \
                 else obj.getResultCaptureDate()
 
-            duedate = obj.aq_parent.getExpiryDate() \
-                if obj.portal_type == 'ReferenceAnalysis' \
-                else obj.getDueDate()
+            if not hide_ar_columns:
+                duedate = obj.aq_parent.getExpiryDate() \
+                    if obj.portal_type == 'ReferenceAnalysis' \
+                    else obj.getDueDate()
 
-            item['replace']['DueDate'] = \
-                self.ulocalized_time(duedate, long_format=1)
+                item['replace']['DueDate'] = \
+                    self.ulocalized_time(duedate, long_format=1)
 
-            if item['review_state'] not in ['to_be_sampled',
-                                            'to_be_preserved',
-                                            'sample_due',
-                                            'published']:
+                if item['review_state'] not in ['to_be_sampled',
+                                                'to_be_preserved',
+                                                'sample_due',
+                                                'published']:
 
-                if (resultdate and resultdate > duedate) \
-                   or (not resultdate and DateTime() > duedate):
+                    if (resultdate and resultdate > duedate) \
+                       or (not resultdate and DateTime() > duedate):
 
-                    item['replace']['DueDate'] = '%s <img width="16" height="16" src="%s/++resource++bika.lims.images/late.png" title="%s"/>' % \
-                        (self.ulocalized_time(duedate, long_format=1),
-                         self.portal_url,
-                         t(_("Late Analysis")))
+                        item['replace']['DueDate'] = '%s <img width="16" height="16" src="%s/++resource++bika.lims.images/late.png" title="%s"/>' % \
+                            (self.ulocalized_time(duedate, long_format=1),
+                             self.portal_url,
+                             t(_("Late Analysis")))
 
             after_icons = []
             # Submitting user may not verify results unless the user is labman
@@ -782,8 +827,27 @@ class AnalysesView(BikaListingView):
                                             t(_("Assigned to: ${worksheet_id}", mapping={'worksheet_id': safe_unicode(ws.id)}))))
             item['after']['state_title'] = '&nbsp;'.join(after_icons)
 
+            # add unit conversion information
+            item['unit_conversions'] = []
+            if item['review_state'] not in (
+                    'retracted', 'sample_due', 'sampled', 'sample_received'):
+                for unit_conversion in service.getUnitConversions():
+                    if unit_conversion.get('SampleType') and \
+                       unit_conversion.get('Unit') and \
+                       unit_conversion.get('SampleType') == item['st_uid']:
+                        if unit_conversion.get('ShowOnListing', False):
+                            converted_unit = ploneapi.content.get(UID=unit_conversion['Unit'])
+                            item['ConvertedResult'] = '%s %s' % (
+                                    convert_unit(
+                                            item['Result'],
+                                            converted_unit.formula,
+                                            dmk,
+                                            obj.getPrecision()),
+                                    converted_unit.converted_unit)
+
         # the TAL requires values for all interim fields on all
         # items, so we set blank values in unused cells
+        new_results = []
         for item in items:
             for field in self.interim_columns:
                 if field not in item:
@@ -859,14 +923,23 @@ class AnalysesView(BikaListingView):
         self.json_interim_fields = json.dumps(self.interim_fields)
         self.items = items
 
-        # Method and Instrument columns must be shown or hidden at the
-        # same time, because the value assigned to one causes
-        # a value reassignment to the other (one method can be performed
-        # by different instruments)
-        self.columns['Method']['toggle'] = show_methodinstr_columns
-        self.columns['Instrument']['toggle'] = show_methodinstr_columns
+        if not hide_ar_columns:
+            # Method and Instrument columns must be shown or hidden at the
+            # same time, because the value assigned to one causes
+            # a value reassignment to the other (one method can be performed
+            # by different instruments)
+            self.columns['Method']['toggle'] = show_methodinstr_columns
+            self.columns['Instrument']['toggle'] = show_methodinstr_columns
 
         return items
+
+    def contents_table(self, table_only=False):
+        """ If you set table_only to true, then nothing outside of the
+            <table/> tag will be printed (form tags, authenticator, etc).
+            Then you can insert your own form tags around it.
+        """
+        table = AnalysesTableView(bika_listing=self, table_only=table_only)
+        return table.render(self)
 
 
 class QCAnalysesView(AnalysesView):
@@ -879,18 +952,31 @@ class QCAnalysesView(AnalysesView):
     """
 
     def __init__(self, context, request, **kwargs):
+        self.portal = api.get_portal()
+        bika_setup = self.portal.bika_setup
+        hide_ar_columns = bika_setup.getHideARColumns()
         AnalysesView.__init__(self, context, request, **kwargs)
-        self.columns['getReferenceAnalysesGroupID'] = {'title': _('QC Sample ID'),
-                                                       'sortable': False}
+        self.columns['getReferenceAnalysesGroupID'] = \
+                                {'title': _('QC Sample ID'),
+                                 'sortable': False}
         self.columns['Worksheet'] = {'title': _('Worksheet'),
                                      'sortable': False}
         self.review_states[0]['columns'] = ['Service',
                                             'Worksheet',
                                             'getReferenceAnalysesGroupID',
                                             'Partition',
+                                            'Result',
+                                            'Uncertainty',
+                                            'state_title']
+        if not hide_ar_columns:
+            self.review_states[0]['columns'] = ['Service',
+                                            'Worksheet',
+                                            'getReferenceAnalysesGroupID',
+                                            'Partition',
                                             'Method',
                                             'Instrument',
                                             'Result',
+                                            'ConvertedResult',
                                             'Uncertainty',
                                             'CaptureDate',
                                             'DueDate',
@@ -934,3 +1020,20 @@ class QCAnalysesView(AnalysesView):
         # Sort items
         items = sorted(items, key=itemgetter('sortcode'))
         return items
+
+class AnalysesTableView(BikaListingTable):
+    pass
+
+class AJAXARManageCategoryExpand(BrowserView):
+
+    def __call__(self):
+        if 'ajax_category_expand' in self.request.keys():
+            cat = self.request.get('cat')
+            analysis_view = AnalysesView(self.context, self.request)
+            analysis_view.allow_edit = False
+            analysis_view.contentFilter['getCategoryTitle'] = cat
+            astv =  AnalysesTableView(bika_listing=analysis_view)
+            astv.bika_listing.allow_edit = False
+            astv.bika_listing.show_categories = False
+            astv.bika_listing.show_select_column = False
+            return astv.rendered_items(cat=cat)

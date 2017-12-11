@@ -42,6 +42,7 @@
   <include package=".analysisrequest"/>
   <include package=".batch"/>
   <include package=".client"/>
+  <include package=".idserver"/>
   <include package=".samplinground"/>
   <include package=".srtemplate"/>
   <include package=".sample"/>
@@ -51,6 +52,7 @@
   <include package=".fields"/>
   <include package=".widgets"/>
   <include package=".reports"/>
+  <include package=".idserver"/>
 
   <browser:page
       for="*"
@@ -111,5 +113,13 @@
       directory="js"
       layer="bika.lims.interfaces.IBikaLIMS"
       />
+
+  <browser:page
+      for="*"
+      name="ar_import_async"
+      class="bika.lims.browser.arimports.ARImportAsyncView"
+      permission="zope2.View"
+      layer="bika.lims.interfaces.IBikaLIMS"
+    />
 
 </configure>

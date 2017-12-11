@@ -222,9 +222,10 @@ class Worksheet(BaseFolder, HistoryAwareMixin):
         # remove analysis from context.Analyses *after* unassign,
         # (doActionFor requires worksheet in analysis.getBackReferences)
         Analyses = self.getAnalyses()
-        if analysis in Analyses:
+        while analysis in Analyses:
             Analyses.remove(analysis)
-            self.setAnalyses(Analyses)
+        self.setAnalyses(Analyses)
+
         layout = [slot for slot in self.getLayout() if slot['analysis_uid'] != analysis.UID()]
         self.setLayout(layout)
 

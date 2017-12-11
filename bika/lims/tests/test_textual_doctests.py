@@ -26,6 +26,12 @@ DOCTESTS = [
     "../docs/Calculations.rst",
     "../docs/IDServer.rst",
     "../docs/Rolemap.rst",
+    "../docs/ContactDepartmentField.rst",
+    "../docs/ClientTypes.rst",
+    "../docs/LaboratorySupervisorField.rst",
+    "../docs/SamplingCOCSetupTab.rst",
+    "../docs/UnitConversions.rst",
+    "../docs/ImportInstrumentResults.rst",
 ]
 
 

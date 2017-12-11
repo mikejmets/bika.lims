@@ -24,6 +24,7 @@ from zope.i18n import translate
 from zope.i18n.locales import locales
 from zope.component import queryUtility
 
+from plone import api as ploneapi
 from plone.memoize import ram
 from plone.registry.interfaces import IRegistry
 
@@ -101,17 +102,17 @@ def printfile(portal, from_addr, to_addrs, msg):
     pass
 
 
-def _cache_key_getUsers(method, context, roles=[], allow_empty=True):
+def _cache_key_getUsers(method, roles=[], allow_empty=True):
     key = time() // (60 * 60), roles, allow_empty
     return key
 
 
 @ram.cache(_cache_key_getUsers)
-def getUsers(context, roles, allow_empty=True):
+def getUsers(roles, allow_empty=True):
     """ Present a DisplayList containing users in the specified
         list of roles
     """
-    mtool = getToolByName(context, 'portal_membership')
+    mtool = ploneapi.portal.get_tool('portal_membership')
     pairs = allow_empty and [['', '']] or []
     users = mtool.searchForMembers(roles=roles)
     for user in users:
@@ -383,7 +384,8 @@ def bika_url_fetcher(url):
             Request(url,
                     headers={
                         'Cookie': "__ac={}".format(__ac),
-                        'User-Agent': VERSION_STRING
+                        'User-Agent': VERSION_STRING,
+                        'Authorization': request._auth,
                     }))
         return dict(file_obj=result,
                     redirected_url=result.geturl(),
@@ -629,3 +631,16 @@ def getFromString(obj, string):
             attrobj = None
             break
     return attrobj if attrobj else None
+
+""" Convert Analysis result using a give formula with "Value" """
+def convert_unit(result, formula, dmk, precision):
+    try:
+        formula = formula.replace('Value', '%f')
+        new =  eval(formula % float(result))
+        fmt = '{{:.{}f}}'.format(precision)
+        formatted = fmt.format(new)
+    except ValueError, e:
+        logger.info('convert unit failed to eval %s - %s: %s' % (
+            formula, result, str(e)))
+        return '-'
+    return formatted

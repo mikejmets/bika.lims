@@ -91,7 +91,9 @@ class AnalysisRequestViewView(BrowserView):
                                                      {'id': 'verify'}]
                 t.show_workflow_action_buttons = True
                 t.show_select_column = True
-                if getSecurityManager().checkPermission(EditFieldResults, self.context) \
+                if 'DueDate' in t.review_states[0]['columns'] and \
+                    getSecurityManager().checkPermission(
+                            EditFieldResults, self.context) \
                    and poc == 'field':
                     t.review_states[0]['columns'].remove('DueDate')
                 self.tables[POINTS_OF_CAPTURE.getValue(poc)] = t.contents_table()
@@ -159,8 +161,10 @@ class AnalysisRequestViewView(BrowserView):
         ar_atts = self.context.getAttachment()
         analyses = self.context.getAnalyses(full_objects=True)
         for att in ar_atts:
+            fsize = 0
             file = att.getAttachmentFile()
-            fsize = file.getSize() if file else 0
+            if file:
+                fsize = file.get_size()
             if fsize < 1024:
                 fsize = '%s b' % fsize
             else:
@@ -181,7 +185,7 @@ class AnalysisRequestViewView(BrowserView):
             an_atts = analysis.getAttachment()
             for att in an_atts:
                 file = att.getAttachmentFile()
-                fsize = file.getSize() if file else 0
+                fsize = file.get_size() if file else 0
                 if fsize < 1024:
                     fsize = '%s b' % fsize
                 else:

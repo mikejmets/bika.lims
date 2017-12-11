@@ -16,7 +16,6 @@ from Products.CMFCore.utils import getToolByName
 from Products.ATExtensions.ateapi import RecordsField
 
 from Products.Archetypes.atapi import Schema
-from Products.Archetypes.atapi import ComputedField
 from Products.Archetypes.atapi import registerType
 from Products.Archetypes.atapi import BooleanField
 from Products.Archetypes.atapi import BooleanWidget
@@ -24,7 +23,6 @@ from Products.Archetypes.atapi import DecimalWidget
 from Products.Archetypes.atapi import FixedPointField
 from Products.Archetypes.atapi import IntegerField
 from Products.Archetypes.atapi import IntegerWidget
-from Products.Archetypes.atapi import LabelWidget
 from Products.Archetypes.atapi import LinesField
 from Products.Archetypes.atapi import MultiSelectionWidget
 from Products.Archetypes.atapi import ReferenceField
@@ -53,6 +51,7 @@ from bika.lims.config import ATTACHMENT_OPTIONS
 from bika.lims.config import CURRENCIES
 from bika.lims.config import DECIMAL_MARKS
 from bika.lims.config import DEFAULT_AR_SPECS
+from bika.lims.config import INSTRUMENT_IMPORT_AUTO_OPTIONS
 from bika.lims.config import MULTI_VERIFICATION_TYPE
 from bika.lims.config import PROJECTNAME
 from bika.lims.config import SCINOTATION_OPTIONS
@@ -70,39 +69,51 @@ class IDFormattingField(RecordsField):
     _properties = RecordsField._properties.copy()
     _properties.update({
         'type': 'prefixes',
-        'subfields': ('portal_type', 'form', 'sequence_type', 'context', 'counter_type', 'counter_reference', 'prefix', 'split_length'),
-        'subfield_labels': {'portal_type': 'Portal Type',
-                            'form': 'Format',
-                            'sequence_type': 'Seq Type',
-                            'context': 'Context',
-                            'counter_type': 'Counter Type',
-                            'counter_reference': 'Counter Ref',
-                            'prefix': 'Prefix',
-                            'split_length': 'Split Length',
-                            },
-        'subfield_readonly': {'portal_type': False,
-                              'form': False,
-                              'sequence_type': False,
-                              'context': False,
-                              'counter_type': False,
-                              'counter_reference': False,
-                              'prefix': False,
-                              'split_length': False,
-                              },
-        'subfield_sizes': {'portal_type': 20,
-                           'form': 30,
-                           'sequence_type': 1,
-                           'context': 12,
-                           'counter_type': 1,
-                           'counter_reference': 12,
-                           'prefix': 12,
-                           'split_length': 5,
-                           },
+        'subfields': (
+            'portal_type',
+            'form',
+            'sequence_type',
+            'context',
+            'counter_type',
+            'counter_reference',
+            'prefix',
+            'split_length'
+        ),
+        'subfield_labels': {
+            'portal_type': 'Portal Type',
+            'form': 'Format',
+            'sequence_type': 'Seq Type',
+            'context': 'Context',
+            'counter_type': 'Counter Type',
+            'counter_reference': 'Counter Ref',
+            'prefix': 'Prefix',
+            'split_length': 'Split Length',
+        },
+        'subfield_readonly': {
+            'portal_type': False,
+            'form': False,
+            'sequence_type': False,
+            'context': False,
+            'counter_type': False,
+            'counter_reference': False,
+            'prefix': False,
+            'split_length': False,
+        },
+        'subfield_sizes': {
+            'portal_type': 20,
+            'form': 30,
+            'sequence_type': 1,
+            'context': 12,
+            'counter_type': 1,
+            'counter_reference': 12,
+            'prefix': 12,
+            'split_length': 5,
+        },
         'subfield_types': {
             'sequence_type': 'selection',
             'counter_type': 'selection',
             'split_length': 'int',
-            },
+        },
         'subfield_vocabularies': {
             'sequence_type': 'getSequenceTypes',
             'counter_type': 'getCounterTypes',
@@ -115,22 +126,30 @@ class IDFormattingField(RecordsField):
     security = ClassSecurityInfo()
 
     def getSequenceTypes(self, instance=None):
-        return DisplayList(
-            [('', ''), 
-             ('counter','Counter'),
-             ('generated', 'Generated')])
+        return DisplayList([
+            ('', ''),
+            ('counter', 'Counter'),
+            ('generated', 'Generated')
+        ])
 
     def getCounterTypes(self, instance=None):
-        return DisplayList(
-            [('', ''), 
-             ('backreference','Backreference'),
-             ('contained', 'Contained')])
+        return DisplayList([
+            ('', ''),
+            ('backreference', 'Backreference'),
+            ('contained', 'Contained')
+        ])
 
 
 STICKER_AUTO_OPTIONS = DisplayList((
     ('None', _('None')),
     ('register', _('Register')),
     ('receive', _('Receive')),
+))
+
+DASHBOARD_SECTIONS = DisplayList((
+    ('analyses', _('Analyses')),
+    ('analysisrequests', _('Analysis Requests')),
+    ('worksheets', _('Worksheets')),
 ))
 
 
@@ -189,7 +208,7 @@ schema = BikaFolderSchema.copy() + Schema((
     ),
     BooleanField(
         'ShowNewReleasesInfo',
-        schemata="Security",
+        schemata="Notifications",
         default=True,
         widget=BooleanWidget(
             label=_("Display an alert on new releases of Bika LIMS"),
@@ -248,6 +267,16 @@ schema = BikaFolderSchema.copy() + Schema((
             description=_(
                 "Enter percentage value eg. 14.0. This percentage is applied system wide "
                 "but can be overwrittem on individual items"),
+        )
+    ),
+    StringField(
+        'AutoTransition',
+        schemata="Results Reports",
+        vocabulary=INSTRUMENT_IMPORT_AUTO_OPTIONS,
+        widget=SelectionWidget(
+            label=_("Auto Transition analysis"),
+            description=_("The transition to be attempted on each analysis when doing AR instrument import"),
+            format='select',
         )
     ),
     StringField(
@@ -321,56 +350,6 @@ schema = BikaFolderSchema.copy() + Schema((
             label=_("Result Footer"),
             description=_("This text will be appended to results reports."),
             append_only=False,
-        ),
-    ),
-    # IntegerField('BatchFax',
-    #     schemata = "Results Reports",
-    #     required = 1,
-    #     default = 4,
-    #     widget = IntegerWidget(
-    #         label=_("Maximum columns per results fax"),
-    #         description = "Too many AR columns per fax will see the font size minimised and could "
-    #                         "render faxes illegible. 4 ARs maximum per page is recommended",
-    #     )
-    # ),
-    # StringField('SMSGatewayAddress',
-    #     schemata = "Results Reports",
-    #     required = 0,
-    #     widget = StringWidget(
-    #         label=_("SMS Gateway Email Address"),
-    #         description = "The email to SMS gateway address. Either a complete email address, "
-    #                         "or just the domain, e.g. '@2way.co.za', the contact's mobile phone "
-    #                         "number will be prepended to",
-    #     )
-    # ),
-    BooleanField(
-        'SamplingWorkflowEnabled',
-        schemata="Analyses",
-        default=False,
-        widget=BooleanWidget(
-            label=_("Enable the Sampling workflow"),
-            description=_("Select this to activate the sample collection workflow steps.")
-        ),
-    ),
-    BooleanField(
-        'ScheduleSamplingEnabled',
-        schemata="Analyses",
-        default=False,
-        widget=BooleanWidget(
-            label=_("Enable the Schedule a Sampling functionality"),
-            description=_(
-                "Select this to allow a Sampling Coordinator to" +
-                " schedule a sampling. This functionality only takes effect" +
-                " when 'Sampling workflow' is active")
-        ),
-    ),
-    BooleanField(
-        'ShowPartitions',
-        schemata="Analyses",
-        default=True,
-        widget=BooleanWidget(
-            label=_("Display individual sample partitions "),
-            description=_("Turn this on if you want to work with sample partitions")
         ),
     ),
     BooleanField(
@@ -463,13 +442,14 @@ schema = BikaFolderSchema.copy() + Schema((
                 "any Analysis in Analysis Service edit view. By default, 1"),
         ),
     ),
-    StringField('TypeOfmultiVerification',
-        schemata = "Analyses",
-        default = 'self_multi_enabled',
-        vocabulary = MULTI_VERIFICATION_TYPE,
-        widget = SelectionWidget(
+    StringField(
+        'TypeOfmultiVerification',
+        schemata="Analyses",
+        default='self_multi_enabled',
+        vocabulary=MULTI_VERIFICATION_TYPE,
+        widget=SelectionWidget(
             label=_("Multi Verification type"),
-            description = _(
+            description=_(
                 "Choose type of multiple verification for the same user."
                 "This setting can enable/disable verifying/consecutively verifying"
                 "more than once for the same user."),
@@ -531,19 +511,6 @@ schema = BikaFolderSchema.copy() + Schema((
                 "own configuration"),
         )
     ),
-    DurationField(
-        'DefaultSampleLifetime',
-        schemata="Analyses",
-        required=1,
-        default={"days": 30, "hours": 0, "minutes": 0},
-        widget=DurationWidget(
-            label=_("Default sample retention period"),
-            description=_(
-                "The number of days before a sample expires and cannot be analysed "
-                "any more. This setting can be overwritten per individual sample type "
-                "in the sample types setup"),
-        )
-    ),
     StringField(
         'ResultsDecimalMark',
         schemata="Analyses",
@@ -568,7 +535,7 @@ schema = BikaFolderSchema.copy() + Schema((
     ),
     StringField(
         'WorksheetLayout',
-        schemata="Analyses",
+        schemata="Appearance",
         default='1',
         vocabulary=WORKSHEET_LAYOUT_OPTIONS,
         widget=SelectionWidget(
@@ -584,16 +551,28 @@ schema = BikaFolderSchema.copy() + Schema((
     ),
     BooleanField(
         'DashboardByDefault',
-        schemata="Analyses",
+        schemata="Appearance",
         default=True,
         widget=BooleanWidget(
             label=_("Use Dashboard as default front page"),
             description=_("Select this to activate the dashboard as a default front page.")
         ),
     ),
+    LinesField(
+        'DashboardSections',
+        schemata="Appearance",
+        multiValued=1,
+        vocabulary=DASHBOARD_SECTIONS,
+        widget=MultiSelectionWidget(
+            format='select',
+            label=_("Dashboard Section"),
+            description=_(
+                "Select which sections you'd like displayed on the dashboard"),
+        )
+    ),
     ReferenceField(
         'LandingPage',
-        schemata="Analyses",
+        schemata="Appearance",
         multiValued=0,
         allowed_types=('Document', ),
         relationship='SetupLandingPage',
@@ -611,8 +590,124 @@ schema = BikaFolderSchema.copy() + Schema((
         ),
     ),
     StringField(
+        'PhotosFolder',
+        schemata="Sampling and COC",
+        widget=StringWidget(
+            label=_("Photo's Folder"),
+            description=_("Path on the file system where the photo's are stored")
+        )
+    ),
+    BooleanField(
+        'HideARColumns',
+        schemata="Appearance",
+        default=False,
+        widget=BooleanWidget(
+            label=_("Deduce Columns in Analyses listing on AR View"),
+            description=_("Hide some columns in the analyses listing of the AR View to improve performance. Columns include Method, Instrument, Analyst, Capture and Due Date")
+        ),
+    ),
+    BooleanField(
+        'SamplingWorkflowEnabled',
+        schemata="Sampling and COC",
+        default=False,
+        widget=BooleanWidget(
+            label=_("Enable Sampling"),
+            description=_("Select this to activate the sample collection workflow steps.")
+        ),
+    ),
+    BooleanField(
+        'ScheduleSamplingEnabled',
+        schemata="Sampling and COC",
+        default=False,
+        widget=BooleanWidget(
+            label=_("Enable Sampling Scheduling"),
+            description=_(
+                "Select this to allow a Sampling Coordinator to" +
+                " schedule a sampling. This functionality only takes effect" +
+                " when 'Sampling workflow' is active")
+        ),
+    ),
+    BooleanField(
+        'ShowPartitions',
+        schemata="Sampling and COC",
+        default=True,
+        widget=BooleanWidget(
+            label=_("Display individual sample partitions "),
+            description=_("Turn this on if you want to work with sample partitions")
+        ),
+    ),
+    BooleanField(
+        'SamplePreservationEnabled',
+        schemata="Sampling and COC",
+        default=False,
+        widget=BooleanWidget(
+            label=_("Enable Sample Preservation"),
+            description=_("")
+        ),
+    ),
+    DurationField(
+        'DefaultSampleLifetime',
+        schemata="Sampling and COC",
+        required=1,
+        default={"days": 30, "hours": 0, "minutes": 0},
+        widget=DurationWidget(
+            label=_("Default sample retention period"),
+            description=_(
+                "The number of days before a sample expires and cannot be analysed "
+                "any more. This setting can be overwritten per individual sample type "
+                "in the sample types setup"),
+        )
+    ),
+    RecordsField(
+        'RejectionReasons',
+        schemata="Sampling and COC",
+        widget=RejectionSetupWidget(
+            label=_("Enable sampling rejection"),
+            description=_("Select this to activate the rejection workflow "
+                          "for Samples and Analysis Requests. A 'Reject' "
+                          "option will be displayed in the actions menu for "
+                          "these objects.")
+        ),
+    ),
+    BooleanField(
+        'NotifyOnRejection',
+        schemata="Notifications",
+        default=False,
+        widget=BooleanWidget(
+            label=_("Sample rejection email notification"),
+            description=_("Select this to activate automatic notifications "
+                          "via email to the Client when a Sample or Analysis "
+                          "Request is rejected.")
+        ),
+    ),
+    BooleanField(
+        'NotifyOnARRetract',
+        schemata="Notifications",
+        default=True,
+        widget=BooleanWidget(
+            label=_("Email notification on AR retract"),
+            description=_("Select this to activate automatic notifications "
+                          "via email to the Client and Lab Managers when an Analysis "
+                          "Request is retracted.")
+        ),
+    ),
+    TextField(
+        'COCAttestationStatement',
+        schemata="Sampling and COC",
+        widget=TextAreaWidget(
+            label=_("COC Attestation Statement"),
+        )
+    ),
+    StringField(
+        'COCFooter',
+        schemata="Sampling and COC",
+        widget=StringWidget(
+            label=_("COC Footer"),
+        )
+    ),
+    StringField(
         'AutoPrintStickers',
-        schemata="Stickers",
+        schemata="Sticker",
         vocabulary=STICKER_AUTO_OPTIONS,
         widget=SelectionWidget(
             format='select',
@@ -625,7 +720,7 @@ schema = BikaFolderSchema.copy() + Schema((
     ),
     StringField(
         'AutoStickerTemplate',
-        schemata="Stickers",
+        schemata="Sticker",
         vocabulary="getStickerTemplates",
         widget=SelectionWidget(
             format='select',
@@ -635,7 +730,7 @@ schema = BikaFolderSchema.copy() + Schema((
     ),
     StringField(
         'SmallStickerTemplate',
-        schemata="Stickers",
+        schemata="Sticker",
         vocabulary="getStickerTemplates",
         default="Code_128_1x48mm.pt",
         widget=SelectionWidget(
@@ -646,7 +741,7 @@ schema = BikaFolderSchema.copy() + Schema((
     ),
     StringField(
         'LargeStickerTemplate',
-        schemata="Stickers",
+        schemata="Sticker",
         vocabulary="getStickerTemplates",
         default="Code_128_1x72mm.pt",
         widget=SelectionWidget(
@@ -659,34 +754,115 @@ schema = BikaFolderSchema.copy() + Schema((
         'IDFormatting',
         schemata="ID Server",
         default=[
-             {'form': 'AI-{seq:03d}', 'portal_type': 'ARImport', 'sequence_type': 'generated', 'split_length': 1},
-             {'form': 'B-{seq:03d}', 'portal_type': 'Batch', 'prefix': 'batch', 'sequence_type': 'generated', 'split_length': 1},
-             {'form': 'D-{seq:03d}', 'portal_type': 'DuplicateAnalysis', 'prefix': 'duplicate', 'sequence_type': 'generated', 'split_length': 1},
-             {'form': 'I-{seq:03d}', 'portal_type': 'Invoice', 'prefix': 'invoice', 'sequence_type': 'generated', 'split_length': 1},
-             {'form': 'QC-{seq:03d}', 'portal_type': 'ReferenceSample', 'prefix': 'refsample', 'sequence_type': 'generated', 'split_length': 1},
-             {'form': 'SA-{seq:03d}', 'portal_type': 'ReferenceAnalysis', 'prefix': 'refanalysis', 'sequence_type': 'generated', 'split_length': 1},
-             {'form': 'WS-{seq:03d}', 'portal_type': 'Worksheet', 'prefix': 'worksheet', 'sequence_type': 'generated', 'split_length': 1},
-             {'form': '{sampleType}-{seq:04d}', 'portal_type': 'Sample', 'prefix': 'sample', 'sequence_type': 'generated', 'split_length': 1},
-             {'context': 'sample', 'counter_reference': 'AnalysisRequestSample', 'counter_type': 'backreference', 'form': '{sampleId}-R{seq:02d}', 'portal_type': 'AnalysisRequest', 'sequence_type': 'counter'},
-             {'context': 'sample', 'counter_reference': 'SamplePartition', 'counter_type': 'contained', 'form': '{sampleId}-P{seq:d}', 'portal_type': 'SamplePartition', 'sequence_type': 'counter'}],
+            {
+                'form': 'AI-{seq:03d}',
+                'portal_type': 'ARImport',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'form': 'B-{seq:03d}',
+                'portal_type': 'Batch',
+                'prefix': 'batch',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'form': 'D-{seq:03d}',
+                'portal_type': 'DuplicateAnalysis',
+                'prefix': 'duplicate',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'form': 'I-{seq:03d}',
+                'portal_type': 'Invoice',
+                'prefix': 'invoice',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'form': 'QC-{seq:03d}',
+                'portal_type': 'ReferenceSample',
+                'prefix': 'refsample',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'form': 'SA-{seq:03d}',
+                'portal_type': 'ReferenceAnalysis',
+                'prefix': 'refanalysis',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'form': 'WS-{seq:03d}',
+                'portal_type': 'Worksheet',
+                'prefix': 'worksheet',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'form': '{sampleType}-{seq:04d}',
+                'portal_type': 'Sample',
+                'prefix': 'sample',
+                'sequence_type': 'generated',
+                'split_length': 1
+            }, {
+                'context': 'sample',
+                'counter_reference': 'AnalysisRequestSample',
+                'counter_type': 'backreference',
+                'form': '{sampleId}-R{seq:02d}',
+                'portal_type': 'AnalysisRequest',
+                'sequence_type': 'counter'
+            }, {
+                'context': 'sample',
+                'counter_reference': 'SamplePartition',
+                'counter_type': 'contained',
+                'form': '{sampleId}-P{seq:d}',
+                'portal_type': 'SamplePartition',
+                'sequence_type': 'counter'
+            }
+        ],
         widget=RecordsWidget(
             label=_("Formatting Configuration"),
             allowDelete=True,
-            description=_("""
-The ID Server in Bika LIMS provides IDs for content items base of the given format specification. The format string is constructed in the same way as a python format() method based predefined variables per content type. The only variable available to all type is 'seq'. Currently, seq can be constructed either using number generator or a counter of existing items. For generated IDs, one can specifypoint at which the format string will be split to create the generator key. For counter IDs, one must specify context and the type of counter which is either the number of backreferences or the number of contained objects.
-
-Configuration Settings:
-* format:
-  - a python format string constructed from predefined variables like sampleId, client, sampleType.
-  - special variable 'seq' must be positioned last in the format string
-* sequence type: [generated|counter]
-* context: if type counter, provides context the counting function
-* counter type: [backreference|contained]
-* counter reference: a parameter to the counting function
-* prefix: default prefix if none provided in format string
-* split length: the number of parts to be included in the prefix
-"""
-                )
+            description=_(
+                " <p>The Bika LIMS ID Server provides unique sequential IDs " 
+                "for objects such as Samples and Worksheets etc, based on a " 
+                "format specified for each content type.</p>" 
+                "<p>The format is constructed similarly to the Python format" 
+                " syntax, using predefined variables per content type, and" 
+                " advancing the IDs through a sequence number, 'seq' and its" 
+                " padding as a number of digits, e.g. '03d' for a sequence of" 
+                " IDs from 001 to 999.</p>" 
+                "<p>Alphanumeric prefixes for IDs are included as is in the" 
+                " formats, e.g. WS for Worksheet in WS-{seq:03d} produces" 
+                " sequential Worksheet IDs: WS-001, WS-002, WS-003 etc.</p>" 
+                "<p>Variables that can be used include:" 
+                "<table>" 
+                "<tr>"
+                "<th style='width:150px'>Content Type</th><th>Variables</th>" 
+                "</tr>" 
+                "<tr><td>Client</td><td>{client}</td></tr>" 
+                "<tr><td>Year</td><td>{year}</td></tr>" 
+                "<tr><td>Sample ID</td><td>{sampleId}</td></tr>" 
+                "<tr><td>Sample Type</td><td>{sampleType}</td></tr>" 
+                "<tr><td>Sampling Date</td><td>{samplingDate}</td></tr>" 
+                "<tr><td>Date Sampled</td><td>{dateSampled}</td></tr>" 
+                "</table>" 
+                "</p>" 
+                "<p>Configuration Settings:" 
+                "<ul>" 
+                "<li>format:" 
+                "<ul><li>a python format string constructed from predefined" 
+                " variables like sampleId, client, sampleType.</li>" 
+                "<li>special variable 'seq' must be positioned last in the"  
+                "format string</li></ul></li>" 
+                "<li>sequence type: [generated|counter]</li>" 
+                "<li>context: if type counter, provides context the counting" 
+                " function</li>" 
+                "<li>counter type: [backreference|contained]</li>" 
+                "<li>counter reference: a parameter to the counting" 
+                " function</li>" 
+                "<li>prefix: default prefix if none provided in format" 
+                " string</li>" 
+                "<li>split length: the number of parts to be included in the" 
+                " prefix</li>" 
+                "</ul></p>")
         )
     ),
     BooleanField(
@@ -717,28 +893,6 @@ Configuration Settings:
             label=_("ID Server Values"),
             cols=30,
             rows=30,
-        ),
-    ),
-    RecordsField(
-        'RejectionReasons',
-        schemata="Analyses",
-        widget=RejectionSetupWidget(
-            label=_("Enable the rejection workflow"),
-            description=_("Select this to activate the rejection workflow "
-                          "for Samples and Analysis Requests. A 'Reject' "
-                          "option will be displayed in the actions menu for "
-                          "these objects.")
-        ),
-    ),
-    BooleanField(
-        'NotifyOnRejection',
-        schemata="Analyses",
-        default=False,
-        widget=BooleanWidget(
-            label=_("Email notification on rejection"),
-            description=_("Select this to activate automatic notifications "
-                          "via email to the Client when a Sample or Analysis "
-                          "Request is rejected.")
         ),
     ),
     BooleanField(
@@ -856,5 +1010,6 @@ class BikaSetup(folder.ATFolder):
         for i in range(len(keys)):
             results.append('%s: %s' % (keys[i], values[i]))
         return "\n".join(results)
+
 
 registerType(BikaSetup, PROJECTNAME)

@@ -6,7 +6,9 @@
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from bika.lims import api
 from bika.lims import bikaMessageFactory as _
+from bika.lims.config import INSTRUMENT_IMPORT_AUTO_OPTIONS
 from bika.lims.utils import t
 from bika.lims.browser import BrowserView
 from bika.lims.content.instrument import getDataInterfaces
@@ -68,6 +70,7 @@ class ImportView(BrowserView):
             import os.path
             instrpath = os.path.join("exportimport", "instruments")
             templates_dir = resource_filename("bika.lims", instrpath)
+            #TODO Serve exim template and  if it does not exits get the default template
             fname = "%s/%s_import.pt" % (templates_dir, exim)
             return ViewPageTemplateFile("instruments/%s_import.pt" % exim)(self)
         else:
@@ -137,9 +140,17 @@ class ajaxGetImportTemplate(BrowserView):
     def __call__(self):
         plone.protect.CheckAuthenticator(self.request)
         exim = self.request.get('exim').replace(".", "/")
+        # This was the default template and the instrument below is the only
+        # instrument that uses this template
+        # To avoid this instrument to break, we'll just give it the template
+        # that it is expecting
+        # We are moving towards all instruments to use one template
+        if exim == 'myself/myinstrument':
+            return ViewPageTemplateFile("instruments/instrument.pt")(self)
+
         # If a specific template for this instrument doesn't exist yet,
         # use the default template for instrument results file import located
-        # at bika/lims/exportimport/instruments/instrument.pt
+        # at bika/lims/exportimport/instruments/default_import.pt
         import os.path
         instrpath = os.path.join("exportimport", "instruments")
         templates_dir = resource_filename("bika.lims", instrpath)
@@ -147,7 +158,7 @@ class ajaxGetImportTemplate(BrowserView):
         if os.path.isfile(fname):
             return ViewPageTemplateFile("instruments/%s_import.pt" % exim)(self)
         else:
-            return ViewPageTemplateFile("instruments/instrument.pt")(self)
+            return ViewPageTemplateFile("instruments/default_import.pt")(self)
 
     def getInstruments(self):
         bsc = getToolByName(self, 'bika_setup_catalog')
@@ -168,3 +179,11 @@ class ajaxGetImportTemplate(BrowserView):
                                    inactive_state = 'active')]
         items.sort(lambda x, y: cmp(x[1].lower(), y[1].lower()))
         return DisplayList(list(items))
+
+    def getAdvanceToState(self):
+        """Get States to advance to on an AR Instrument Import
+        """
+        tr_success_state = api.get_bika_setup().getAutoTransition()
+        if len(tr_success_state) ==  0:
+            return DisplayList([('', "Don't transition")])
+        return INSTRUMENT_IMPORT_AUTO_OPTIONS

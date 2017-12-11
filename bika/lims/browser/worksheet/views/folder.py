@@ -5,31 +5,24 @@
 # Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
-from DateTime import DateTime
-from DocumentTemplate import sequence
+import json
+import logging
+
 from Products.Archetypes.config import REFERENCE_CATALOG
 from Products.Archetypes.public import DisplayList
 from Products.CMFCore.utils import getToolByName
-from Products.CMFPlone.utils import _createObjectByType
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from bika.lims import PMF
+from bika.lims import bikaMessageFactory as _
+from bika.lims.browser.bika_listing import BikaListingView
+from bika.lims.permissions import EditWorksheet
+from bika.lims.permissions import ManageWorksheets
+from bika.lims.utils import getUsers
+from bika.lims.utils import to_utf8 as _c
 from plone.app.content.browser.interfaces import IFolderContentsView
 from plone.app.layout.globals.interfaces import IViewView
 from zope.interface import implements
 
-from bika.lims import bikaMessageFactory as _
-from bika.lims import PMF, logger
-from bika.lims.browser import BrowserView
-from bika.lims.browser.bika_listing import BikaListingView
-from bika.lims.browser.bika_listing import WorkflowAction
-from bika.lims.permissions import EditWorksheet
-from bika.lims.permissions import ManageWorksheets
-from bika.lims.utils import getUsers, tmpID, t
-from bika.lims.utils import to_utf8 as _c
-
-import logging
-import plone
-import json
-import zope
 
 class FolderView(BikaListingView):
 
@@ -65,7 +58,7 @@ class FolderView(BikaListingView):
 
         pm = getToolByName(context, "portal_membership")
         # this is a property of self, because self.getAnalysts returns it
-        self.analysts = getUsers(self, ['Manager', 'LabManager', 'Analyst'])
+        self.analysts = getUsers(['Manager', 'LabManager', 'Analyst'])
         self.analysts = self.analysts.sortedByKey()
 
         bsc = getToolByName(context, 'bika_setup_catalog')
@@ -319,99 +312,8 @@ class FolderView(BikaListingView):
         if not item:
             return None
 
-        item['CreationDate'] = self.ulocalized_time(obj.creation_date)
-        item['Analyst'] = obj.getAnalyst().strip()
-        item['Priority'] = ''
-        item['getPriority'] = ''
-
-        instrument = obj.getInstrument()
-        item['Instrument'] = instrument.Title() if instrument else ''
-
-        wst = obj.getWorksheetTemplate()
-        item['Template'] = wst.Title() if wst else ''
-        if wst:
-            item['replace']['Template'] = "<a href='%s'>%s</a>" % \
-                (wst.absolute_url(), wst.Title())
-
         if len(obj.getAnalyses()) == 0:
             item['table_row_class'] = 'state-empty-worksheet'
-
-        layout = obj.getLayout()
-        item['Title'] = obj.Title()
-        turl = "manage_results" if len(layout) > 0 else "add_analyses"
-        item['replace']['Title'] = "<a href='%s/%s'>%s</a>" % \
-            (item['url'], turl, item['Title'])
-
-        # Set services
-        ws_services = {}
-        for slot in [s for s in layout if s['type'] == 'a']:
-            analysis = self.rc.lookupObject(slot['analysis_uid'])
-            if not analysis:
-                error = "Analysis with uid '%s' NOT FOUND in Reference Catalog.\n Worksheet: '%s'. Layout: '%s'" % \
-                        (slot['analysis_uid'], obj, layout)
-                logging.info(error)
-                continue
-            service = analysis.getService()
-            title = service.Title()
-            if title not in ws_services:
-                ws_services[title] = "<a href='%s'>%s</a>" % \
-                    (service.absolute_url(), title)
-        keys = list(ws_services.keys())
-        keys.sort()
-        services = [ws_services[k] for k in keys]
-        item['Services'] = ""
-        item['replace']['Services'] = ", ".join(services)
-
-        pos_parent = {}
-        for slot in layout:
-            # compensate for bad data caused by a stupid bug.
-            if type(slot['position']) in (list, tuple):
-                slot['position'] = slot['position'][0]
-            if slot['position'] == 'new':
-                continue
-            if slot['position'] in pos_parent:
-                continue
-            pos_parent[slot['position']] = self.rc.lookupObject(slot['container_uid'])
-
-        # Set Sample Types and QC Samples
-        sampletypes = []
-        qcsamples = []
-        for container in pos_parent.values():
-            if container.portal_type == 'AnalysisRequest':
-                sampletype = "<a href='%s'>%s</a>" % \
-                           (container.getSample().getSampleType().absolute_url(),
-                            container.getSample().getSampleType().Title())
-                sampletypes.append(sampletype)
-            if container.portal_type == 'ReferenceSample':
-                qcsample = "<a href='%s'>%s</a>" % \
-                        (container.absolute_url(),
-                         container.Title())
-                qcsamples.append(qcsample)
-
-        sampletypes = list(set(sampletypes))
-        sampletypes.sort()
-        item['SampleTypes'] = ""
-        item['replace']['SampleTypes'] = ", ".join(sampletypes)
-        qcsamples = list(set(qcsamples))
-        qcsamples.sort()
-        item['QC'] = ""
-        item['replace']['QC'] = ", ".join(qcsamples)
-        item['QCTotals'] = ''
-
-        # Total QC Samples (Total Routine Analyses)
-        analyses = obj.getAnalyses()
-        totalQCAnalyses = [a for a in analyses
-                               if a.portal_type == 'ReferenceAnalysis'
-                               or a.portal_type == 'DuplicateAnalysis']
-        totalQCSamples = [a.getSample().UID() for a in totalQCAnalyses]
-        totalQCSamples = list(set(totalQCSamples))
-        item['QCTotals'] = str(len(totalQCSamples)) + ' (' + str(len(totalQCAnalyses)) + ')'
-
-        # Total Routine Samples (Total Routine Analyses)
-        totalRoutineAnalyses = [a for a in analyses if a not in totalQCAnalyses]
-        totalRoutineSamples = [a.getSample().UID() for a in totalRoutineAnalyses]
-        totalRoutineSamples = list(set(totalRoutineSamples))
-        item['RoutineTotals'] = str(len(totalRoutineSamples)) + ' (' + str(len(totalRoutineAnalyses)) + ')'
 
         if item['review_state'] == 'open' \
             and self.allow_edit \
@@ -423,6 +325,122 @@ class FolderView(BikaListingView):
             self.can_reassign = True
 
         return item
+
+    def column_RoutineTotals(self, item, obj):
+        analyses = obj.getAnalyses()
+        totalRoutineAnalyses = [a for a in analyses
+                                if a.portal_type != 'ReferenceAnalysis'
+                                or a.portal_type != 'DuplicateAnalysis']
+        totalRoutineSamples = [a.getSample().UID() for a in
+                               totalRoutineAnalyses]
+        totalRoutineSamples = list(set(totalRoutineSamples))
+        item['RoutineTotals'] = str(len(totalRoutineSamples)) + ' (' + str(
+            len(totalRoutineAnalyses)) + ')'
+
+    def column_QCTotals(self, item, obj):
+        analyses = obj.getAnalyses()
+        totalQCAnalyses = [a for a in analyses
+                           if a.portal_type == 'ReferenceAnalysis'
+                           or a.portal_type == 'DuplicateAnalysis']
+        totalQCSamples = [a.getSample().UID() for a in totalQCAnalyses]
+        totalQCSamples = list(set(totalQCSamples))
+        item['QCTotals'] = str(len(totalQCSamples)) + ' (' + str(
+            len(totalQCAnalyses)) + ')'
+
+    def column_SampleTypes(self, item, obj):
+        layout = obj.getLayout()
+        pos_parent = {}
+        for slot in layout:
+            if slot['position'] == 'new':
+                continue
+            if slot['position'] in pos_parent:
+                continue
+            pos_parent[slot['position']] = self.rc.lookupObject(
+                slot['container_uid'])
+        sampletypes = []
+        for container in pos_parent.values():
+            if container.portal_type == 'AnalysisRequest':
+                sampletype = \
+                    "<a href='%s'>%s</a>" % \
+                    (container.getSample().getSampleType().absolute_url(),
+                     container.getSample().getSampleType().Title())
+                sampletypes.append(sampletype)
+        sampletypes = list(set(sampletypes))
+        sampletypes.sort()
+        item['SampleTypes'] = ""
+        item['replace']['SampleTypes'] = ", ".join(sampletypes)
+
+    def column_QC(self, item, obj):
+        layout = obj.getLayout()
+        pos_parent = {}
+        for slot in layout:
+            if slot['position'] == 'new':
+                continue
+            if slot['position'] in pos_parent:
+                continue
+            pos_parent[slot['position']] = self.rc.lookupObject(
+                slot['container_uid'])
+        qcsamples = []
+        for container in pos_parent.values():
+            if container.portal_type == 'ReferenceSample':
+                qcsample = "<a href='%s'>%s</a>" % (container.absolute_url(),
+                                                    container.Title())
+                qcsamples.append(qcsample)
+        qcsamples = list(set(qcsamples))
+        qcsamples.sort()
+        item['QC'] = ""
+        item['replace']['QC'] = ", ".join(qcsamples)
+        item['QCTotals'] = ''
+
+    def column_Priority(self, item, obj):
+        item['Priority'] = ''
+
+    def column_Analyst(self, item, obj):
+        item['Analyst'] = obj.getAnalyst().strip()
+
+    def column_CreationDate(self, item, obj):
+        item['CreationDate'] = self.ulocalized_time(obj.creation_date)
+
+    def column_Title(self, item, obj):
+        layout = obj.getLayout()
+        item['Title'] = obj.Title()
+        turl = "manage_results" if len(layout) > 0 else "add_analyses"
+        item['replace']['Title'] = "<a href='%s/%s'>%s</a>" % \
+                                   (item['url'], turl, item['Title'])
+
+    def column_Template(self, item, obj):
+        wst = obj.getWorksheetTemplate()
+        item['Template'] = wst.Title() if wst else ''
+        if wst:
+            item['replace']['Template'] = "<a href='%s'>%s</a>" % \
+                                          (wst.absolute_url(), wst.Title())
+
+    def column_Services(self, item, obj):
+        # Set services
+        layout = obj.getLayout()
+        ws_services = {}
+        for slot in [s for s in layout if s['type'] == 'a']:
+            analysis = self.rc.lookupObject(slot['analysis_uid'])
+            if not analysis:
+                error = "Analysis with uid '%s' NOT FOUND in Reference " \
+                        "Catalog.\n Worksheet: '%s'. Layout: '%s'" % \
+                        (slot['analysis_uid'], obj, layout)
+                logging.info(error)
+                continue
+            service = analysis.getService()
+            title = service.Title()
+            if title not in ws_services:
+                ws_services[title] = "<a href='%s'>%s</a>" % \
+                                     (service.absolute_url(), title)
+        keys = list(ws_services.keys())
+        keys.sort()
+        services = [ws_services[k] for k in keys]
+        item['Services'] = ""
+        item['replace']['Services'] = ", ".join(services)
+
+    def column_Instrument(self, item, obj):
+        instrument = obj.getInstrument()
+        item['Instrument'] = instrument.Title() if instrument else ''
 
     def folderitems(self):
         items = BikaListingView.folderitems(self)
@@ -459,12 +477,22 @@ class FolderView(BikaListingView):
         """ List of templates
             Used in bika_listing.pt
         """
-        return DisplayList(self.templates)
+        bsc = getToolByName(self.context, 'bika_setup_catalog')
+        return DisplayList([(c.UID, c.Title) for c in
+                bsc(portal_type = 'WorksheetTemplate',
+                   inactive_state = 'active',
+                   sort_on = 'sortable_title')])
 
     def getInstruments(self):
         """ List of instruments
             Used in bika_listing.pt
         """
+        bsc = getToolByName(self.context, 'bika_setup_catalog')
+        self.instruments = [(i.UID, i.Title) for i in
+                            bsc(portal_type = 'Instrument',
+                                inactive_state = 'active')]
+        self.instruments.sort(lambda x, y: cmp(x[1], y[1]))
+
         return DisplayList(self.instruments)
 
     def getTemplateInstruments(self):

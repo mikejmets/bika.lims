@@ -98,8 +98,7 @@ class SelectionMacrosView(BrowserView):
 
     def select_analyst(self, allow_blank=False, style=None):
         self.style = style
-        self.analysts = getUsers(self.context,
-                                 ['Manager', 'Analyst', 'LabManager'],
+        self.analysts = getUsers(['Manager', 'Analyst', 'LabManager'],
                                  allow_blank)
         return self.select_analyst_pt()
 
@@ -108,7 +107,7 @@ class SelectionMacrosView(BrowserView):
     def select_user(self, allow_blank=True, style=None):
         self.style = style
         self.allow_blank = allow_blank
-        self.users = getUsers(self.context, None, allow_blank)
+        self.users = getUsers(None, allow_blank)
         return self.select_user_pt()
 
     select_client_pt = ViewPageTemplateFile("select_client.pt")
