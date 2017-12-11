@@ -296,7 +296,7 @@ class ImportInstrumentResultsView(BrowserView):
             os.rename(result_file, archive_file)
 
         report = json.loads(results)
-        result_to_return = ['Processing folder ' % instrument_path]
+        result_to_return = ['Processing folder %s' % instrument_path]
         if len(report['log']) > 0:
             result_to_return.append('Log:')
             for l in report['log']:
