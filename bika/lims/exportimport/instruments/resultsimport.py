@@ -565,8 +565,14 @@ class AnalysisResultsImporter(Logger):
             for analysis in analyses:
                 analysis = analysis.getObject()
                 initial_result = analysis.getResult()
-                calc_passed = analysis.calculateResult(override=True,
-                                                       cascade=True)
+                try:
+                    calc_passed = analysis.calculateResult(override=True,
+                                                           cascade=True)
+                except Exception, e:
+                    self.err("Exeption on calculate result on {} {}: {}"\
+                            .format(objid, acode, str(e)))
+                    continue
+
                 if calc_passed == False:
                     continue
 
@@ -574,10 +580,15 @@ class AnalysisResultsImporter(Logger):
                     analysis.Analyst = self.user._id
                 if self.advance_to_state:
                     try:
-                        api.do_transition_for(analysis, self.advance_to_state)
-                    except:
-                        self.log("Failed to perform transition '{}' on {}: {}"\
-                                .format(self.advance_to_state, objid, acode))
+                        available_transions = [i['id'] for i in \
+                                api.get_transitions_for(analysis)]
+                        if self.advance_to_state in available_transions:
+                            api.do_transition_for(analysis, self.advance_to_state)
+                    except Exception, e:
+                        self.err("Exception in perform transition '{}' on {} {}: {}"\
+                                .format(self.advance_to_state, objid, acode, str(e)))
+                        continue
+
                 if calc_passed and initial_result != analysis.getResult():
                     self.log(
                         "${request_id}: calculated result for "

@@ -267,12 +267,12 @@ class ImportInstrumentResultsView(BrowserView):
         logger.info('Async import instrument result ready')
 
         data = open(result_file, 'r').read()
-        file = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
+        afile = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
 
         request.form = dict(submitted=True,
                             artoapply='received_tobeverified',
                             override='nooverride',
-                            file=file,
+                            file=afile,
                             sample='requestid',
                             instrument='',
                             advancetostate = 'submit',
@@ -296,15 +296,11 @@ class ImportInstrumentResultsView(BrowserView):
             os.rename(result_file, archive_file)
 
         report = json.loads(results)
-        result_to_return = []
+        result_to_return = ['Processing folder ' % instrument_path]
         if len(report['log']) > 0:
             result_to_return.append('Log:')
             for l in report['log']:
                 result_to_return.append(l)
-        if len(report['errors']) > 0:
-            result_to_return.append('Errors:')
-            for e in report['errors']:
-                result_to_return.append(e)
         if len(report['warns']) > 0:
             result_to_return.append('Warnings:')
             for w in report['warns']:
@@ -313,6 +309,8 @@ class ImportInstrumentResultsView(BrowserView):
         self._email_analyst(analyst_email, analyst_name, message)
         if 'Import' in globals():
             del Import
+        if len(report['errors']) > 0:
+            self._email_errors(report['errors'])
         logger.info('Async import instrument result done')
 
     def _email_errors(self, errors):
