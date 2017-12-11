@@ -48,7 +48,7 @@ class ImportInstrumentResultsView(BrowserView):
         errors = []
         archive = []
         if not os.path.isdir(analysts_folder):
-            logger.info('Instrument Result Folder not found: {}'.format(analysts_folder))
+            logger.error('Instrument Result Folder not found: {}'.format(analysts_folder))
             return 'Folder: {} not found'.format(analysts_folder)
         exims = []
         all_instruments = instruments.__all__
@@ -133,8 +133,11 @@ class ImportInstrumentResultsView(BrowserView):
                             try:
                                 shutil.move(current_file, temp_file)
                             except Exception, e:
-                                raise RuntimeError('Cannot move file %s to %s (%s)' % (
-                                        current_file, temp_file, str(e)))
+                                msg = 'Cannot move file %s to %s (%s)' % (
+                                        current_file, temp_file, str(e))
+                                errors.append(msg)
+                                continue
+                        logger.info('Moved file %s to %s' % (current_file, temp_file))
                         if task_queue is not None:
                             path = [i for i in self.context.getPhysicalPath()]
                             path.append('async_import_instrument_result')
@@ -147,7 +150,7 @@ class ImportInstrumentResultsView(BrowserView):
                                     'analyst_name': analyst_name,
                                     'import_importer': import_importer,
                                     }
-                            logger.info('Queue Task: path=%s' % path)
+                            logger.info('Queue Task: path=%s; params=%s' % (path, params))
                             task_id = task_queue.add(path,
                                     method='POST',
                                     params=params)
@@ -260,14 +263,26 @@ class ImportInstrumentResultsView(BrowserView):
         elif import_importer == 'shimadzu.nexera.LC2040C':
             from bika.lims.exportimport.instruments.shimadzu.nexera.LC2040C import Import
         elif import_importer == 'shimadzu.nexera.LCMS8050':
-            from bika.lims.exportimport.instruments.shimadzu.nexera.CMS8050 import Import
+            from bika.lims.exportimport.instruments.shimadzu.nexera.LCMS8050 import Import
         elif import_importer == 'agilent.masshunter.masshunter':
             from bika.lims.exportimport.instruments.agilent.masshunter.masshunter import Import
 
         logger.info('Async import instrument result ready')
 
-        data = open(result_file, 'r').read()
-        afile = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
+        try:
+            data = open(result_file, 'r').read()
+        except Exception, e:
+            msgs.append('Could not open results file %s' % result_file)
+            logger.error('Async import instrument result: errors = %s' % msgs)
+            self._email_errors(msgs)
+            return
+        try:
+            afile = FileUpload(FileToUpload(cStringIO.StringIO(data),fname))
+        except Exception, e:
+            msgs.append('Could not upload results file %s' % fname)
+            logger.error('Async import instrument result: errors = %s' % msgs)
+            self._email_errors(msgs)
+            return
 
         request.form = dict(submitted=True,
                             artoapply='received_tobeverified',
@@ -286,14 +301,21 @@ class ImportInstrumentResultsView(BrowserView):
                 results = Import(context, request)
         except Exception, e:
             errors.append(e)
+            logger.error('Async import instrument result import: %s' % errors)
             results = '[]'
 
+        logger.info('Async import instrument results: import complete')
         archive_file = os.path.join(instrument_path, 'archives', fname)
         try:
             os.rename(result_file, archive_file)
         except Exception, e:
-            os.remove(archive_file)
-            os.rename(result_file, archive_file)
+            try:
+                os.remove(archive_file)
+                os.rename(result_file, archive_file)
+            except:
+                logger.error('Async import instrument result: cannot move %s to %s' % (result_file, archive_file))
+
+        logger.info('Async import instrument results: archive complete')
 
         report = json.loads(results)
         result_to_return = ['Processing folder %s' % instrument_path]
@@ -309,9 +331,13 @@ class ImportInstrumentResultsView(BrowserView):
         self._email_analyst(analyst_email, analyst_name, message)
         if 'Import' in globals():
             del Import
+<<<<<<< HEAD
         if len(report['errors']) > 0:
             self._email_errors(report['errors'])
         logger.info('Async import instrument result done')
+=======
+        logger.info('Async import instrument result exit')
+>>>>>>> 6acf6a64431fe3eb4d8181b7200c97f0139fe8c7
 
     def _email_errors(self, errors):
         message = '\n'.join(errors)
@@ -369,9 +395,13 @@ Bika LIMS
                         name=name,
                         message=message)
         try:
-            logger.info('Email Analyst complete: %s' % to_email)
-            return mail_host.send(
+            result = mail_host.send(
                         mail_text, to_email, from_email,
                         subject=subject, charset="utf-8", immediate=True)
+            logger.info('Email Analyst complete: %s' % to_email)
+            return result
         except smtplib.SMTPRecipientsRefused:
+            logger.info('Email Analyst SMTP Error: %s' % to_email)
             raise smtplib.SMTPRecipientsRefused('Recipient address rejected by server')
+        except Exception, e:
+            logger.info('Email Analyst %s Unknown error: %s' % (to_email, e))
