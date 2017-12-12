@@ -124,6 +124,10 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
         # Metals Mix Method with IS longer cali\tCAL1\tBlank\t9/23/2016 11:54:59 AM\t\tMRC\tAs\tQUANT\t193.759\t1\tppb\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tAfter Drift Correction\t-0.0936625\t-0.1063610\t-0.1266098\t\t\t\t\t\t\t\t-0.1088778\t0.0166172\t15.26
 
         splitted = [token.strip() for token in line.split('\t')]
+        if len(splitted) == 1:
+            self.err("Please ensure that you are using the correct file")
+            return 0
+
         quantitation = {'DefaultResult': 'Title21'}
         # File has no headers
         self._quantitationresultsheader  = ['Title%s' % x for x in range(44)]
