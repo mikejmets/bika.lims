@@ -71,6 +71,7 @@ class ARPhotosImporter(BrowserView):
                 attachment.setAttachmentFile(f)
                 f.close()
                 attachment.setAttachmentType(att_type_uid)
+                attachment.setReportOption('r')
 
                 # Attach to AR
                 ar.setAttachment(attachment.UID())
