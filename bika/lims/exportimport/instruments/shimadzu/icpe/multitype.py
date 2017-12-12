@@ -125,7 +125,8 @@ class ICPEMultitypeCSVParser(InstrumentCSVResultsFileParser):
 
         splitted = [token.strip() for token in line.split('\t')]
         if len(splitted) == 1:
-            self.err("Please ensure that you are using the correct file")
+            self.err("""A tab separator was not found on the file. Maybe you are
+            not using the correct file.""")
             return 0
 
         quantitation = {'DefaultResult': 'Title21'}
