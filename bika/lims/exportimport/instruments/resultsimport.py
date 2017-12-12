@@ -406,7 +406,7 @@ class AnalysisResultsImporter(Logger):
             analyses = self._getZODBAnalyses(objid)
             logger.info('PROCESS: Analysis Request %s' % objid)
             for result in results:
-                logger.info('PROCESS: AS %s' % str(result.keys()))
+                logger.debug('PROCESS: AS %s' % str(result.keys()))
                 inst = None
                 if len(analyses) == 0 and self.instrument_uid:
                     # No registered analyses found, but maybe we need to
@@ -507,7 +507,7 @@ class AnalysisResultsImporter(Logger):
                             ar = analysis.portal_type == 'Analysis' and analysis.aq_parent or None
                             if ar and ar.UID:
                                 # Set AR imported info
-                                if True: #ar.UID() not in arprocessed:
+                                if ar.UID() not in arprocessed:
                                     arprocessed.append(ar.UID())
                                 importedar = ar.getRequestID() in importedars.keys() \
                                             and importedars[ar.getRequestID()] or []
@@ -575,7 +575,7 @@ class AnalysisResultsImporter(Logger):
             analyses = ar.getAnalyses()
             for analysis in analyses:
                 analysis = analysis.getObject()
-                logger.info('PROCESS: Calculate Analysis %s' % analysis.getId())
+                logger.debug('PROCESS: Calculate Analysis %s' % analysis.getId())
                 initial_result = analysis.getResult()
                 try:
                     #Cascade True ????
