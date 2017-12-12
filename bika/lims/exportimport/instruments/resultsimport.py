@@ -12,6 +12,7 @@ from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import t
 from bika.lims.exportimport.instruments.logger import Logger
 from bika.lims.idserver import renameAfterCreation
+from bika.lims.utils import logger
 from bika.lims.utils import tmpID
 from bika.lims.workflow import doActionFor
 from Products.Archetypes.config import REFERENCE_CATALOG
@@ -187,7 +188,7 @@ class InstrumentResultsFileParser(Logger):
             Called by the Results Importer after parse() call
         """
         if len(self.getRawResults()) == 0:
-            self.err("No results found")
+            self.warn("No results found")
             return False
         return True
 
@@ -226,7 +227,7 @@ class InstrumentCSVResultsFileParser(InstrumentResultsFileParser):
                 jump = self._parseline(line)
 
         self.log(
-            "End of file reached successfully: ${total_objects} objects, "
+            "End of file reached: ${total_objects} objects, "
             "${total_analyses} analyses, ${total_results} results",
             mapping={"total_objects": self.getObjectsTotalCount(),
                      "total_analyses": self.getAnalysesTotalCount(),
@@ -392,15 +393,20 @@ class AnalysisResultsImporter(Logger):
             else:
                 acodes.append(acode)
         if len(acodes) == 0:
-            self.err("Service keywords: no matches found")
+            self.warn("Service keywords: no matches found")
 
         searchcriteria = self.getIdSearchCriteria();
+        logger.info('PROCESS: Get Raw Results')
+        raw_results = self._parser.getRawResults()
+        logger.info('PROCESS: Iter Raw Results')
         #self.log(_("Search criterias: %s") % (', '.join(searchcriteria)))
-        for objid, results in self._parser.getRawResults().iteritems():
+        for objid, results in raw_results.iteritems():
             # Allowed more than one result for the same sample and analysis.
             # Needed for calibration tests
+            analyses = self._getZODBAnalyses(objid)
+            logger.info('PROCESS: Analysis Request %s' % objid)
             for result in results:
-                analyses = self._getZODBAnalyses(objid)
+                logger.debug('PROCESS: AS %s' % str(result.keys()))
                 inst = None
                 if len(analyses) == 0 and self.instrument_uid:
                     # No registered analyses found, but maybe we need to
@@ -408,11 +414,11 @@ class AnalysisResultsImporter(Logger):
                     insts = self.bsc(portal_type='Instrument', UID=self.instrument_uid)
                     if len(insts) == 0:
                         # No instrument found
-                        self.err("No Analysis Request with '${allowed_ar_states}' "
+                        self.warn("No Analysis Request with '${allowed_ar_states}' "
                                  "states found, And no QC analyses found for ${object_id}",
                                  mapping={"allowed_ar_states": ', '.join(allowed_ar_states_msg),
                                           "object_id": objid})
-                        self.err("Instrument not found")
+                        self.warn("Instrument not found")
                         continue
 
                     inst = insts[0].getObject()
@@ -429,14 +435,14 @@ class AnalysisResultsImporter(Logger):
 
                     elif refsample and len(refsample) > 1:
                         # More than one reference sample found!
-                        self.err(
+                        self.warn(
                             "More than one reference sample found for '${object_id}'",
                             mapping={"object_id": objid})
                         continue
 
                     else:
                         # No reference sample found!
-                        self.err("No Reference Sample found for ${object_id}",
+                        self.warn("No Reference Sample found for ${object_id}",
                                  mapping={"object_id": objid})
                         continue
 
@@ -451,7 +457,7 @@ class AnalysisResultsImporter(Logger):
 
                 elif len(analyses) == 0:
                     # No analyses found
-                    self.err("No Analysis Request with '${allowed_ar_states}' "
+                    self.warn("No Analysis Request with '${allowed_ar_states}' "
                              "states neither QC analyses found for ${object_id}",
                              mapping={
                                  "allowed_ar_states":', '.join(allowed_ar_states_msg),
@@ -471,13 +477,13 @@ class AnalysisResultsImporter(Logger):
                            if analysis.getKeyword() == acode]
 
                     if len(ans) > 1:
-                        self.err("More than one analysis found for ${object_id} and ${analysis_keyword}",
+                        self.warn("More than one analysis found for ${object_id} and ${analysis_keyword}",
                                  mapping={"object_id": objid,
                                           "analysis_keyword": acode})
                         continue
 
                     elif len(ans) == 0:
-                        self.err("No analyses found for ${object_id} and ${analysis_keyword}",
+                        self.warn("No analyses found for ${object_id} and ${analysis_keyword}",
                                  mapping={"object_id": objid,
                                           "analysis_keyword": acode})
                         continue
@@ -501,71 +507,78 @@ class AnalysisResultsImporter(Logger):
                             ar = analysis.portal_type == 'Analysis' and analysis.aq_parent or None
                             if ar and ar.UID:
                                 # Set AR imported info
-                                arprocessed.append(ar.UID())
+                                if ar.UID() not in arprocessed:
+                                    arprocessed.append(ar.UID())
                                 importedar = ar.getRequestID() in importedars.keys() \
                                             and importedars[ar.getRequestID()] or []
                                 if acode not in importedar:
                                     importedar.append(acode)
                                 importedars[ar.getRequestID()] = importedar
 
-                        # Create the AttachmentType for mime type if not exists
-                        attuid = None
-                        attachmentType = self.bsc(portal_type="AttachmentType",
-                                                  title=self._parser.getAttachmentFileType())
-                        if len(attachmentType) == 0:
-                            try:
-                                folder = self.context.bika_setup.bika_attachmenttypes
-                                obj = _createObjectByType("AttachmentType", folder, tmpID())
-                                obj.edit(title=self._parser.getAttachmentFileType(),
-                                         description="Autogenerated file type")
-                                obj.unmarkCreationFlag()
-                                renameAfterCreation(obj)
-                                attuid = obj.UID()
-                            except:
-                                attuid = None
-                                self.err(
-                                    "Unable to create the Attachment Type ${mime_type}",
-                                    mapping={
-                                    "mime_type": self._parser.getFileMimeType()})
-                        else:
-                            attuid = attachmentType[0].UID
+                        wss = analysis.getBackReferences('WorksheetAnalysis')
+                        if wss:
+                            # Create the AttachmentType for mime type if not exists
+                            attuid = None
+                            attachmentType = self.bsc(portal_type="AttachmentType",
+                                                      title=self._parser.getAttachmentFileType())
+                            # Get Attachment UID
+                            if len(attachmentType) == 0:
+                                try:
+                                    folder = self.context.bika_setup.bika_attachmenttypes
+                                    obj = _createObjectByType("AttachmentType", folder, tmpID())
+                                    obj.edit(title=self._parser.getAttachmentFileType(),
+                                             description="Autogenerated file type")
+                                    obj.unmarkCreationFlag()
+                                    renameAfterCreation(obj)
+                                    attuid = obj.UID()
+                                except:
+                                    attuid = None
+                                    self.warn(
+                                        "Unable to create the Attachment Type ${mime_type}",
+                                        mapping={
+                                        "mime_type": self._parser.getFileMimeType()})
+                            else:
+                                attuid = attachmentType[0].UID
 
-                        if attuid is not None:
-                            try:
-                                # Attach the file to the Analysis
-                                wss = analysis.getBackReferences('WorksheetAnalysis')
-                                if wss and len(wss) > 0:
-                                    #TODO: Mirar si es pot evitar utilitzar el WS i utilitzar directament l'Anàlisi (útil en cas de CalibrationTest)
-                                    ws = wss[0]
-                                    attachment = _createObjectByType("Attachment", ws, tmpID())
-                                    attachment.edit(
-                                        AttachmentFile=self._parser.getInputFile(),
-                                        AttachmentType=attuid,
-                                        AttachmentKeys='Results, Automatic import')
-                                    attachment.reindexObject()
-                                    others = analysis.getAttachment()
-                                    attachments = []
-                                    for other in others:
-                                        if other.getAttachmentFile().filename != attachment.getAttachmentFile().filename:
-                                            attachments.append(other.UID())
-                                    attachments.append(attachment.UID())
-                                    analysis.setAttachment(attachments)
+                            if attuid is not None:
+                                try:
+                                    # Attach the file to the Analysis
+                                    if wss and len(wss) > 0:
+                                        #TODO: Mirar si es pot evitar utilitzar el WS i utilitzar directament l'Anàlisi (útil en cas de CalibrationTest)
+                                        ws = wss[0]
+                                        attachment = _createObjectByType("Attachment", ws, tmpID())
+                                        attachment.edit(
+                                            AttachmentFile=self._parser.getInputFile(),
+                                            AttachmentType=attuid,
+                                            AttachmentKeys='Results, Automatic import')
+                                        attachment.reindexObject()
+                                        others = analysis.getAttachment()
+                                        attachments = []
+                                        for other in others:
+                                            if other.getAttachmentFile().filename != attachment.getAttachmentFile().filename:
+                                                attachments.append(other.UID())
+                                        attachments.append(attachment.UID())
+                                        analysis.setAttachment(attachments)
 
-                            except:
-    #                            self.err(_("Unable to attach results file '${file_name}' to AR ${request_id}",
-    #                                       mapping={"file_name": self._parser.getInputFile().filename,
-    #                                                "request_id": ar.getRequestID()}))
-                                pass
+                                except:
+        #                            self.warn(_("Unable to attach results file '${file_name}' to AR ${request_id}",
+        #                                       mapping={"file_name": self._parser.getInputFile().filename,
+        #                                                "request_id": ar.getRequestID()}))
+                                    pass
 
         # Calculate analysis dependencies
+        logger.info('PROCESS: Calculate Processed %s ARs' % len(arprocessed))
         for aruid in list(set(arprocessed)):
             ar = self.bc(portal_type='AnalysisRequest', UID=aruid)
             ar = ar[0].getObject()
+            logger.info('PROCESS: Calculate AR %s' % ar.getId())
             analyses = ar.getAnalyses()
             for analysis in analyses:
                 analysis = analysis.getObject()
+                logger.debug('PROCESS: Calculate Analysis %s' % analysis.getId())
                 initial_result = analysis.getResult()
                 try:
+                    #Cascade True ????
                     calc_passed = analysis.calculateResult(override=True,
                                                            cascade=True)
                 except Exception, e:
@@ -598,6 +611,8 @@ class AnalysisResultsImporter(Logger):
                                  "analysis_result": str(analysis.getResult())}
                     )
 
+        logger.info('PROCESS: item importedars')
+        #Construct log message
         for arid, acodes in importedars.iteritems():
             acodesmsg = '. '.join(["Analysis %s" % acod for acod in acodes])
             self.log("${request_id}: ${analysis_keywords} imported successfully",
@@ -697,7 +712,7 @@ class AnalysisResultsImporter(Logger):
                         in allowed_an_states]
 
         if len(analyses) == 0:
-            self.err(
+            self.warn(
                 "No analyses '${allowed_analysis_states}' states found for ${object_id}",
                 mapping={"allowed_analysis_states": ', '.join(allowed_an_states_msg),
                          "object_id": objid})
@@ -871,9 +886,9 @@ class AnalysisResultsImporter(Logger):
                      })
 
         if (resultsaved or len(interimsout) > 0) \
-            and values.get('Remarks', '') \
-            and analysis.portal_type == 'Analysis' \
-            and (analysis.getRemarks() != '' or self._override[1] == True):
+           and values.get('Remarks', '') \
+           and analysis.portal_type == 'Analysis' \
+           and (analysis.getRemarks() != '' or self._override[1] == True):
             analysis.setRemarks(values['Remarks'])
 
         return resultsaved or len(interimsout) > 0

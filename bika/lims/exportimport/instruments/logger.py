@@ -35,7 +35,9 @@ class Logger:
             prefix = "[%s] " % numline
         if line:
             suffix = ": %s" % line
-        array.append(prefix + msg + suffix)
+        str_msg =  '{}{}{}'.format(prefix, msg,suffix)
+        if  str_msg not in array:
+            array.append(prefix + msg + suffix)
 
     @property
     def errors(self):

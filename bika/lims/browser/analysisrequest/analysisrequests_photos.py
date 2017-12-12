@@ -43,7 +43,8 @@ class ARPhotosImporter(BrowserView):
             if imghdr.what(filepath) is None:
                 continue
 
-            ar_photo = photo.split('.')[0]
+            ar_photo, file_extension = os.path.splitext(photo)
+            ar_photo = ar_photo.upper()
             ar = bc(portal_type='AnalysisRequest', id=ar_photo)
             if len(ar) == 0:
                 # Move to errors folder 
@@ -70,6 +71,7 @@ class ARPhotosImporter(BrowserView):
                 attachment.setAttachmentFile(f)
                 f.close()
                 attachment.setAttachmentType(att_type_uid)
+                attachment.setReportOption('r')
 
                 # Attach to AR
                 ar.setAttachment(attachment.UID())

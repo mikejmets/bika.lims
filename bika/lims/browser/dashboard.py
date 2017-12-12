@@ -26,7 +26,11 @@ class DashboardView(BrowserView):
             pm = getToolByName(self.context, "portal_membership")
             member = pm.getAuthenticatedMember()
             roles = member.getRoles()
-            tofrontpage = 'Manager' not in roles and 'LabManager' not in roles
+
+            #BC-231 Allow all staff to see dashboard
+            allowed_roles = ['Manager', 'LabManager', 'LabClerk', 'Preserver',
+                             'Analyst', 'Publisher', 'Verifier']
+            tofrontpage = len(set(roles).intersection(allowed_roles)) == 0
 
         if tofrontpage == True:
             self.request.response.redirect(self.portal_url + "/bika-frontpage")
