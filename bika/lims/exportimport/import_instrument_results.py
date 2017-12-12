@@ -31,7 +31,7 @@ class ImportInstrumentResultsView(BrowserView):
     def import_instrument_results(self):
         """ 
         """
-        logger.info('Inside import_instrument_results')
+        logger.debug('Inside import_instrument_results')
         request = self.request
         bsc = api.get_tool("bika_setup_catalog")
         analysts_folder = os.environ.get('INSTRUMENT_RESULTS_IMPORTER', '')
@@ -209,7 +209,7 @@ class ImportInstrumentResultsView(BrowserView):
                 if 'Import' in globals():
                     del Import
 
-        logger.info('Instrument Results Importer Done')
+        logger.debug('Instrument Results Importer Done')
         if len(errors):
             if send_email:
                 self._email_errors(errors)
