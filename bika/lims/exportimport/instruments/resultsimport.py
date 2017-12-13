@@ -649,7 +649,7 @@ class AnalysisResultsImporter(Logger):
                 mapping={"nr_updated_ars": str(len(importedars)),
                          "nr_updated_results": str(ancount)})
         duration = datetime.now() - starttime
-        logger.info('PROCESS: Complete %s' % duration.seconds)
+        logger.info('PROCESS: Completed in %s sec' % duration.seconds)
 
     def _getObjects(self, objid, criteria, states):
         #self.log("Criteria: %s %s") % (criteria, obji))
