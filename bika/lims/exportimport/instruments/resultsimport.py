@@ -396,15 +396,20 @@ class AnalysisResultsImporter(Logger):
             self.warn("Service keywords: no matches found")
 
         searchcriteria = self.getIdSearchCriteria();
+        starttime = datetime.now()
         logger.info('PROCESS: Get Raw Results')
         raw_results = self._parser.getRawResults()
-        logger.info('PROCESS: Iter Raw Results')
+        num_raw_results = len(raw_results)
+        logger.info('PROCESS: %s Iter Raw Results' % num_raw_results)
         #self.log(_("Search criterias: %s") % (', '.join(searchcriteria)))
+        cnt = 0
         for objid, results in raw_results.iteritems():
+            cnt += 1
             # Allowed more than one result for the same sample and analysis.
             # Needed for calibration tests
             analyses = self._getZODBAnalyses(objid)
-            logger.info('PROCESS: Analysis Request %s' % objid)
+            logger.info('PROCESS: Analysis Request %s (%s/%s)' % (
+                objid, cnt, num_raw_results))
             for result in results:
                 logger.debug('PROCESS: AS %s' % str(result.keys()))
                 inst = None
@@ -568,10 +573,14 @@ class AnalysisResultsImporter(Logger):
 
         # Calculate analysis dependencies
         logger.info('PROCESS: Calculate Processed %s ARs' % len(arprocessed))
+        num_ars_processes = len(arprocessed)
+        cnt = 0
         for aruid in list(set(arprocessed)):
+            cnt += 1
             ar = self.bc(portal_type='AnalysisRequest', UID=aruid)
             ar = ar[0].getObject()
-            logger.info('PROCESS: Calculate AR %s' % ar.getId())
+            logger.info('PROCESS: Calculate AR %s (%s/%s)' % (
+                ar.getId(), cnt, num_ars_processes))
             analyses = ar.getAnalyses()
             for analysis in analyses:
                 analysis = analysis.getObject()
@@ -611,7 +620,6 @@ class AnalysisResultsImporter(Logger):
                                  "analysis_result": str(analysis.getResult())}
                     )
 
-        logger.info('PROCESS: item importedars')
         #Construct log message
         for arid, acodes in importedars.iteritems():
             acodesmsg = '. '.join(["Analysis %s" % acod for acod in acodes])
@@ -640,6 +648,8 @@ class AnalysisResultsImporter(Logger):
                 "${nr_updated_results} results updated",
                 mapping={"nr_updated_ars": str(len(importedars)),
                          "nr_updated_results": str(ancount)})
+        duration = datetime.now() - starttime
+        logger.info('PROCESS: Completed in %s sec' % duration.seconds)
 
     def _getObjects(self, objid, criteria, states):
         #self.log("Criteria: %s %s") % (criteria, obji))
