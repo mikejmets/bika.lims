@@ -904,7 +904,7 @@ def async_sample_and_receive(brain_or_object, context, dateSampled, sampler):
     :param brain_or_object: A single catalog brain or content object
     :returns: The object where the transtion was performed
     """
-    if len(sampler) == 0 or len(dateSampled) == 0:
+    if len(sampler) == 0 or dateSampled is None:
         message = context.translate(
                 _("Sampler and DateSampled are required"))
         context.plone_utils.addPortalMessage(message, 'error')
