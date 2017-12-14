@@ -63,6 +63,7 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
             message = None
             objects = AnalysisRequestWorkflowAction._get_selected_items(self)
             transitioned = {'to_be_preserved':[], 'sample_due':[]}
+            num_objects = len(objects)
             for obj_uid, obj in objects.items():
                 if obj.portal_type == "AnalysisRequest":
                     ar = obj
@@ -125,12 +126,14 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                         a.getObject().reindexObject()
 
                 if Sampler and DateSampled:
-                    api.async_sample(
-                        sample, ar, self.context, DateSampled, Sampler)
-                    #workflow.doActionFor(sample, action)
-                    #new_state = workflow.getInfoFor(sample, 'review_state')
-                    #doActionFor(ar, action)
-                    #transitioned[new_state].append(sample.Title())
+                    if num_objects > 2:
+                        api.async_sample(
+                            sample, ar, self.context, DateSampled, Sampler)
+                    else:
+                        workflow.doActionFor(sample, action)
+                        new_state = workflow.getInfoFor(sample, 'review_state')
+                        doActionFor(ar, action)
+                        transitioned[new_state].append(sample.Title())
                 else:
                     message = _('Both Sampler and Date Sampled are required')
                     self.context.plone_utils.addPortalMessage(message, 'error')
