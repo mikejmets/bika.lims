@@ -336,6 +336,25 @@ class AnalysisRequestAddView(BrowserView):
             return parent
         return None
 
+    def get_parent_ar(self, ar):
+        """Returns the parent AR
+        """
+        parent = ar.getParentAnalysisRequest()
+
+        # Return immediately if we have no parent
+        if parent is None:
+            return None
+
+        # Walk back the chain until we reach the source AR
+        while True:
+            pparent = parent.getParentAnalysisRequest()
+            if pparent is None:
+                break
+            # remember the new parent
+            parent = pparent
+
+        return parent
+
     def generate_fieldvalues(self, count=1):
         """Returns a mapping of '<fieldname>-<count>' to the default value
         of the field or the field value of the source AR
@@ -352,12 +371,16 @@ class AnalysisRequestAddView(BrowserView):
         # generate fields for all requested ARs
         for arnum in range(count):
             source = copy_from.get(arnum)
+            parent = None
+            if source is not None:
+                parent = self.get_parent_ar(source)
             for field in fields:
                 value = None
                 fieldname = field.getName()
                 if source and fieldname not in SKIP_FIELD_ON_COPY:
                     # get the field value stored on the source
-                    value = self.get_field_value(field, source)
+                    context = parent or source
+                    value = self.get_field_value(field, context)
                 else:
                     # get the default value of this field
                     value = self.get_default_value(field, ar_context)
@@ -501,7 +524,8 @@ class AnalysisRequestAddView(BrowserView):
 
         for brain in services:
             category = brain.getCategoryTitle
-            analyses[category].append(brain)
+            if category in analyses:
+                analyses[category].append(brain)
         return analyses
 
     @cache(cache_key)
@@ -1079,7 +1103,7 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
 
         # client
         client = self.get_client()
-        client_uid = api.get_uid(client)
+        client_uid = client and api.get_uid(client) or ""
 
         # sample matrix
         sample_matrix = obj.getSampleMatrix()
@@ -1642,7 +1666,9 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
         # extract records from request
         records = self.get_records()
 
-        errors = {}
+        fielderrors = {}
+        errors = {"message": "", "fielderrors": {}}
+
         attachments = {}
         valid_records = []
 
@@ -1697,7 +1723,7 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             for field in missing:
                 fieldname = "{}-{}".format(field, n)
                 msg = _("Field '{}' is required".format(field))
-                errors[fieldname] = msg
+                fielderrors[fieldname] = msg
 
             # Selected Analysis UIDs
             selected_analysis_uids = record.get("Analyses", [])
@@ -1753,7 +1779,9 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             # append the valid record to the list of valid records
             valid_records.append(valid_record)
 
-        if errors:
+        # return immediately with an error response if some field checks failed
+        if fielderrors:
+            errors["fielderrors"] = fielderrors
             return {'errors': errors}
 
         # Process Form
@@ -1769,12 +1797,11 @@ class ajaxAnalysisRequestAddView(AnalysisRequestAddView):
             specifications = record.pop("Specifications", {})
 
             # Create the Analysis Request
-            ar = crar(
-                client,
-                self.request,
-                record,
-                specifications=specifications,
-            )
+            try:
+                ar = crar(client, self.request, record, specifications=specifications)
+            except (KeyError, RuntimeError) as e:
+                errors["message"] = e.message
+                return {"errors": errors}
             ARs.append(ar.Title())
 
             _attachments = []
