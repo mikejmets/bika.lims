@@ -10,6 +10,7 @@ import plone, json
 from bika.lims.permissions import *
 
 from Acquisition import aq_parent, aq_inner
+from bika.lims import api
 from bika.lims import bikaMessageFactory as _
 from bika.lims.browser.analysisrequest import AnalysisRequestWorkflowAction
 from bika.lims.subscribers import doActionFor
@@ -124,10 +125,12 @@ class ClientWorkflowAction(AnalysisRequestWorkflowAction):
                         a.getObject().reindexObject()
 
                 if Sampler and DateSampled:
-                    workflow.doActionFor(sample, action)
-                    new_state = workflow.getInfoFor(sample, 'review_state')
-                    doActionFor(ar, action)
-                    transitioned[new_state].append(sample.Title())
+                    api.async_sample(
+                        sample, ar, self.context, DateSampled, Sampler)
+                    #workflow.doActionFor(sample, action)
+                    #new_state = workflow.getInfoFor(sample, 'review_state')
+                    #doActionFor(ar, action)
+                    #transitioned[new_state].append(sample.Title())
                 else:
                     message = _('Both Sampler and Date Sampled are required')
                     self.context.plone_utils.addPortalMessage(message, 'error')

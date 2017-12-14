@@ -908,6 +908,11 @@ def async_sample_and_receive(brain_or_object, context, dateSampled, sampler):
     :param brain_or_object: A single catalog brain or content object
     :returns: The object where the transtion was performed
     """
+    if len(sampler) == 0 or len(dateSampled) == 0:
+        message = context.translate(
+                _("Sampler and DateSampled are required"))
+        context.plone_utils.addPortalMessage(message, 'error')
+        return
     obj = get_object(brain_or_object)
     task_queue = queryUtility(ITaskQueue, name='sample-receive')
     if task_queue is not None:
@@ -937,6 +942,48 @@ def async_sample_and_receive(brain_or_object, context, dateSampled, sampler):
         do_transition_for(obj, 'receive')
         message = context.translate(
                 _("Sampled and Received %s" % ( obj.Title())))
+        context.plone_utils.addPortalMessage(message, 'info')
+
+def async_sample(sample, analysisrequest, context, dateSampled, sampler):
+    """Performs a workflow transition sample for provided object.
+
+    :param brain_or_object: A single catalog brain or content object
+    :returns: The object where the transtion was performed
+    """
+    if len(sampler) == 0 or len(dateSampled) == 0:
+        message = context.translate(
+                _("Sampler and DateSampled are required"))
+        context.plone_utils.addPortalMessage(message, 'error')
+        return
+
+    task_queue = queryUtility(ITaskQueue, name='sample-ar')
+    if task_queue is not None:
+        logger.info('Queue sample AR')
+        path = [i for i in context.getPhysicalPath()]
+        path.append('async_sample')
+        path = '/'.join(path)
+
+        params = {
+                'sample_uid': sample.UID(),
+                'ar_uid': analysisrequest.UID(),
+                'dateSampled': dateSampled,
+                'sampler': sampler,
+                }
+        logger.info('Queue Task: path=%s' % path)
+        task_id = task_queue.add(path,
+                method='POST',
+                params=params)
+        message = context.translate(
+                _("Submitted %s to the queue for processing" % (
+                    analysisrequest.Title())))
+        context.plone_utils.addPortalMessage(message, 'info')
+    else:
+        logger.info('Non-Queue sample AR')
+        analysisrequest.setDateSampled(dateSampled)
+        analysisrequest.setSampler(sampler)
+        do_transition_for(sample, 'sample')
+        message = context.translate(
+                _("Sampled AR %s" % ( analysisrequest.Title())))
         context.plone_utils.addPortalMessage(message, 'info')
 
 
@@ -1155,3 +1202,23 @@ class AsyncView(BrowserView):
         obj.setSampler(sampler)
         ploneapi.content.transition(obj, 'sample')
         ploneapi.content.transition(obj, 'receive')
+
+    def async_sample(self):
+
+        logger.info('async_sample_ar server')
+        form = self.request.form
+        sample_uid = form.get('sample_uid')
+        if sample_uid is None:
+            raise RuntimeError('async_sample sample_uid')
+        sample = ploneapi.content.get(UID=sample_uid)
+        ar_uid = form.get('ar_uid')
+        if ar_uid is None:
+            raise RuntimeError('async_sample ar_uid')
+        ar = ploneapi.content.get(UID=ar_uid)
+        dateSampled = form.get('dateSampled')
+        sampler = form.get('sampler')
+
+        ploneapi.content.transition(sample, 'sample')
+        ar.setDateSampled(dateSampled)
+        ar.setSampler(sampler)
+        ploneapi.content.transition(ar, 'sample')
