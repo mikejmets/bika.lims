@@ -1219,12 +1219,9 @@ class AsyncView(BrowserView):
         dateSampled = form.get('dateSampled')
         sampler = form.get('sampler')
 
-        ploneapi.content.transition(sample, 'sample')
         ar.setDateSampled(dateSampled)
         ar.setSampler(sampler)
         ploneapi.content.transition(ar, 'sample')
-        do_transition_for(obj, 'sample')
-        do_transition_for(obj, 'receive')
         logger.info('async_sample server complete')
 
     def async_transition_object(self):
