@@ -40,6 +40,7 @@ from bika.lims.utils import getFromString
 from bika.lims.utils import isActive, getHiddenAttributesForClass
 from bika.lims.utils import t
 from bika.lims.utils import to_utf8
+from bika.lims.workflow import doAsyncActionFor
 
 
 class WorkflowAction:
@@ -304,10 +305,14 @@ class WorkflowAction:
                         username = getToolByName(self.context, 'portal_membership').getAuthenticatedMember().getUserName()
                         item.addVerificator(username)
                         if revers - nmvers <= 1:
-                            success, message = doActionFor(item, action)
+                            success, message = doAsyncActionFor(item, action)
                             if not success:
                                 # If failed, delete last verificator.
                                 item.deleteLastVerificator()
+                    elif action == 'verify':
+                        success, message = doAsyncActionFor(item, action)
+                    elif action == 'cancel':
+                        success, message = doAsyncActionFor(item, action)
                     else:
                         success, message = doActionFor(item, action)
                     if success:

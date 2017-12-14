@@ -1189,7 +1189,7 @@ class AsyncView(BrowserView):
 
     def async_sample_and_receive(self):
 
-        logger.info('async_sample_and_receive server')
+        logger.info('async_sample_and_receive server entered')
         form = self.request.form
         obj_uid = form.get('obj_uid')
         if obj_uid is None:
@@ -1202,6 +1202,7 @@ class AsyncView(BrowserView):
         obj.setSampler(sampler)
         ploneapi.content.transition(obj, 'sample')
         ploneapi.content.transition(obj, 'receive')
+        logger.info('async_sample_and_receive server complete')
 
     def async_sample(self):
 
@@ -1222,3 +1223,24 @@ class AsyncView(BrowserView):
         ar.setDateSampled(dateSampled)
         ar.setSampler(sampler)
         ploneapi.content.transition(ar, 'sample')
+        do_transition_for(obj, 'sample')
+        do_transition_for(obj, 'receive')
+        logger.info('async_sample server complete')
+
+    def async_transition_object(self):
+
+        logger.info('async_transition_object server entered')
+        form = self.request.form
+        obj_uid = form.get('obj_uid')
+        if obj_uid is None:
+            raise RuntimeError('async_transition_object requires obj_uid')
+        obj = get_object_by_uid(uid=obj_uid)
+        if obj is None:
+            raise RuntimeError('async_transition_object unknown obj_uid')
+
+        action_id = form.get('action_id')
+        if action_id is None:
+            raise RuntimeError('async_transition_object requires action_id')
+
+        do_transition_for(obj, action_id)
+        logger.info('async_transition_object server complete')
