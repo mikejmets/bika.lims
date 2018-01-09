@@ -3,17 +3,17 @@
 # Copyright 2011-2016 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
+from bika.lims import api
+from bika.lims import logger
 from bika.lims.exportimport.dataimport import SetupDataSetList as SDL
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import ISetupDataSetList
-from Products.CMFPlone.utils import safe_unicode, _createObjectByType
 from bika.lims.utils import tmpID, to_unicode
-from bika.lims.utils import to_utf8
 from bika.lims import bikaMessageFactory as _
 from bika.lims.utils import t
-from Products.CMFCore.utils import getToolByName
-from bika.lims import logger
 from bika.lims.utils.analysis import create_analysis
+from Products.CMFPlone.utils import safe_unicode, _createObjectByType
+from Products.CMFCore.utils import getToolByName
 from zope.interface import implements
 from pkg_resources import resource_filename
 import datetime
@@ -55,7 +55,8 @@ def read_file(path):
         out = '%s.%s' % (path, e)
         if os.path.isfile(out):
             return open(out, "rb").read()
-    raise IOError("File not found: %s. Allowed extensions: %s" % (path, ','.join(allowed_ext)))
+    raise IOError("File not found: %s. Allowed extensions: %s" % (
+        path, ','.join(allowed_ext)))
 
 
 class SetupDataSetList(SDL):
@@ -88,13 +89,18 @@ class WorksheetImporter:
             try:
                 self.Import()
             except IOError:
-                # The importer must omit the files not found inside the server filesystem (bika/lims/setupdata/test/
-                # if the file is loaded from 'select existing file' or bika/lims/setupdata/uploaded if it's loaded from
-                # 'Load from file') and finishes the import without errors. https://jira.bikalabs.com/browse/LIMS-1624
-                warning = "Error while loading attached file from %s. The file will not be uploaded into the system."
+                # The importer must omit the files not found inside the
+                # server filesystem (bika/lims/setupdata/test/
+                # if the file is loaded from 'select existing file' or
+                # bika/lims/setupdata/uploaded if it's loaded from
+                # 'Load from file') and finishes the import without
+                # errors. https://jira.bikalabs.com/browse/LIMS-1624
+                warning = """Error while loading attached file from %s.
+The file will not be uploaded into the system."""
                 logger.warning(warning, self.sheetname)
-                self.context.plone_utils.addPortalMessage("Error while loading some attached files. "
-                                                          "The files weren't uploaded into the system.")
+                self.context.plone_utils.addPortalMessage(
+                    "Error while loading some attached files. "
+                    "The files weren't uploaded into the system.")
         else:
             logger.info("No records found: '{0}'".format(self.sheetname))
 
@@ -2269,3 +2275,15 @@ class Invoice_Batches(WorksheetImporter):
                 BatchEndDate=row['end'],
             )
             renameAfterCreation(obj)
+
+class Client_Licence_Types(WorksheetImporter):
+
+    def Import(self):
+        folder = self.context.bika_setup.bika_clientlicencetypes
+        for row in self.get_rows(3):
+            if row['title']:
+                obj = _createObjectByType(
+                        "ClientLicenceType", folder, tmpID())
+                obj.title = row['title']
+                obj.description = row['description']
+                renameAfterCreation(obj)

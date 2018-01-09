@@ -54,6 +54,7 @@ AddSamplingDeviation = 'BIKA: Add SamplingDeviation'
 AddSamplingRound = 'BIKA: Add SamplingRound'
 AddSRTemplate = 'BIKA: Add SRTemplate'
 AddSubGroup = 'BIKA: Add Sub-group'
+AddClientLicenceType = 'BIKA: Add ClientLicenceType'
 
 # Default Archetypes Add Permission
 ADD_CONTENT_PERMISSION = permissions.AddPortalContent
@@ -166,10 +167,9 @@ ReopenBatch = 'BIKA: Reopen Batch'
 CloseSamplingRound = 'BIKA: Close SamplingRound'
 ReopenSamplingRound = 'BIKA: Reopen SamplingRound'
 
-# Manage AR Imports
+# Manage Client Types
 # ----------------------------------------------
-ManageARImport = 'BIKA: Manage ARImport'
-
+ManageClientLicenceType = 'BIKA: Manage ClientLicenceType'
 
 def setup_permissions(portal):
     """
@@ -210,6 +210,7 @@ def setup_permissions(portal):
     mp(AddSamplingDeviation, ['Manager', 'Owner', 'LabManager', 'LabClerk'], 1)
     mp(AddSRTemplate, ['Manager', 'Owner', 'LabManager'], 0)
     mp(AddSubGroup, ['Manager', 'LabManager', 'LabClerk'], 0)
+    mp(AddClientLicenceType, ['Manager', 'LabManager'], 0)
 
     mp(permissions.AddPortalContent, ['Manager', 'Owner', 'LabManager'], 1)
     mp(permissions.ListFolderContents, ['Manager', 'Owner'], 1)
@@ -442,4 +443,4 @@ def setup_permissions(portal):
     mp = portal.bika_setup.bika_attachmenttypes.manage_permission
     mp('Access contents information', ['Authenticated', 'Analyst', 'Client'], 1)
     mp(permissions.View, ['Authenticated', 'Analyst', 'Client'], 1)
-    portal.bika_setup.bika_attachmenttypes.reindexObject()
+

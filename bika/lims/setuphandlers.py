@@ -65,6 +65,7 @@ class BikaGenerator(object):
                        'bika_attachmenttypes',
                        'bika_batchlabels',
                        'bika_calculations',
+                       'bika_clientlicencetypes',
                        'bika_departments',
                        'bika_containers',
                        'bika_containertypes',
