@@ -20,6 +20,10 @@ lib64/
 parts/
 sdist/
 var/
+include/
+var/
+local/
+share/
 wheels/
 *.egg-info/
 .installed.cfg
@@ -105,3 +109,5 @@ src/bika.lims
 src/senaite.api
 src/senaite.jsonapi
 src/senaite.core
+
+pip-selfcheck.json
