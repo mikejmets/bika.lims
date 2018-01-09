@@ -2,7 +2,13 @@
 
 BASE=${buildout:directory}
 I18N=$BASE/bin/i18ndude
-LOCALES=$BASE/bika/lims/locales
+
+SRC=src
+LOCALES=$SRC/senaite/lims/locales
+
+# we need to merge the bika.po and plone.po for jarn.jsi18n usage
+BIKA_SRC=$BASE/lib/bika.lims
+BIKA_LOCALES=$BIKA_SRC/bika/lims/locales
 
 function die() {
     echo "ERROR: $1"
@@ -15,47 +21,26 @@ if test ! -x $I18N; then
     die "i18ndude not installed"
 fi
 
-# Check Transifex Installed
-function has_tx() {
-  TX=$(which tx)
-  if test ! -x $TX || test -z $TX; then
-     return -1
-  else
-      return 0
-  fi
-}
+################################################################################
+# PROCESSING SENAITE DOMAIN
+################################################################################
+DOMAIN=senaite
+echo "Processing Domain $DOMAIN"
+# Re-scan the source code for new strings and create a temporary $DOMAIN-tmp.pot
+$I18N rebuild-pot --pot $LOCALES/$DOMAIN-tmp.pot --exclude "build" --create $DOMAIN $SRC
+# Merge the manual translations of $DOMAIN-manual.pot into the temporary $DOMAIN-tmp.pot
+$I18N merge --pot $LOCALES/$DOMAIN-tmp.pot --merge $LOCALES/$DOMAIN-manual.pot
+# Merge the content translations of $DOMAIN-manual.pot into the temporary $DOMAIN-tmp.pot
+$I18N merge --pot $LOCALES/$DOMAIN-tmp.pot --merge $LOCALES/$DOMAIN-content.pot
+# Overwrite the existing $DOMAIN.pot
+mv $LOCALES/$DOMAIN-tmp.pot $LOCALES/$DOMAIN.pot
+# Synchronize all .po files with the new $DOMAIN.pot
+$I18N sync --pot $LOCALES/$DOMAIN.pot $LOCALES/*/LC_MESSAGES/$DOMAIN.po
+echo "Processing Domain $DOMAIN [DONE]"
 
-# Transifex Pull Function
-function tx_pull() {
-    if has_tx; then
-        cd $LOCALES
-        echo "Transifex Pull"
-        tx pull -a -f
-    else
-        die "Please install the Transifex Client first: $ pip install transifex-client"
-    fi
-    cd $BASE
-}
-
-# Transifex Push Function
-function tx_push() {
-    if has_tx; then
-        cd $LOCALES
-        echo "Transifex Push"
-        tx push -s -t --skip
-    else
-        die "Please install the Transifex Client first: $ pip install transifex-client"
-    fi
-    cd $BASE
-}
-
-# Clean all generated .mo files
-find $LOCALES -name "*.mo" -delete
-
-# Pull Transifex
-tx_pull
-
-# Generate the Bika Domain
+################################################################################
+# PROCESSING BIKA DOMAIN
+################################################################################
 DOMAIN=bika
 echo "Processing Domain $DOMAIN"
 # Flush the english (transifex source language) po files
@@ -71,7 +56,9 @@ mv $LOCALES/$DOMAIN-tmp.pot $LOCALES/$DOMAIN.pot
 $I18N sync --pot $LOCALES/$DOMAIN.pot $LOCALES/*/LC_MESSAGES/$DOMAIN.po
 echo "Domain $DOMAIN [DONE]"
 
-# Generate Plone Domain
+################################################################################
+# PROCESSING PLONE DOMAIN
+################################################################################
 DOMAIN=plone
 echo "Processing Domain $DOMAIN"
 # Flush the english (transifex source language) po files
@@ -86,6 +73,3 @@ mv $LOCALES/$DOMAIN-tmp.pot $LOCALES/$DOMAIN.pot
 # Synchronize all .po files with the new $DOMAIN.pot
 $I18N sync --pot $LOCALES/$DOMAIN.pot $LOCALES/*/LC_MESSAGES/$DOMAIN.po
 echo "Domain $DOMAIN [DONE]"
-
-# Push Transifex
-tx_push

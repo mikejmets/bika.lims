@@ -1,0 +1,400 @@
+/* Plone Style overwrites */
+.hiddenStructure {
+    display: none;
+}
+.contentActions {
+    padding-top: 1em;
+}
+div.portletAssignments .managedPortletActions form {
+    display: inline;
+}
+.fieldRequired:before {
+    content: "•";
+    padding: 0 0.2em 0 0;
+    color: red;
+}
+span.required:after {
+    content: "•";
+    padding: 0 0 0 0.2em;
+    color: red;
+}
+div.field.error {
+    background-color: #f2dede;
+    border:  1px solid #a94442;
+    padding: 0.5em;
+    margin:  1em 0;
+}
+.error .fieldRequired {
+    color: #a94442;
+}
+div.widget input {
+    display: inline;
+    height: auto;
+}
+div.field input {
+    display: inline;
+    height: auto;
+}
+div.widget label {
+    display: inline;
+}
+div.field label {
+    display: inline;
+}
+/* /Plone Style overwrites */
+
+
+/* Loader */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+}
+#loader {
+    top: 50%;
+    left: 50%;
+    position: fixed;
+    text-align: center;
+    padding: 0.5em;
+}
+#bika-spinner {
+    display: none!important;
+}
+.bika-tooltip {
+    opacity: 1;
+    border: none!important;
+    background-color: transparent!important;
+}
+.bika-tooltip .tooltip-inner {
+    background-color: white;
+    color: black;
+    text-align: left;
+}
+.bika-tooltip .tooltip-inner table th {
+    border-bottom: 2px solid #f7f7f7;
+}
+.bika-tooltip .tooltip-arrow {
+    border-bottom-color: white!important;
+}
+.bika-tooltip td {
+    cursor: pointer;
+}
+.bika-tooltip td:hover {
+    color: #337ab7;
+}
+/* /Loader */
+
+
+/* Bika Style overwrites */
+.notext {
+    overflow: hidden;
+    visibility:hidden;
+    display:none;
+}
+#manage-ar-fields {
+    vertical-align: middle!important;
+}
+.context_action_link {
+    top: 0;
+}
+#analysisrequest_manage_add_form ul {
+    padding: 0;
+}
+#analysisrequest_manage_add_form ul li input {
+    margin: 0;
+}
+#analysisrequest_manage_add_form ul li {
+    padding: 0.5em;
+    height: auto;
+    font-size: 100%;
+}
+.toggle-barchart {
+    text-align: right!importantt;
+    width: 100%;
+}
+.dashboard-section h2 {
+    margin: 3px 0 0 0;
+    font-size: 1em!important;
+}
+.dashboard-panels {
+    padding-bottom: 20px!important;
+}
+.dashboard-info-panel {
+    padding: 0;
+}
+.dashboard-info-panel .toggle-barchart {
+}
+.dashboard-info-panel-wrapper {
+}
+.dashboard-info-panel-number {
+    padding-left: 20px!important;
+}
+.dashboard-info-panel-total {
+    padding-left: 20px!important;
+    max-width: 100px!important;
+}
+div#viewlet-above-content-title #panel-notification {
+    top: 50%;
+    left: 50%;
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    z-index: 1000;
+}
+div#viewlet-above-content-title #panel-notification div.error-notification-item {
+    background: url(++resource++bika.lims.images/warning.png) no-repeat scroll 15px center #fff680;
+    border-radius: 5px;
+    padding: 15px 30px 15px 40px;
+}
+div#viewlet-above-content-title #panel-notification div.succeed-notification-item {
+    background: url(++resource++bika.lims.images/ok.png) no-repeat scroll 15px center #dfdfdf;
+    border-radius: 5px;
+    padding: 15px 30px 15px 40px;
+}
+.bika-listing-table .cat_header {
+    height: 3em;
+    vertical-align: middle;
+    cursor: pointer;
+    background-color: #fcf8e3;
+}
+/* Priority Selection Widget */
+.ArchetypesPrioritySelectionWidget { }
+
+    .ArchetypesPrioritySelectionWidget select {
+        border: 1px solid #cdcdcd;
+        border-radius: 5px;
+        box-shadow: 1px 1px 1px #dcdcdc;
+        padding-right: 10px; }
+
+        .ArchetypesPrioritySelectionWidget select,
+        .ArchetypesPrioritySelectionWidget select option {
+            padding-left:25px;
+            border: none;
+            background-position: 2px 2px;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            background-attachment: scroll;
+            background-color: #fff; }
+
+        .ArchetypesPrioritySelectionWidget select[value="1"],
+        .ArchetypesPrioritySelectionWidget select option[value="1"] {
+            background-image: url(++resource++bika.lims.images/highest.svg); }
+
+        .ArchetypesPrioritySelectionWidget select[value="2"],
+        .ArchetypesPrioritySelectionWidget select option[value="2"] {
+            background-image: url(++resource++bika.lims.images/high.svg); }
+
+        .ArchetypesPrioritySelectionWidget select[value="3"],
+        .ArchetypesPrioritySelectionWidget select option[value="3"] {
+            background-image: url(++resource++bika.lims.images/medium.svg); }
+
+        .ArchetypesPrioritySelectionWidget select[value="4"],
+        .ArchetypesPrioritySelectionWidget select option[value="4"] {
+            background-image: url(++resource++bika.lims.images/low.svg); }
+
+        .ArchetypesPrioritySelectionWidget select[value="5"],
+        .ArchetypesPrioritySelectionWidget select option[value="5"] {
+            background-image: url(++resource++bika.lims.images/lowest.svg); }
+
+.priority-ico {
+    background-position: left top;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    background-attachment: scroll;
+    min-height: 16px;
+    min-width: 16px; }
+
+    .priority-ico.priority-1 {
+        background-image: url(++resource++bika.lims.images/highest.svg); }
+
+    .priority-ico.priority-2 {
+        background-image: url(++resource++bika.lims.images/high.svg); }
+
+    .priority-ico.priority-3 {
+        background-image: url(++resource++bika.lims.images/medium.svg); }
+
+    .priority-ico.priority-4 {
+        background-image: url(++resource++bika.lims.images/low.svg); }
+
+    .priority-ico.priority-5 {
+        background-image: url(++resource++bika.lims.images/lowest.svg); }
+
+/* Analysis Request fields table from Add form */
+table.analysisrequest.add {}
+    table.analysisrequest.add tr:hover td,
+    table.analysisrequest.add tr:hover th,
+    table.analysisrequest.add tr:hover td span,
+    table.analysisrequest.add tr:hover th span {
+        background-color: #fff9ee !important; }
+
+    table.analysisrequest.add tr:hover th,
+    table.analysisrequest.add tr:hover th span {
+        border-right:none; }
+
+.bika-listing-table .progress-bar-container {
+    background-color: #efefef;
+    border: 1px solid #c1c1c1;
+    border-radius: 3px;
+    height: 16px;
+    width: 50px;
+    overflow: hidden;
+}
+.bika-listing-table .progress-bar-container .progress-bar {
+    background-color: #a2d0ce;
+    float: none;
+    height: inherit;
+}
+.bika-listing-table .progress-bar-container .progress-perc {
+    font-size: 0.85em;
+    margin-top: -16px;
+    width: inherit;
+    text-align:center;
+}
+
+.queued-items {
+    background: #fff9ee url(++resource++bika.lims.images/exclamation2_big.png) no-repeat scroll 15px center / 24px auto;
+    border-radius: 5px;
+    font-size: 1.1em;
+    margin-top: 10px;
+    padding: 15px 0 15px 48px;
+}
+.queued-items > a {
+    background-color: #436976;
+    border-radius: 5px;
+    font-size: 0.85em;
+    padding: 4px 10px;
+}
+
+div.bika-listing-table-top-hooks:after {
+    clear: both;
+    content: " ";
+    display: block;
+    font-size: 0;
+    height: 0;
+    visibility: hidden;
+}
+div.bika-listing-table-top-hooks div.listing-hook-top-left,
+div.bika-listing-table-top-hooks div.listing-hook-top-right {
+    width:50%;
+}
+div.bika-listing-table-top-hooks div.listing-hook-top-right {
+    float:right;
+}
+div.bika-listing-table-top-hooks div.listing-hook-top-left {
+    float:left;
+}
+div.bika-listing-table-top-hooks div.listing-hook-top-wide {
+    clear:both;
+    display:block;
+}
+/* /Bika Style overwrites */
+
+
+/* Top Navigation */
+#portal-logo img {
+    display: block;
+    margin-top: 20px;
+}
+.topbar-nav {
+    margin-top: 20px;
+}
+.senaite-navbar-brand {
+    float: left;
+    height: 50px;
+    padding: 15px 15px;
+    font-size: 40px;
+    line-height: 10px;
+    color: #D7DBDC!important;
+    font-weight: bold;
+    text-decoration: none!important;
+}
+.senaite-navbar-brand:hover {
+    text-decoration: none!important;
+}
+/* /Top Navigation */
+
+
+/* Sidebar Navigation */
+.sidebar-nav .navbar .navbar-collapse {
+    max-height: none;
+    padding: 0;
+}
+.sidebar-nav .navbar ul {
+    float: none;
+}
+.sidebar-nav .navbar ul:not {
+    display: block;
+}
+.sidebar-nav .navbar li {
+    float: none;
+    display: block;
+}
+.sidebar-nav .navbar li.active a {
+    background-color: #e7e7e7;
+}
+.sidebar-nav .navbar li a {
+    padding: 10px 15px;
+}
+.sidebar-nav .submenu li a {
+    color: #777;
+}
+.sidebar-nav li.expanded>a:after {
+    content: "▼";
+    font-size: 50%;
+}
+.sidebar-nav .nav-level-1 li a {
+    padding-left: 30px;
+}
+.sidebar-nav .nav-level-2 li a {
+    padding-left: 45px;
+}
+.sidebar-nav .nav-level-3 li a {
+    padding-left: 60px;
+}
+.sidebar-nav .nav-level-5 li a {
+    padding-left: 75px;
+}
+/* /Sidebar Navigation */
+
+
+/* Fixture for jqueryui.combogrid.css */
+.ui-corner-all,.ui-corner-bottom,.ui-corner-right,.ui-corner-br {
+    border-bottom-right-radius: 5px!important;
+}
+.ui-corner-all,.ui-corner-top,.ui-corner-left,.ui-corner-tl {
+    border-top-left-radius: 5px!important;
+}
+.ui-corner-all,.ui-corner-top,.ui-corner-right,.ui-corner-tr {
+    border-top-right-radius: 5px!important;
+}
+.ui-corner-all,.ui-corner-bottom,.ui-corner-left,.ui-corner-bl {
+    border-bottom-left-radius: 5px!important;
+}
+#cg-divHeader {
+    height: 30px!important;
+}
+.cg-navTable .currentPage,
+.cg-navTable .recordXP {
+    color: black!important;
+}
+/* /Fixture for jqueryui.combogrid.css */
+
+
+/* Fixture for overlays */
+/* default close button positioned on upper-left corner */
+div.overlaybg div.close,
+div.overlay div.close {
+    background-image: url(++resource++plone.app.jquerytools.pb_close.png);
+    position: absolute;
+    left: -14px;
+    top: -14px;
+    cursor: pointer;
+    height: 30px;
+    width: 30px;
+    opacity: 1;
+}
+/* /Fixture for overlays */
