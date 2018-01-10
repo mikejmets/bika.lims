@@ -21,7 +21,6 @@ parts/
 sdist/
 var/
 include/
-var/
 local/
 share/
 wheels/
